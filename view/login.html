@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TecnovaleGAS — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #F97316;
+      --orange-dark: #EA580C;
+      --dark: #0F172A;
+      --dark-2: #1E293B;
+      --dark-3: #334155;
+      --gray-400: #94A3B8;
+      --gray-500: #64748B;
+      --white: #FFFFFF;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--dark-2);
+      border: 1px solid var(--dark-3);
+      border-radius: var(--radius);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+    }
+
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .login-logo .logo-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--orange);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: var(--white);
+    }
+
+    .login-logo .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .login-logo .logo-main { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; color: var(--white); }
+    .login-logo .logo-accent { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; color: var(--orange); }
+
+    h1 { font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .subtitle { font-size: 14px; color: var(--gray-400); margin-bottom: 32px; }
+
+    .form-group { margin-bottom: 20px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-400);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-wrap i.icon-left {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-500);
+      font-size: 15px;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      background: var(--dark);
+      border: 1.5px solid var(--dark-3);
+      border-radius: 10px;
+      padding: 12px 44px;
+      font-size: 15px;
+      color: var(--white);
+      font-family: 'Barlow', sans-serif;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    input:focus { border-color: var(--orange); }
+    input::placeholder { color: var(--gray-500); }
+
+    .btn-toggle-senha {
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: var(--gray-500); cursor: pointer;
+      font-size: 15px;
+      padding: 4px;
+    }
+    .btn-toggle-senha:hover { color: var(--orange); }
+
+    .btn-login {
+      width: 100%;
+      background: var(--orange);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Barlow', sans-serif;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .2s, transform .1s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-login:hover  { background: var(--orange-dark); }
+    .btn-login:active { transform: scale(.98); }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .error-msg {
+      display: none;
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.35);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #FCA5A5;
+      margin-bottom: 20px;
+      align-items: center;
+      gap: 8px;
+    }
+    .error-msg.visible { display: flex; }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="logo-icon"><i class="fa-solid fa-helmet-safety"></i></div>
+      <div class="logo-text">
+        <span class="logo-main">Tecno</span>
+        <span class="logo-accent">ValeGAS</span>
+      </div>
+    </div>
+
+    <h1>Bem-vindo de volta</h1>
+    <p class="subtitle">Faça login para acessar o sistema de estoque</p>
+
+    <div class="error-msg" id="errorMsg">
+      <i class="fa-solid fa-circle-xmark"></i>
+      <span id="errorText">Email ou senha incorretos.</span>
+    </div>
+
+    <div class="form-group">
+      <label for="email">E-mail</label>
+      <div class="input-wrap">
+        <i class="fa-solid fa-envelope icon-left"></i>
+        <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="senha">Senha</label>
+      <div class="input-wrap">
+        <i class="fa-solid fa-lock icon-left"></i>
+        <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password" />
+        <button class="btn-toggle-senha" type="button" onclick="toggleSenha()" id="btnToggleSenha">
+          <i class="fa-solid fa-eye" id="iconSenha"></i>
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="btnLogin" onclick="fazerLogin()">
+      <i class="fa-solid fa-right-to-bracket"></i>
+      Entrar
+    </button>
+
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:5000';
+
+    // Se já está logado, redireciona direto para o dashboard
+    if (sessionStorage.getItem('token')) {
+      window.location.href = '/dashboard';
+    }
+
+    // Enter dispara o login
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') fazerLogin();
+    });
+
+    function toggleSenha() {
+      const input = document.getElementById('senha');
+      const icon  = document.getElementById('iconSenha');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    function mostrarErro(msg) {
+      document.getElementById('errorText').textContent = msg;
+      document.getElementById('errorMsg').classList.add('visible');
+    }
+
+    function ocultarErro() {
+      document.getElementById('errorMsg').classList.remove('visible');
+    }
+
+    async function fazerLogin() {
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value.trim();
+      const btn   = document.getElementById('btnLogin');
+
+      ocultarErro();
+
+      if (!email) { mostrarErro('Informe o e-mail.'); return; }
+      if (!senha)  { mostrarErro('Informe a senha.'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.status) {
+          mostrarErro(data.msg || 'Email ou senha incorretos.');
+          return;
+        }
+
+        // Salva token e nome do usuário
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('nomeLogin', data.nomeLogin || 'Administrador');
+
+        // Redireciona para o dashboard
+        window.location.href = '/dashboard';
+
+      } catch (err) {
+        mostrarErro('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
+        console.error('Login error:', err);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Entrar';
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConstroEstoque — Gestão de Obras</title>
+  <link rel="stylesheet" href="index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-helmet-safety"></i></div>
+      <div class="logo-text">
+        <span class="logo-main">Tecno</span><span class="logo-accent">ValeGAS</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard">
+        <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="estoque">
+        <i class="fa-solid fa-boxes-stacked"></i><span>Estoque</span>
+      </a>
+      <a href="#" class="nav-item" data-page="obras">
+        <i class="fa-solid fa-hard-hat"></i><span>Obras</span>
+      </a>
+      <a href="#" class="nav-item" data-page="clientes">
+        <i class="fa-solid fa-users"></i><span>Clientes</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <!-- Preenchido por carregarAdministrador() -->
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div class="user-details">
+          <span class="user-name" id="userName">Administrador</span>
+          <span class="user-role">Gestor de Estoque</span>
+        </div>
+      </div>
+      <button class="btn-logout" title="Sair" onclick="logout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn-sidebar-toggle" id="sidebarToggle">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="breadcrumb" id="breadcrumb">Dashboard</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" placeholder="Buscar..." id="globalSearch" />
+        </div>
+        <button class="btn-notif" id="btnNotif">
+          <i class="fa-solid fa-bell"></i>
+          <!-- Contador de alertas críticos — preenchido por renderNotificacoes() -->
+          <span class="notif-badge hidden" id="notifBadge"></span>
+        </button>
+        <div class="notif-dropdown hidden" id="notifDropdown">
+          <div class="notif-header">Notificações de Estoque</div>
+          <!-- Itens injetados por renderNotificacoes() -->
+          <div id="notifList"></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <section class="page active" id="page-dashboard">
+        <div class="page-header">
+          <h1>Dashboard</h1>
+          <span class="page-subtitle">Visão geral do sistema</span>
+        </div>
+
+        <!-- KPIs — preenchidos por renderKPIs() -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon orange"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div class="kpi-info">
+              <span class="kpi-value" id="kpi-produtos">—</span>
+              <span class="kpi-label">Produtos Cadastrados</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon dark"><i class="fa-solid fa-hard-hat"></i></div>
+            <div class="kpi-info">
+              <span class="kpi-value" id="kpi-obras">—</span>
+              <span class="kpi-label">Obras Ativas</span>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon orange"><i class="fa-solid fa-users"></i></div>
+            <div class="kpi-info">
+              <span class="kpi-value" id="kpi-clientes">—</span>
+              <span class="kpi-label">Clientes</span>
+            </div>
+          </div>
+          <div class="kpi-card kpi-alert">
+            <div class="kpi-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="kpi-info">
+              <span class="kpi-value" id="kpi-alertas">—</span>
+              <span class="kpi-label">Alertas de Estoque</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Alertas — preenchido por renderAlertas() -->
+          <div class="card">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-triangle-exclamation"></i> Alertas de Estoque</h2>
+            </div>
+            <div class="alert-list" id="alertList">
+              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+            </div>
+          </div>
+
+          <!-- Obras recentes — preenchido por renderObrasRecentes() -->
+          <div class="card">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-clock-rotate-left"></i> Obras Recentes</h2>
+            </div>
+            <div class="obra-list" id="obraRecentList">
+              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+            </div>
+          </div>
+
+          <!-- Gráfico de barras — preenchido por renderGraficoEstoque() -->
+          <div class="card card-full">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-chart-bar"></i> Produtos com Menor Estoque</h2>
+            </div>
+            <div class="bar-chart-container" id="barChart">
+              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== ESTOQUE ===== -->
+      <section class="page" id="page-estoque">
+        <div class="page-header">
+          <h1>Estoque / Produtos</h1>
+          <span class="page-subtitle">Gerencie todos os produtos</span>
+        </div>
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar produto..." id="searchProduto"
+              oninput="filtrarTabela('tabelaProdutos', this.value)" />
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalNovoProduto()">
+            <i class="fa-solid fa-plus"></i> Novo Produto
+          </button>
+        </div>
+        <div class="card">
+          <table class="data-table" id="tabelaProdutos">
+            <thead>
+              <tr>
+                <th>ID</th><th>Nome</th><th>Descrição</th>
+                <th>Quantidade</th><th>Status</th><th>Ações</th>
+              </tr>
+            </thead>
+            <!-- Linhas injetadas por renderTabelaProdutos(produtos) -->
+            <tbody id="bodyProdutos">
+              <tr><td colspan="6" class="loading-cell">
+                <i class="fa-solid fa-spinner fa-spin"></i> Carregando produtos...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== OBRAS ===== -->
+      <section class="page" id="page-obras">
+        <div class="page-header">
+          <h1>Obras / Projetos</h1>
+          <span class="page-subtitle">Controle de obras e materiais utilizados</span>
+        </div>
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar obra..." id="searchObra"
+              oninput="filtrarTabela('tabelaObras', this.value)" />
+          </div>
+          <div class="toolbar-filters">
+            <select class="select-filter" onchange="filtrarStatus(this.value)">
+              <option value="">Todos os status</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Pausada">Pausada</option>
+              <option value="Concluida">Concluída</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalNovaObra()">
+            <i class="fa-solid fa-plus"></i> Nova Obra
+          </button>
+        </div>
+        <div class="card">
+          <table class="data-table" id="tabelaObras">
+            <thead>
+              <tr>
+                <th>ID</th><th>Descrição</th><th>Responsável</th>
+                <th>Cliente</th><th>Data</th><th>Status</th><th>Ações</th>
+              </tr>
+            </thead>
+            <!-- Linhas injetadas por renderTabelaObras(obras) -->
+            <tbody id="bodyObras">
+              <tr><td colspan="7" class="loading-cell">
+                <i class="fa-solid fa-spinner fa-spin"></i> Carregando obras...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== CLIENTES ===== -->
+      <section class="page" id="page-clientes">
+        <div class="page-header">
+          <h1>Clientes</h1>
+          <span class="page-subtitle">Cadastro de clientes e contratantes</span>
+        </div>
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar cliente..." id="searchCliente"
+              oninput="filtrarTabela('tabelaClientes', this.value)" />
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalNovoCliente()">
+            <i class="fa-solid fa-plus"></i> Novo Cliente
+          </button>
+        </div>
+        <div class="card">
+          <table class="data-table" id="tabelaClientes">
+            <thead>
+              <tr>
+                <th>ID</th><th>Nome</th><th>CPF / CNPJ</th>
+                <th>Endereço</th><th>Contato</th><th>Ações</th>
+              </tr>
+            </thead>
+            <!-- Linhas injetadas por renderTabelaClientes(clientes) -->
+            <tbody id="bodyClientes">
+              <tr><td colspan="6" class="loading-cell">
+                <i class="fa-solid fa-spinner fa-spin"></i> Carregando clientes...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div><!-- end page-content -->
+  </main>
+
+  <!-- ===== MODAL: PRODUTO ===== -->
+  <div class="modal-overlay hidden" id="modalProduto">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalProdutoTitle"><i class="fa-solid fa-boxes-stacked"></i> Novo Produto</h2>
+        <button class="modal-close" onclick="fecharModal('modalProduto')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="prodIdEdicao" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>ID do Produto</label>
+            <input type="number" id="prodId" placeholder="Ex: 005" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Nome do Produto</label>
+            <input type="text" id="prodNome" placeholder="Ex: Cimento CP-II" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade em Estoque</label>
+            <input type="number" id="prodQtd" placeholder="Ex: 100" min="0" max="9999" />
+          </div>
+          <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="prodDesc" placeholder="Ex: Saco 50kg" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarProduto()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: OBRA ===== -->
+  <div class="modal-overlay hidden" id="modalObra">
+    <div class="modal modal-large">
+      <div class="modal-header">
+        <h2 id="modalObraTitle"><i class="fa-solid fa-hard-hat"></i> Nova Obra</h2>
+        <button class="modal-close" onclick="fecharModal('modalObra')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="obraIdEdicao" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Descrição da Obra</label>
+            <input type="text" id="obraDesc" placeholder="Ex: Residencial Alfa" />
+          </div>
+          <div class="form-group">
+            <label>Responsável</label>
+            <input type="text" id="obraResp" placeholder="Ex: Carlos Mendes" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>ID do Cliente</label>
+            <input type="number" id="obraCodCliente" placeholder="Ex: 001" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Data da Obra</label>
+            <input type="date" id="obraData" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select id="obraStatus">
+              <option value="Em andamento">Em andamento</option>
+              <option value="Pausada">Pausada</option>
+              <option value="Concluida">Concluída</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
+        <div id="produtosObraList">
+          <div class="produto-obra-row">
+            <input type="number" placeholder="ID Produto" class="prod-id-input" min="1" />
+            <input type="number" placeholder="Quantidade" class="prod-qtd-input" min="1" />
+            <button class="btn-icon danger" onclick="removerProdutoObra(this)"><i class="fa-solid fa-minus"></i></button>
+          </div>
+        </div>
+        <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
+          <i class="fa-solid fa-plus"></i> Adicionar Produto
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalObra')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarObra()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: CLIENTE ===== -->
+  <div class="modal-overlay hidden" id="modalCliente">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalClienteTitle"><i class="fa-solid fa-user-plus"></i> Novo Cliente</h2>
+        <button class="modal-close" onclick="fecharModal('modalCliente')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="cliIdEdicao" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>ID do Cliente</label>
+            <input type="number" id="cliId" placeholder="Ex: 004" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" id="cliNome" placeholder="Ex: João Silva" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>CPF / CNPJ</label>
+            <input type="text" id="cliCpfCnpj" placeholder="Ex: 123.456.789-00" />
+          </div>
+          <div class="form-group">
+            <label>Contato</label>
+            <input type="text" id="cliContato" placeholder="Ex: (11) 99999-0001" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Endereço</label>
+          <input type="text" id="cliEndereco" placeholder="Ex: Rua das Flores, 45 – SP" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalCliente')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarCliente()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: VER PRODUTOS DA OBRA ===== -->
+  <div class="modal-overlay hidden" id="modalVerObra">
+    <div class="modal modal-large">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-eye"></i> Produtos da Obra</h2>
+        <button class="modal-close" onclick="fecharModal('modalVerObra')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <!-- Conteúdo injetado por verProdutosObra(idObra) -->
+      <div class="modal-body" id="modalVerObraBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalVerObra')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: CONFIRMAR EXCLUSÃO ===== -->
+  <div class="modal-overlay hidden" id="modalConfirmar">
+    <div class="modal modal-small">
+      <div class="modal-header danger-header">
+        <h2><i class="fa-solid fa-trash"></i> Confirmar Exclusão</h2>
+        <button class="modal-close" onclick="fecharModal('modalConfirmar')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body center">
+        <p id="confirmarMsg">Tem certeza que deseja excluir este item?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalConfirmar')">Cancelar</button>
+        <button class="btn btn-danger" id="btnConfirmarExcluir">
+          <i class="fa-solid fa-trash"></i> Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="index.js"></script>
+</body>
+</html>
