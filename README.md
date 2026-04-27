@@ -145,4 +145,3 @@ A interface do sistema foi desenvolvida utilizando HTML, CSS e JavaScript, permi
 ## 👨‍💻 Autor
 
 Desenvolvido por **Cauã Peres**, **Mateus Ricardo** e **João Vinicius** como Trabalho de Conclusão de Curso.
-
