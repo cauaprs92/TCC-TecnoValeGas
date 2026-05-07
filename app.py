@@ -5,16 +5,14 @@ from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound
 
-# Adiciona a raiz do projeto ao sys.path para permitir imports absolutos via src.*
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Raiz do projeto = diretório onde este app.py está
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from src.error_response import ErrorResponse
 from src.routers import cliente_bp, produto_bp, obra_bp, login_bp
 
-# Caminho para a pasta view (frontend) — sobe dois níveis a partir de src/routers/
-BASE_DIR   = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STATIC_DIR = os.path.join(BASE_DIR, "view")
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")

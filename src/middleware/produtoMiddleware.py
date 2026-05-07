@@ -1,4 +1,3 @@
-import re
 from functools import wraps
 from flask import request
 from src.error_response import ErrorResponse
@@ -33,11 +32,6 @@ class ProdutoMiddleware:
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
                     {"message": "O campo 'nomeProduto' deve ter pelo menos 3 caracteres!"}
-                )
-            if re.search(r'\d', nome.strip()):
-                raise ErrorResponse(
-                    400, "Erro na validação de dados",
-                    {"message": "O campo 'nomeProduto' não pode conter números!"}
                 )
 
             # qtdProduto
