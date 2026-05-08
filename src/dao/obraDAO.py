@@ -2,13 +2,12 @@ from src.dao.conexao import Conexao
 
 class ObraDAO:
 
-    #  Inserir 
     def inserir(self, obra: dict) -> bool:
         sql = """
             INSERT INTO obras
-              (idObra, codCliente, codProduto, descObra, dataObra,
+              (codCliente, descObra, dataInicio, dataFim,
                statusObra, respObra, obsObra, orientacaoObra)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -16,17 +15,16 @@ class ObraDAO:
         cursor = conexao.cursor()
         try:
             cursor.execute(sql, (
-                obra["idObra"],
                 obra["codCliente"],
-                obra["codProduto"],
                 obra["descObra"],
-                obra["dataObra"],
+                obra["dataInicio"],
+                obra.get("dataFim"),
                 obra.get("statusObra"),
                 obra.get("respObra"),
                 obra.get("obsObra"),
                 obra.get("orientacaoObra")
             ))
-            conexao.commit() #tal do commit ne pae
+            conexao.commit()
             print("Obra inserida com sucesso!")
             return True
         except Exception as e:
@@ -36,14 +34,12 @@ class ObraDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    #  Buscar todas
-    def buscar_todas(self) -> list: #vira lista 
+    def buscar_todas(self) -> list:
         sql = """
-            SELECT o.idObra, c.nomeCliente, o.descObra, o.dataObra,
+            SELECT o.idObra, o.codCliente, o.descObra, o.dataInicio, o.dataFim,
                    o.statusObra, o.respObra, o.obsObra, o.orientacaoObra
             FROM obras o
-            JOIN clientes c ON o.codCliente = c.idCliente
-            ORDER BY o.dataObra DESC
+            ORDER BY o.dataInicio DESC
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -58,10 +54,9 @@ class ObraDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    #  Buscar por ID 
     def buscar_por_id(self, id_obra: int):
         sql = """
-            SELECT idObra, codCliente, codProduto, descObra, dataObra,
+            SELECT idObra, codCliente, descObra, dataInicio, dataFim,
                    statusObra, respObra, obsObra, orientacaoObra
             FROM obras WHERE idObra = %s
         """
@@ -78,7 +73,37 @@ class ObraDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    # Atualizar status 
+    def atualizar(self, id_obra: int, obra: dict) -> bool:
+        sql = """
+            UPDATE obras SET
+              codCliente = %s, descObra = %s, dataInicio = %s, dataFim = %s,
+              statusObra = %s, respObra = %s
+            WHERE idObra = %s
+        """
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, (
+                obra["codCliente"],
+                obra["descObra"],
+                obra["dataInicio"],
+                obra.get("dataFim"),
+                obra["statusObra"],
+                obra.get("respObra", ""),
+                id_obra
+            ))
+            conexao.commit()
+            print(f"Obra {id_obra} atualizada com sucesso!")
+            return True
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao atualizar obra: {e}")
+            return False
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def atualizar_status(self, id_obra: int, novo_status: str) -> bool:
         sql = "UPDATE obras SET statusObra = %s WHERE idObra = %s"
         conexao = Conexao.obter_conexao()
@@ -91,13 +116,12 @@ class ObraDAO:
             print(f"Status da obra {id_obra} atualizado para '{novo_status}'")
             return True
         except Exception as e:
-            conexao.rollback() #desfaz oq foi feito, para que não entre informações pela metade no banco
+            conexao.rollback()
             print(f"Erro ao atualizar status da obra: {e}")
             return False
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    #  Deletar 
     def deletar(self, id_obra: int) -> bool:
         sql = "DELETE FROM obras WHERE idObra = %s"
         conexao = Conexao.obter_conexao()
@@ -110,7 +134,7 @@ class ObraDAO:
             print("Obra deletada com sucesso!")
             return True
         except Exception as e:
-            conexao.rollback() #desfaz oq foi feito, para que não entre informações pela metade no banco
+            conexao.rollback()
             print(f"Erro ao deletar obra: {e}")
             return False
         finally:

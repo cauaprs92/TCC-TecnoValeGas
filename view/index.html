@@ -216,12 +216,12 @@
             <thead>
               <tr>
                 <th>ID</th><th>Descrição</th><th>Responsável</th>
-                <th>Cliente</th><th>Data</th><th>Status</th><th>Ações</th>
+                <th>Cliente</th><th>Início</th><th>Fim</th><th>Status</th><th>Ações</th>
               </tr>
             </thead>
             <!-- Linhas injetadas por renderTabelaObras(obras) -->
             <tbody id="bodyObras">
-              <tr><td colspan="7" class="loading-cell">
+              <tr><td colspan="8" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando obras...
               </td></tr>
             </tbody>
@@ -275,26 +275,33 @@
       </div>
       <div class="modal-body">
         <input type="hidden" id="prodIdEdicao" />
-        <div class="form-row">
+
+        <div class="form-group">
+          <label>Nome do Produto</label>
+          <input type="text" id="prodNome" placeholder="Ex: Cimento CP-II" />
+        </div>
+
+        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
           <div class="form-group">
-            <label>ID do Produto</label>
-            <input type="number" id="prodId" placeholder="Ex: 005" min="1" />
+            <label>Qtd. em Estoque</label>
+            <input type="number" id="prodQtd" placeholder="100" min="0" />
           </div>
           <div class="form-group">
-            <label>Nome do Produto</label>
-            <input type="text" id="prodNome" placeholder="Ex: Cimento CP-II" />
+            <label>Qtd. Mínima</label>
+            <input type="number" id="prodQtdMin" placeholder="10" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Qtd. Máxima</label>
+            <input type="number" id="prodQtdMax" placeholder="500" min="0" />
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Quantidade em Estoque</label>
-            <input type="number" id="prodQtd" placeholder="Ex: 100" min="0" max="9999" />
-          </div>
-          <div class="form-group">
-            <label>Descrição</label>
-            <input type="text" id="prodDesc" placeholder="Ex: Saco 50kg" />
-          </div>
+
+        <div class="form-group">
+          <label>Descrição</label>
+          <textarea id="prodDesc" rows="4"
+            placeholder="Ex: Saco 50kg, uso em fundações e estruturas..."></textarea>
         </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>
@@ -314,48 +321,98 @@
       </div>
       <div class="modal-body">
         <input type="hidden" id="obraIdEdicao" />
-        <div class="form-row">
-          <div class="form-group">
-            <label>Descrição da Obra</label>
-            <input type="text" id="obraDesc" placeholder="Ex: Residencial Alfa" />
-          </div>
+
+        <!-- Status — sempre visível -->
+        <div class="form-group">
+          <label>Status</label>
+          <select id="obraStatus">
+            <option value="Em andamento">Em andamento</option>
+            <option value="Pausada">Pausada</option>
+            <option value="Concluida">Concluída</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
+        </div>
+
+        <div class="form-row" style="grid-template-columns:2fr 1fr 1fr">
           <div class="form-group">
             <label>Responsável</label>
-            <input type="text" id="obraResp" placeholder="Ex: Carlos Mendes" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>ID do Cliente</label>
-            <input type="number" id="obraCodCliente" placeholder="Ex: 001" min="1" />
-          </div>
-          <div class="form-group">
-            <label>Data da Obra</label>
-            <input type="date" id="obraData" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Status</label>
-            <select id="obraStatus">
-              <option value="Em andamento">Em andamento</option>
-              <option value="Pausada">Pausada</option>
-              <option value="Concluida">Concluída</option>
-              <option value="Cancelada">Cancelada</option>
+            <select id="obraResp">
+              <option value="">Selecione o responsável...</option>
+              <option value="Mateus">Mateus</option>
+              <option value="Cauã">Cauã</option>
+              <option value="João">João</option>
             </select>
           </div>
-        </div>
-        <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
-        <div id="produtosObraList">
-          <div class="produto-obra-row">
-            <input type="number" placeholder="ID Produto" class="prod-id-input" min="1" />
-            <input type="number" placeholder="Quantidade" class="prod-qtd-input" min="1" />
-            <button class="btn-icon danger" onclick="removerProdutoObra(this)"><i class="fa-solid fa-minus"></i></button>
+          <div class="form-group">
+            <label>Data Início</label>
+            <input type="date" id="obraDataInicio" />
+          </div>
+          <div class="form-group">
+            <label>Data Fim <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <input type="date" id="obraDataFim" />
           </div>
         </div>
-        <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
-          <i class="fa-solid fa-plus"></i> Adicionar Produto
-        </button>
+
+        <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 130px">
+            <label>ID do Cliente</label>
+            <input type="number" id="obraCodCliente" placeholder="001" min="1"
+              oninput="buscarClienteObra(this)" />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Nome</label>
+            <input type="text" id="obraClienteNome" readonly
+              placeholder="Preenchido automaticamente" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Endereço</label>
+          <input type="text" id="obraClienteEndereco" readonly
+            placeholder="Preenchido automaticamente" />
+        </div>
+
+        <div class="form-section-title"><i class="fa-solid fa-align-left"></i> Descrição</div>
+        <div class="form-group">
+          <textarea id="obraDesc" rows="3"
+            placeholder="Ex: Instalação de gás residencial no Condomínio Alfa, bloco B..."></textarea>
+        </div>
+
+        <!-- Produtos — visível apenas no modo criação -->
+        <div id="obraSecaoProdutos">
+          <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
+          <div id="produtosObraList">
+            <div class="produto-obra-row">
+              <input type="number" placeholder="ID" class="prod-id-input" min="1"
+                oninput="buscarProdutoObra(this)" />
+              <input type="text" placeholder="Nome do produto" class="prod-nome-input" readonly />
+              <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
+              <input type="number" placeholder="Qtd. a usar" class="prod-qtd-input" min="1" />
+              <button class="btn-icon danger" onclick="removerProdutoObra(this)">
+                <i class="fa-solid fa-minus"></i>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
+            <i class="fa-solid fa-plus"></i> Adicionar Produto
+          </button>
+        </div><!-- #obraSecaoProdutos -->
+
+        <!-- Produtos somente leitura + adição — visível apenas no modo edição -->
+        <div id="obraSecaoProdutosVer" class="hidden">
+          <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
+          <div id="obraProdutosVerList"></div>
+
+          <div class="form-section-title" style="margin-top:14px">
+            <i class="fa-solid fa-plus"></i> Adicionar Produtos
+          </div>
+          <div id="produtosObraEdList"></div>
+          <button class="btn btn-ghost" onclick="adicionarProdutoObraEd()">
+            <i class="fa-solid fa-plus"></i> Adicionar Produto
+          </button>
+        </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="fecharModal('modalObra')">Cancelar</button>
@@ -368,37 +425,71 @@
 
   <!-- ===== MODAL: CLIENTE ===== -->
   <div class="modal-overlay hidden" id="modalCliente">
-    <div class="modal">
+    <div class="modal modal-large">
       <div class="modal-header">
         <h2 id="modalClienteTitle"><i class="fa-solid fa-user-plus"></i> Novo Cliente</h2>
         <button class="modal-close" onclick="fecharModal('modalCliente')"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="cliIdEdicao" />
-        <div class="form-row">
-          <div class="form-group">
-            <label>ID do Cliente</label>
-            <input type="number" id="cliId" placeholder="Ex: 004" min="1" />
-          </div>
-          <div class="form-group">
-            <label>Nome</label>
-            <input type="text" id="cliNome" placeholder="Ex: João Silva" />
-          </div>
+
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="cliNome" placeholder="Ex: João Silva" />
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>CPF / CNPJ</label>
-            <input type="text" id="cliCpfCnpj" placeholder="Ex: 123.456.789-00" />
+            <input type="text" id="cliCpfCnpj" placeholder="000.000.000-00"
+              oninput="mascaraCpfCnpj(this)" maxlength="18" />
           </div>
           <div class="form-group">
-            <label>Contato</label>
-            <input type="text" id="cliContato" placeholder="Ex: (11) 99999-0001" />
+            <label>Telefone</label>
+            <input type="text" id="cliContato" placeholder="(00) 00000-0000"
+              oninput="mascaraTelefone(this)" maxlength="15" />
           </div>
         </div>
+
         <div class="form-group">
-          <label>Endereço</label>
-          <input type="text" id="cliEndereco" placeholder="Ex: Rua das Flores, 45 – SP" />
+          <label>CEP</label>
+          <input type="text" id="cliCep" placeholder="00000-000"
+            oninput="mascaraCep(this)" maxlength="9" />
         </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:3">
+            <label>Rua / Logradouro</label>
+            <input type="text" id="cliRua" placeholder="Rua das Flores" />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Número</label>
+            <input type="text" id="cliNumero" placeholder="42" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Complemento <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <input type="text" id="cliComplemento" placeholder="Apto 201" />
+          </div>
+          <div class="form-group">
+            <label>Bairro</label>
+            <input type="text" id="cliBairro" placeholder="Centro" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex:3">
+            <label>Cidade</label>
+            <input type="text" id="cliCidade" placeholder="São Paulo" />
+          </div>
+          <div class="form-group" style="flex:1">
+            <label>Estado</label>
+            <input type="text" id="cliEstado" placeholder="SP" maxlength="2" style="text-transform:uppercase" />
+          </div>
+        </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="fecharModal('modalCliente')">Cancelar</button>

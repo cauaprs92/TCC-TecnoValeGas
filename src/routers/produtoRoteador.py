@@ -15,20 +15,30 @@ def handle_error(e: ErrorResponse):
     return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
+def _serializar(p) -> dict:
+    return {
+        "idProduto":   p._idProduto,
+        "nomeProduto": p._nomeProduto,
+        "qtdProduto":  p._qtdProduto,
+        "descProduto": p._descProduto,
+        "qtdMinima":   p._qtdMinima,
+        "qtdMaxima":   p._qtdMaxima,
+    }
+
+
 # ─── POST /produto ────────────────────────────────────────────────────────────
 @produto_bp.route("", methods=["POST"])
 @jwt.validate_token
 @middleware.validate_body
 def cadastrar():
-    """Cadastra um novo produto no estoque."""
-    body    = request.get_json()
-    produto = body["produto"]
+    produto = request.get_json()["produto"]
 
     sucesso, mensagem, aviso = controller.cadastrar(
-        produto.get("idProduto"),
         produto.get("nomeProduto"),
         produto.get("qtdProduto"),
         produto.get("descProduto", ""),
+        int(produto.get("qtdMinima") or 0),
+        int(produto.get("qtdMaxima") or 9999),
     )
 
     if not sucesso:
@@ -37,7 +47,6 @@ def cadastrar():
     resposta = {"status": True, "msg": mensagem}
     if aviso:
         resposta["aviso"] = aviso
-
     return jsonify(resposta), 201
 
 
@@ -45,20 +54,8 @@ def cadastrar():
 @produto_bp.route("", methods=["GET"])
 @jwt.validate_token
 def listar():
-    """Lista todos os produtos do estoque."""
     produtos = controller.listar()
-
-    resultado = [
-        {
-            "idProduto":   p._idProduto,
-            "nomeProduto": p._nomeProduto,
-            "qtdProduto":  p._qtdProduto,
-            "descProduto": p._descProduto,
-        }
-        for p in produtos
-    ]
-
-    return jsonify({"status": True, "produtos": resultado}), 200
+    return jsonify({"status": True, "produtos": [_serializar(p) for p in produtos]}), 200
 
 
 # ─── GET /produto/<idProduto> ─────────────────────────────────────────────────
@@ -66,20 +63,12 @@ def listar():
 @jwt.validate_token
 @middleware.validate_id_param
 def buscar_por_id(idProduto: int):
-    """Busca um produto pelo ID."""
     produto = controller.buscar_por_id(idProduto)
 
     if not produto:
         raise ErrorResponse(404, "Produto não encontrado.", {"message": f"Nenhum produto com ID {idProduto}."})
 
-    resultado = {
-        "idProduto":   produto._idProduto,
-        "nomeProduto": produto._nomeProduto,
-        "qtdProduto":  produto._qtdProduto,
-        "descProduto": produto._descProduto,
-    }
-
-    return jsonify({"status": True, "produto": resultado}), 200
+    return jsonify({"status": True, "produto": _serializar(produto)}), 200
 
 
 # ─── PUT /produto/<idProduto> ─────────────────────────────────────────────────
@@ -88,15 +77,15 @@ def buscar_por_id(idProduto: int):
 @middleware.validate_id_param
 @middleware.validate_body
 def editar(idProduto: int):
-    """Atualiza os dados de um produto existente."""
-    body    = request.get_json()
-    produto = body["produto"]
+    produto = request.get_json()["produto"]
 
     sucesso, mensagem, aviso = controller.editar(
         idProduto,
         produto.get("nomeProduto"),
         produto.get("qtdProduto"),
         produto.get("descProduto", ""),
+        int(produto.get("qtdMinima") or 0),
+        int(produto.get("qtdMaxima") or 9999),
     )
 
     if not sucesso:
@@ -105,7 +94,6 @@ def editar(idProduto: int):
     resposta = {"status": True, "msg": mensagem}
     if aviso:
         resposta["aviso"] = aviso
-
     return jsonify(resposta), 200
 
 
@@ -114,7 +102,6 @@ def editar(idProduto: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def deletar(idProduto: int):
-    """Remove um produto pelo ID."""
     sucesso, mensagem, _ = controller.deletar(idProduto)
 
     if not sucesso:
@@ -128,7 +115,6 @@ def deletar(idProduto: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def verificar_estoque(idProduto: int):
-    """Verifica a disponibilidade de estoque de um produto."""
     quantidade = request.args.get("quantidade", 1)
 
     try:

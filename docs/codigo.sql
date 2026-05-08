@@ -6,45 +6,82 @@
     idLogin int primary key NOT NULL,
     email VARCHAR(45) NOT NULL,
     senha VARCHAR(45)NOT NULL,
-    nomeLogin VARCHAR(45) 
+    nomeLogin VARCHAR(45)
     );
-    
+
     insert into login value(
     1, "adm123@gmail.com", "adm123", "adm"
     );
 
     create table produtos(
-    idProduto int primary key NOT NULL,
-    qtdProduto int,
+    idProduto   int primary key NOT NULL,
     nomeProduto VARCHAR(255),
-    descProduto VARCHAR(255) 
+    qtdProduto  int          DEFAULT 0,
+    descProduto TEXT,
+    qtdMinima   int          DEFAULT 0,
+    qtdMaxima   int          DEFAULT 9999
     );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- ALTER TABLE produtos
+    --   MODIFY COLUMN descProduto TEXT,
+    --   ADD COLUMN qtdMinima int DEFAULT 0,
+    --   ADD COLUMN qtdMaxima int DEFAULT 9999;
 
     create table clientes(
-    idCliente int primary key NOT NULL,
-    nomeCliente VARCHAR(45) NOT NULL,
-    CNPJCPF VARCHAR(255) NOT NULL,
-    enderecoCliente VARCHAR(255) NOT NULL,
-    contatoCliente VARCHAR(255) 
+    idCliente      int primary key NOT NULL,
+    nomeCliente    VARCHAR(45)  NOT NULL,
+    CNPJCPF        VARCHAR(18)  NOT NULL,
+    contatoCliente VARCHAR(15),
+    cep            VARCHAR(9),
+    rua            VARCHAR(255),
+    numero         VARCHAR(20),
+    complemento    VARCHAR(100),
+    bairro         VARCHAR(100),
+    cidade         VARCHAR(100),
+    estado         VARCHAR(2)
     );
 
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- ALTER TABLE clientes
+    --   DROP COLUMN enderecoCliente,
+    --   MODIFY COLUMN contatoCliente VARCHAR(15),
+    --   ADD COLUMN cep         VARCHAR(9),
+    --   ADD COLUMN rua         VARCHAR(255),
+    --   ADD COLUMN numero      VARCHAR(20),
+    --   ADD COLUMN complemento VARCHAR(100),
+    --   ADD COLUMN bairro      VARCHAR(100),
+    --   ADD COLUMN cidade      VARCHAR(100),
+    --   ADD COLUMN estado      VARCHAR(2);
+
     create table obras(
-    idObra int primary key,
-    codCliente int 	NOT NULL,
-    codProduto int NOT NULL,
-    descObra VARCHAR(255) NOT NULL,
-    dataObra DATE NOT NULL,
-    statusObra VARCHAR(255),
-    respObra VARCHAR(255),
-    obsObra VARCHAR(255),
+    idObra         int primary key AUTO_INCREMENT,
+    codCliente     int          NOT NULL,
+    descObra       VARCHAR(255) NOT NULL,
+    dataInicio     DATE         NOT NULL,
+    dataFim        DATE,
+    statusObra     VARCHAR(255),
+    respObra       VARCHAR(255),
+    obsObra        VARCHAR(255),
     orientacaoObra VARCHAR(255),
     FOREIGN KEY (codCliente) REFERENCES clientes(idCliente)
     );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- ALTER TABLE obras
+    --   DROP COLUMN codProduto,
+    --   ADD COLUMN dataInicio DATE NOT NULL AFTER descObra,
+    --   ADD COLUMN dataFim    DATE         AFTER dataInicio;
+    -- -- Se a coluna dataObra ainda existir:
+    -- ALTER TABLE obras DROP COLUMN dataObra;
+    -- -- Adicionar AUTO_INCREMENT ao idObra:
+    -- ALTER TABLE obras MODIFY COLUMN idObra int NOT NULL AUTO_INCREMENT;
+
     create table produtosObras(
         idProdutosObra  int primary key AUTO_INCREMENT,
-        idObra          int NOT NULL,  
-        idProduto       int NOT NULL,  
-        qtdProdutosObra int NOT NULL,  
+        idObra          int NOT NULL,
+        idProduto       int NOT NULL,
+        qtdProdutosObra int NOT NULL,
 
         FOREIGN KEY (idObra)    REFERENCES obras(idObra),
         FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
@@ -56,7 +93,7 @@
     SELECT * FROM produtosObras;
 
 
-    ## para reiniciar o banco 
+    ## para reiniciar o banco
     SET FOREIGN_KEY_CHECKS = 0;
 
     TRUNCATE TABLE produtosObras;

@@ -15,14 +15,25 @@ def handle_error(e: ErrorResponse):
     return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
+def _serializar(o):
+    return {
+        "idObra":     o[0],
+        "codCliente": o[1],
+        "descObra":   o[2],
+        "dataInicio": str(o[3]) if o[3] else None,
+        "dataFim":    str(o[4]) if o[4] else None,
+        "statusObra": o[5],
+        "respObra":   o[6],
+    }
+
+
 # ─── POST /obra ───────────────────────────────────────────────────────────────
 @obra_bp.route("", methods=["POST"])
 @jwt.validate_token
 @middleware.validate_body
 def cadastrar():
-    """Cadastra uma nova obra com os produtos utilizados."""
-    body           = request.get_json()
-    dados_obra     = body["obra"]
+    body            = request.get_json()
+    dados_obra      = body["obra"]
     produtos_usados = body["produtosUsados"]
 
     sucesso, mensagem = controller.cadastrar(dados_obra, produtos_usados)
@@ -37,22 +48,8 @@ def cadastrar():
 @obra_bp.route("", methods=["GET"])
 @jwt.validate_token
 def listar():
-    """Lista todas as obras."""
     obras = controller.listar()
-
-    resultado = [
-        {
-            "idObra":      idObra,
-            "codCliente":  codCliente,
-            "descObra":    descObra,
-            "dataObra":    str(dataObra) if dataObra else None,
-            "statusObra":  statusObra,
-            "respObra":    respObra,
-        }
-        for idObra, codCliente, descObra, dataObra, statusObra, respObra, *_ in obras
-    ]
-
-    return jsonify({"status": True, "obras": resultado}), 200
+    return jsonify({"status": True, "obras": [_serializar(o) for o in obras]}), 200
 
 
 # ─── GET /obra/<idObra> ───────────────────────────────────────────────────────
@@ -60,54 +57,24 @@ def listar():
 @jwt.validate_token
 @middleware.validate_id_param
 def buscar_por_id(idObra: int):
-    """Busca uma obra pelo ID."""
     obra = controller.buscar_por_id(idObra)
 
     if not obra:
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
-    obra = tuple(obra)
-    codCliente = obra[1]
-    descObra = obra[3]
-    dataObra = obra[4]
-    statusObra = obra[5]
-    respObra = obra[6]
-
-    resultado = {
-        "idObra":     idObra,
-        "codCliente": codCliente,
-        "descObra":   descObra,
-        "dataObra":   str(dataObra) if dataObra else None,
-        "statusObra": statusObra,
-        "respObra":   respObra,
-    }
-
-    return jsonify({"status": True, "obra": resultado}), 200
+    return jsonify({"status": True, "obra": _serializar(obra)}), 200
 
 
 # ─── GET /obra/cliente/<idCliente> ────────────────────────────────────────────
 @obra_bp.route("/cliente/<int:idCliente>", methods=["GET"])
 @jwt.validate_token
 def listar_por_cliente(idCliente: int):
-    """Lista todas as obras de um determinado cliente."""
     sucesso, mensagem, obras = controller.listar_por_cliente(idCliente)
 
     if not sucesso:
         raise ErrorResponse(404, mensagem, {"message": mensagem})
 
-    resultado = [
-        {
-            "idObra":     idObra,
-            "codCliente": codCliente,
-            "descObra":   descObra,
-            "dataObra":   str(dataObra) if dataObra else None,
-            "statusObra": statusObra,
-            "respObra":   respObra,
-        }
-        for idObra, codCliente, descObra, dataObra, statusObra, respObra, *_ in obras
-    ]
-
-    return jsonify({"status": True, "msg": mensagem, "obras": resultado}), 200
+    return jsonify({"status": True, "msg": mensagem, "obras": [_serializar(o) for o in obras]}), 200
 
 
 # ─── GET /obra/<idObra>/produtos ──────────────────────────────────────────────
@@ -115,14 +82,30 @@ def listar_por_cliente(idCliente: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def buscar_produtos_da_obra(idObra: int):
-    """Lista os produtos utilizados em uma obra."""
     obra = controller.buscar_por_id(idObra)
     if not obra:
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
     produtos = controller.buscar_produtos_da_obra(idObra)
-
     return jsonify({"status": True, "produtos": produtos}), 200
+
+
+# ─── PUT /obra/<idObra> ───────────────────────────────────────────────────────
+@obra_bp.route("/<int:idObra>", methods=["PUT"])
+@jwt.validate_token
+@middleware.validate_id_param
+@middleware.validate_update_body
+def atualizar(idObra: int):
+    body          = request.get_json()
+    dados_obra    = body["obra"]
+    produtos_novos = body.get("produtosNovos") or []
+
+    sucesso, mensagem = controller.atualizar(idObra, dados_obra, produtos_novos)
+
+    if not sucesso:
+        raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    return jsonify({"status": True, "msg": mensagem}), 200
 
 
 # ─── PATCH /obra/<idObra>/status ─────────────────────────────────────────────
@@ -131,8 +114,7 @@ def buscar_produtos_da_obra(idObra: int):
 @middleware.validate_id_param
 @middleware.validate_status_body
 def atualizar_status(idObra: int):
-    """Atualiza apenas o status de uma obra."""
-    body       = request.get_json()
+    body        = request.get_json()
     novo_status = body["statusObra"]
 
     sucesso, mensagem = controller.atualizar_status(idObra, novo_status)
@@ -148,7 +130,6 @@ def atualizar_status(idObra: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def deletar(idObra: int):
-    """Remove uma obra pelo ID."""
     sucesso, mensagem = controller.deletar(idObra)
 
     if not sucesso:

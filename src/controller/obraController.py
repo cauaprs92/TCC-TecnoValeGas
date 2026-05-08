@@ -27,8 +27,8 @@ class ObraController:
         if not dadosObra.get("descObra", "").strip():
             return False, "Descricao da obra nao pode ser vazia."
 
-        if not dadosObra.get("dataObra", "").strip():
-            return False, "Data da obra nao pode ser vazia."
+        if not dadosObra.get("dataInicio", "").strip():
+            return False, "Data de inicio da obra nao pode ser vazia."
 
         if not dadosObra.get("respObra", "").strip():
             return False, "Responsavel pela obra e obrigatorio."
@@ -57,6 +57,43 @@ class ObraController:
             return True, "Obra cadastrada com sucesso!"
         return False, "Erro ao cadastrar obra."
 
+    def atualizar(self, idObra: int, dadosObra: dict, produtosNovos: list = None) -> tuple:
+        obraExistente = self.dao.buscar_por_id(idObra)
+        if not obraExistente:
+            return False, "Obra nao encontrada."
+
+        clienteExistente = self.daoCliente.buscar_por_id(dadosObra["codCliente"])
+        if not clienteExistente:
+            return False, "Cliente nao encontrado."
+
+        if not dadosObra.get("descObra", "").strip():
+            return False, "Descricao da obra nao pode ser vazia."
+
+        valido, mensagem = self._validar_status(dadosObra.get("statusObra", ""))
+        if not valido:
+            return False, mensagem
+
+        sucesso = self.dao.atualizar(idObra, dadosObra)
+        if not sucesso:
+            return False, "Erro ao atualizar obra."
+
+        if produtosNovos:
+            avisos = []
+            for item in produtosNovos:
+                estoque_ok, msg = self.ctrlProduto.verificar_estoque(item["idProduto"], item["quantidade"])
+                if not estoque_ok:
+                    return False, msg
+                if "ATENCAO" in msg or "AVISO" in msg:
+                    avisos.append(msg)
+
+            ok = self.daoProdObras.adicionar_produtos_obra(idObra, produtosNovos)
+            if not ok:
+                return False, "Erro ao adicionar produtos à obra."
+            if avisos:
+                return True, "Obra atualizada!\n" + "\n".join(avisos)
+
+        return True, "Obra atualizada com sucesso!"
+
     def listar(self) -> list:
         return self.dao.buscar_todas()
 
@@ -69,14 +106,8 @@ class ObraController:
             return False, "Cliente nao encontrado.", []
 
         obras = self.dao.buscar_todas()
-        obrasFiltradas = [o for o in obras if o[0] and idCliente == self._buscar_id_cliente_da_obra(o[0])]
+        obrasFiltradas = [o for o in obras if o[1] == idCliente]
         return True, f"Obras do cliente {clienteExistente._nomeCliente}", obrasFiltradas
-
-    def _buscar_id_cliente_da_obra(self, idObra: int) -> int:
-        obra = self.dao.buscar_por_id(idObra)
-        if obra:
-            return obra[1]
-        return None
 
     def atualizar_status(self, idObra: int, novoStatus: str) -> tuple:
         valido, mensagem = self._validar_status(novoStatus)
