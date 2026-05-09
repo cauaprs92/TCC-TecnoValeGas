@@ -3,15 +3,23 @@
     use tcc;
 
     create table login(
-    idLogin int primary key NOT NULL,
-    email VARCHAR(45) NOT NULL,
-    senha VARCHAR(45)NOT NULL,
+    idLogin   int primary key NOT NULL AUTO_INCREMENT,
+    email     VARCHAR(45)  NOT NULL UNIQUE,
+    senha     VARCHAR(60)  NOT NULL,
     nomeLogin VARCHAR(45)
     );
 
-    insert into login value(
-    1, "adm123@gmail.com", "adm123", "adm"
+    -- senha: adm123 (bcrypt hash)
+    insert into login (email, senha, nomeLogin) values(
+    "adm123@gmail.com", "$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO", "adm"
     );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- ALTER TABLE login
+    --   MODIFY COLUMN idLogin int NOT NULL AUTO_INCREMENT,
+    --   MODIFY COLUMN email VARCHAR(45) NOT NULL,
+    --   MODIFY COLUMN senha VARCHAR(60) NOT NULL,
+    --   ADD UNIQUE (email);
 
     create table produtos(
     idProduto   int primary key NOT NULL,

@@ -17,13 +17,15 @@ def handle_error(e: ErrorResponse):
 
 def _serializar(o):
     return {
-        "idObra":     o[0],
-        "codCliente": o[1],
-        "descObra":   o[2],
-        "dataInicio": str(o[3]) if o[3] else None,
-        "dataFim":    str(o[4]) if o[4] else None,
-        "statusObra": o[5],
-        "respObra":   o[6],
+        "idObra":          o[0],
+        "codCliente":      o[1],
+        "descObra":        o[2],
+        "dataInicio":      str(o[3]) if o[3] else None,
+        "dataFim":         str(o[4]) if o[4] else None,
+        "statusObra":      o[5],
+        "respObra":        o[6],
+        "obsObra":         o[7],
+        "orientacaoObra":  o[8],
     }
 
 

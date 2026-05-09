@@ -32,6 +32,9 @@
       <a href="#" class="nav-item" data-page="clientes">
         <i class="fa-solid fa-users"></i><span>Clientes</span>
       </a>
+      <a href="#" class="nav-item" data-page="admins">
+        <i class="fa-solid fa-user-shield"></i><span>Administradores</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -162,8 +165,11 @@
           <div class="search-inline">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Buscar produto..." id="searchProduto"
-              oninput="filtrarTabela('tabelaProdutos', this.value)" />
+              oninput="filtrarProdutos(this.value)" />
           </div>
+          <button class="btn btn-secondary" onclick="exportarProdutos()">
+            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+          </button>
           <button class="btn btn-primary" onclick="abrirModalNovoProduto()">
             <i class="fa-solid fa-plus"></i> Novo Produto
           </button>
@@ -183,6 +189,7 @@
               </td></tr>
             </tbody>
           </table>
+          <div id="paginacaoProdutos"></div>
         </div>
       </section>
 
@@ -196,10 +203,10 @@
           <div class="search-inline">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Buscar obra..." id="searchObra"
-              oninput="filtrarTabela('tabelaObras', this.value)" />
+              oninput="filtrarObras(this.value)" />
           </div>
           <div class="toolbar-filters">
-            <select class="select-filter" onchange="filtrarStatus(this.value)">
+            <select class="select-filter" onchange="filtrarStatusObra(this.value)">
               <option value="">Todos os status</option>
               <option value="Em andamento">Em andamento</option>
               <option value="Pausada">Pausada</option>
@@ -207,6 +214,9 @@
               <option value="Cancelada">Cancelada</option>
             </select>
           </div>
+          <button class="btn btn-secondary" onclick="exportarObras()">
+            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+          </button>
           <button class="btn btn-primary" onclick="abrirModalNovaObra()">
             <i class="fa-solid fa-plus"></i> Nova Obra
           </button>
@@ -226,6 +236,7 @@
               </td></tr>
             </tbody>
           </table>
+          <div id="paginacaoObras"></div>
         </div>
       </section>
 
@@ -239,8 +250,11 @@
           <div class="search-inline">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" placeholder="Buscar cliente..." id="searchCliente"
-              oninput="filtrarTabela('tabelaClientes', this.value)" />
+              oninput="filtrarClientes(this.value)" />
           </div>
+          <button class="btn btn-secondary" onclick="exportarClientes()">
+            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+          </button>
           <button class="btn btn-primary" onclick="abrirModalNovoCliente()">
             <i class="fa-solid fa-plus"></i> Novo Cliente
           </button>
@@ -257,6 +271,39 @@
             <tbody id="bodyClientes">
               <tr><td colspan="6" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando clientes...
+              </td></tr>
+            </tbody>
+          </table>
+          <div id="paginacaoClientes"></div>
+        </div>
+      </section>
+
+      <!-- ===== ADMINISTRADORES ===== -->
+      <section class="page" id="page-admins">
+        <div class="page-header">
+          <h1>Administradores</h1>
+          <span class="page-subtitle">Gerencie os usuários do sistema</span>
+        </div>
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar administrador..." id="searchAdmin"
+              oninput="filtrarTabela('tabelaAdmins', this.value)" />
+          </div>
+          <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
+            <i class="fa-solid fa-plus"></i> Novo Administrador
+          </button>
+        </div>
+        <div class="card">
+          <table class="data-table" id="tabelaAdmins">
+            <thead>
+              <tr>
+                <th>ID</th><th>Nome</th><th>Email</th><th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="bodyAdmins">
+              <tr><td colspan="4" class="loading-cell">
+                <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
               </td></tr>
             </tbody>
           </table>
@@ -377,6 +424,19 @@
         <div class="form-group">
           <textarea id="obraDesc" rows="3"
             placeholder="Ex: Instalação de gás residencial no Condomínio Alfa, bloco B..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Observações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <textarea id="obraObs" rows="2"
+              placeholder="Ex: Acesso somente pela entrada lateral..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Orientações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <textarea id="obraOrientacao" rows="2"
+              placeholder="Ex: Uso de EPI obrigatório..."></textarea>
+          </div>
         </div>
 
         <!-- Produtos — visível apenas no modo criação -->
@@ -515,6 +575,46 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: ADMINISTRADOR ===== -->
+  <div class="modal-overlay hidden" id="modalAdmin">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalAdminTitle"><i class="fa-solid fa-user-shield"></i> Novo Administrador</h2>
+        <button class="modal-close" onclick="fecharModal('modalAdmin')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="adminIdEdicao" />
+
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="adminNome" placeholder="Ex: João" />
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="adminEmail" placeholder="joao@empresa.com" />
+        </div>
+
+        <div class="form-group" id="adminSenhaGroup">
+          <label>Senha</label>
+          <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
+        </div>
+
+        <div class="form-group hidden" id="adminNovaSenhaGroup">
+          <label>Nova Senha <span style="font-weight:400;opacity:.6">(deixe em branco para manter)</span></label>
+          <input type="password" id="adminNovaSenha" placeholder="Mínimo 6 caracteres" />
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalAdmin')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarAdmin()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== MODAL: CONFIRMAR EXCLUSÃO ===== -->
   <div class="modal-overlay hidden" id="modalConfirmar">
     <div class="modal modal-small">
@@ -535,6 +635,7 @@
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
   <script src="index.js"></script>
 </body>
 </html>

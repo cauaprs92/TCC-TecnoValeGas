@@ -5,7 +5,7 @@ from mysql.connector import errorcode
 
 # --------- Passo 1: Instalar bibliotecas ---------
 def install_packages():
-    packages = ["flask", "mysql-connector-python", "pyjwt", "flask-cors"]
+    packages = ["flask", "mysql-connector-python", "pyjwt", "flask-cors", "bcrypt"]
     for pkg in packages:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 

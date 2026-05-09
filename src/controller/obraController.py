@@ -105,9 +105,8 @@ class ObraController:
         if not clienteExistente:
             return False, "Cliente nao encontrado.", []
 
-        obras = self.dao.buscar_todas()
-        obrasFiltradas = [o for o in obras if o[1] == idCliente]
-        return True, f"Obras do cliente {clienteExistente._nomeCliente}", obrasFiltradas
+        obras = self.dao.buscar_por_cliente(idCliente)
+        return True, f"Obras do cliente {clienteExistente._nomeCliente}", obras
 
     def atualizar_status(self, idObra: int, novoStatus: str) -> tuple:
         valido, mensagem = self._validar_status(novoStatus)
@@ -118,7 +117,22 @@ class ObraController:
         if not obraExistente:
             return False, "Obra nao encontrada."
 
-        sucesso = self.dao.atualizar_status(idObra, novoStatus.strip())
+        statusAtual = obraExistente[5]
+        novoStatus  = novoStatus.strip()
+
+        if statusAtual == novoStatus:
+            return True, "Status já estava definido como esse valor."
+
+        if novoStatus == "Cancelada" and statusAtual != "Cancelada":
+            if not self.daoProdObras.restaurar_estoque_obra(idObra):
+                return False, "Erro ao restaurar estoque ao cancelar obra."
+
+        elif statusAtual == "Cancelada" and novoStatus != "Cancelada":
+            ok, msg = self.daoProdObras.baixar_estoque_obra(idObra)
+            if not ok:
+                return False, f"Não foi possível reativar a obra: {msg}"
+
+        sucesso = self.dao.atualizar_status(idObra, novoStatus)
         if sucesso:
             return True, "Status atualizado com sucesso!"
         return False, "Erro ao atualizar status."
@@ -128,7 +142,7 @@ class ObraController:
         if not obraExistente:
             return False, "Obra nao encontrada."
 
-        sucesso = self.dao.deletar(idObra)
+        sucesso = self.daoProdObras.deletar_obra_com_reposicao(idObra)
         if sucesso:
             return True, "Obra deletada com sucesso!"
         return False, "Erro ao deletar obra."

@@ -77,7 +77,7 @@ class ObraDAO:
         sql = """
             UPDATE obras SET
               codCliente = %s, descObra = %s, dataInicio = %s, dataFim = %s,
-              statusObra = %s, respObra = %s
+              statusObra = %s, respObra = %s, obsObra = %s, orientacaoObra = %s
             WHERE idObra = %s
         """
         conexao = Conexao.obter_conexao()
@@ -92,6 +92,8 @@ class ObraDAO:
                 obra.get("dataFim"),
                 obra["statusObra"],
                 obra.get("respObra", ""),
+                obra.get("obsObra"),
+                obra.get("orientacaoObra"),
                 id_obra
             ))
             conexao.commit()
@@ -101,6 +103,27 @@ class ObraDAO:
             conexao.rollback()
             print(f"Erro ao atualizar obra: {e}")
             return False
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
+    def buscar_por_cliente(self, id_cliente: int) -> list:
+        sql = """
+            SELECT idObra, codCliente, descObra, dataInicio, dataFim,
+                   statusObra, respObra, obsObra, orientacaoObra
+            FROM obras
+            WHERE codCliente = %s
+            ORDER BY dataInicio DESC
+        """
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return []
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, (id_cliente,))
+            return cursor.fetchall()
+        except Exception as e:
+            print(f"Erro ao buscar obras do cliente {id_cliente}: {e}")
+            return []
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 

@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function carregarTodos() {
-  await Promise.allSettled([carregarProdutos(), carregarObras(), carregarClientes()]);
+  await Promise.allSettled([carregarProdutos(), carregarObras(), carregarClientes(), carregarAdmins()]);
 }
 
 function carregarAdministrador() {
@@ -94,30 +94,42 @@ async function carregarProdutos() {
 }
 
 function renderTabelaProdutos(produtos) {
+  const q        = filtros.produtos;
+  const filtrado = q ? produtos.filter(p =>
+    `${p.idProduto} ${p.nomeProduto} ${p.descProduto || ''}`.toLowerCase().includes(q)
+  ) : produtos;
+
+  const total = filtrado.length;
+  const totalPags = Math.ceil(total / PER_PAGE) || 1;
+  if (PAG_STATE.produtos > totalPags) PAG_STATE.produtos = 1;
+  const inicio = (PAG_STATE.produtos - 1) * PER_PAGE;
+  const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
+
   const tbody = document.getElementById('bodyProdutos');
-  if (!produtos.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Nenhum produto cadastrado.</td></tr>`;
-    return;
+  if (!pagina.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${total === 0 && q ? 'Nenhum resultado para a busca.' : 'Nenhum produto cadastrado.'}</td></tr>`;
+  } else {
+    tbody.innerHTML = pagina.map(p => {
+      const { cls, label } = statusEstoque(p);
+      return `
+        <tr>
+          <td>${String(p.idProduto).padStart(3,'0')}</td>
+          <td>${p.nomeProduto}</td>
+          <td>${p.descProduto || '—'}</td>
+          <td><span class="qty-badge ${cls}">${p.qtdProduto}</span></td>
+          <td>${label}</td>
+          <td class="actions">
+            <button class="btn-icon" title="Editar" onclick="abrirModalEditarProduto(${p.idProduto})">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn-icon danger" title="Excluir" onclick="deletarItem('produto', ${p.idProduto}, '${p.nomeProduto}')">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
   }
-  tbody.innerHTML = produtos.map(p => {
-    const { cls, label } = statusEstoque(p);
-    return `
-      <tr>
-        <td>${String(p.idProduto).padStart(3,'0')}</td>
-        <td>${p.nomeProduto}</td>
-        <td>${p.descProduto || '—'}</td>
-        <td><span class="qty-badge ${cls}">${p.qtdProduto}</span></td>
-        <td>${label}</td>
-        <td class="actions">
-          <button class="btn-icon" title="Editar" onclick="abrirModalEditarProduto(${p.idProduto})">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="btn-icon danger" title="Excluir" onclick="deletarItem('produto', ${p.idProduto}, '${p.nomeProduto}')">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>`;
-  }).join('');
+  renderPaginacao('paginacaoProdutos', total, PAG_STATE.produtos, 'mudarPaginaProdutos');
 }
 
 function abrirModalNovoProduto() {
@@ -208,38 +220,54 @@ async function carregarObras() {
 }
 
 function renderTabelaObras(obras) {
-  const tbody = document.getElementById('bodyObras');
-  if (!obras.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-row">Nenhuma obra cadastrada.</td></tr>`;
-    return;
+  let filtrado = obras;
+  const q = filtros.obras;
+  const s = filtros.obraStatus;
+  if (q) filtrado = filtrado.filter(o =>
+    `${o.idObra} ${o.descObra} ${o.respObra || ''} ${o.statusObra}`.toLowerCase().includes(q)
+  );
+  if (s) filtrado = filtrado.filter(o => o.statusObra === s);
+
+  const total     = filtrado.length;
+  const totalPags = Math.ceil(total / PER_PAGE) || 1;
+  if (PAG_STATE.obras > totalPags) PAG_STATE.obras = 1;
+  const inicio = (PAG_STATE.obras - 1) * PER_PAGE;
+  const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
+
+  const fmtData = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+  const tbody   = document.getElementById('bodyObras');
+
+  if (!pagina.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-row">${total === 0 && (q || s) ? 'Nenhum resultado para a busca.' : 'Nenhuma obra cadastrada.'}</td></tr>`;
+  } else {
+    tbody.innerHTML = pagina.map(o => {
+      const badge       = badgeStatus(o.statusObra);
+      const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
+      const nomeCliente = cliente ? cliente.nomeCliente : `#${o.codCliente}`;
+      return `
+        <tr>
+          <td>${String(o.idObra).padStart(3,'0')}</td>
+          <td>${o.descObra}</td>
+          <td>${o.respObra || '—'}</td>
+          <td>${nomeCliente}</td>
+          <td>${fmtData(o.dataInicio)}</td>
+          <td>${fmtData(o.dataFim)}</td>
+          <td>${badge}</td>
+          <td class="actions">
+            <button class="btn-icon" title="Ver produtos" onclick="verProdutosObra(${o.idObra})">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button class="btn-icon" title="Editar" onclick="abrirModalEditarObra(${o.idObra})">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="btn-icon danger" title="Excluir" onclick="deletarItem('obra', ${o.idObra}, '${o.descObra}')">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
   }
-  tbody.innerHTML = obras.map(o => {
-    const badge      = badgeStatus(o.statusObra);
-    const fmtData    = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
-    const cliente    = cacheClientes.find(c => c.idCliente === o.codCliente);
-    const nomeCliente = cliente ? cliente.nomeCliente : `#${o.codCliente}`;
-    return `
-      <tr>
-        <td>${String(o.idObra).padStart(3,'0')}</td>
-        <td>${o.descObra}</td>
-        <td>${o.respObra || '—'}</td>
-        <td>${nomeCliente}</td>
-        <td>${fmtData(o.dataInicio)}</td>
-        <td>${fmtData(o.dataFim)}</td>
-        <td>${badge}</td>
-        <td class="actions">
-          <button class="btn-icon" title="Ver produtos" onclick="verProdutosObra(${o.idObra})">
-            <i class="fa-solid fa-eye"></i>
-          </button>
-          <button class="btn-icon" title="Editar" onclick="abrirModalEditarObra(${o.idObra})">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="btn-icon danger" title="Excluir" onclick="deletarItem('obra', ${o.idObra}, '${o.descObra}')">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>`;
-  }).join('');
+  renderPaginacao('paginacaoObras', total, PAG_STATE.obras, 'mudarPaginaObras');
 }
 
 function _novaProdutoObraRow() {
@@ -266,6 +294,8 @@ function abrirModalNovaObra() {
   document.getElementById('obraClienteNome').value      = '';
   document.getElementById('obraClienteEndereco').value  = '';
   document.getElementById('obraDesc').value             = '';
+  document.getElementById('obraObs').value              = '';
+  document.getElementById('obraOrientacao').value       = '';
   document.getElementById('produtosObraList').innerHTML = _novaProdutoObraRow();
   document.getElementById('obraSecaoProdutos').classList.remove('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.add('hidden');
@@ -284,6 +314,8 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraDataFim').value         = o.dataFim || '';
   document.getElementById('obraCodCliente').value      = o.codCliente;
   document.getElementById('obraDesc').value            = o.descObra || '';
+  document.getElementById('obraObs').value             = o.obsObra || '';
+  document.getElementById('obraOrientacao').value      = o.orientacaoObra || '';
   buscarClienteObra(document.getElementById('obraCodCliente'));
   document.getElementById('obraSecaoProdutos').classList.add('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.remove('hidden');
@@ -368,6 +400,9 @@ async function salvarObra() {
   const cod        = document.getElementById('obraCodCliente').value.trim();
   const desc       = document.getElementById('obraDesc').value.trim();
 
+  const obs        = document.getElementById('obraObs').value.trim() || null;
+  const orientacao = document.getElementById('obraOrientacao').value.trim() || null;
+
   if (!resp)       { showToast('Selecione o responsável.', 'error'); return; }
   if (!cod)        { showToast('ID do cliente é obrigatório.', 'error'); return; }
   if (!dataInicio) { showToast('Data de início é obrigatória.', 'error'); return; }
@@ -376,7 +411,7 @@ async function salvarObra() {
   const clienteOk = cacheClientes.find(x => x.idCliente === parseInt(cod));
   if (!clienteOk) { showToast('Cliente não encontrado. Verifique o ID.', 'error'); return; }
 
-  const obra = { descObra: desc, respObra: resp, codCliente: parseInt(cod), dataInicio, dataFim, statusObra: status };
+  const obra = { descObra: desc, respObra: resp, codCliente: parseInt(cod), dataInicio, dataFim, statusObra: status, obsObra: obs, orientacaoObra: orientacao };
 
   // Modo edição — PUT completo + produtos novos opcionais
   if (idEdicao) {
@@ -542,6 +577,10 @@ async function buscarCEP(cep) {
 
 let cacheClientes = [];
 
+const PAG_STATE = { produtos: 1, obras: 1, clientes: 1 };
+const PER_PAGE  = 10;
+const filtros   = { produtos: '', obras: '', obraStatus: '', clientes: '' };
+
 async function carregarClientes() {
   try {
     const res = await apiFetch('/cliente');
@@ -561,27 +600,39 @@ function _enderecoCliente(c) {
 }
 
 function renderTabelaClientes(clientes) {
+  const q        = filtros.clientes;
+  const filtrado = q ? clientes.filter(c =>
+    `${c.idCliente} ${c.nomeCliente} ${c.CNPJCPF} ${c.contatoCliente || ''}`.toLowerCase().includes(q)
+  ) : clientes;
+
+  const total     = filtrado.length;
+  const totalPags = Math.ceil(total / PER_PAGE) || 1;
+  if (PAG_STATE.clientes > totalPags) PAG_STATE.clientes = 1;
+  const inicio = (PAG_STATE.clientes - 1) * PER_PAGE;
+  const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
+
   const tbody = document.getElementById('bodyClientes');
-  if (!clientes.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Nenhum cliente cadastrado.</td></tr>`;
-    return;
+  if (!pagina.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${total === 0 && q ? 'Nenhum resultado para a busca.' : 'Nenhum cliente cadastrado.'}</td></tr>`;
+  } else {
+    tbody.innerHTML = pagina.map(c => `
+      <tr>
+        <td>${String(c.idCliente).padStart(3,'0')}</td>
+        <td>${c.nomeCliente}</td>
+        <td>${c.CNPJCPF}</td>
+        <td>${_enderecoCliente(c)}</td>
+        <td>${c.contatoCliente || '—'}</td>
+        <td class="actions">
+          <button class="btn-icon" title="Editar" onclick="abrirModalEditarCliente(${c.idCliente})">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button class="btn-icon danger" title="Excluir" onclick="deletarItem('cliente', ${c.idCliente}, '${c.nomeCliente}')">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>`).join('');
   }
-  tbody.innerHTML = clientes.map(c => `
-    <tr>
-      <td>${String(c.idCliente).padStart(3,'0')}</td>
-      <td>${c.nomeCliente}</td>
-      <td>${c.CNPJCPF}</td>
-      <td>${_enderecoCliente(c)}</td>
-      <td>${c.contatoCliente || '—'}</td>
-      <td class="actions">
-        <button class="btn-icon" title="Editar" onclick="abrirModalEditarCliente(${c.idCliente})">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn-icon danger" title="Excluir" onclick="deletarItem('cliente', ${c.idCliente}, '${c.nomeCliente}')">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </td>
-    </tr>`).join('');
+  renderPaginacao('paginacaoClientes', total, PAG_STATE.clientes, 'mudarPaginaClientes');
 }
 
 function _limparModalCliente() {
@@ -668,7 +719,7 @@ async function salvarCliente() {
 // EXCLUSÃO GENÉRICA
 // ══════════════════════════════════════════════════
 
-const endpointExclusao = { produto: '/produto', obra: '/obra', cliente: '/cliente' };
+const endpointExclusao = { produto: '/produto', obra: '/obra', cliente: '/cliente', admin: '/admin' };
 
 function deletarItem(tipo, id, nome) {
   document.getElementById('confirmarMsg').textContent =
@@ -686,6 +737,7 @@ async function confirmarExclusao(tipo, id) {
     if (tipo === 'produto')  await carregarProdutos();
     if (tipo === 'obra')     await carregarObras();
     if (tipo === 'cliente')  await carregarClientes();
+    if (tipo === 'admin')    await carregarAdmins();
   } catch (e) {
     showToast(`Erro ao excluir: ${e.message}`, 'error');
   }
@@ -824,7 +876,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     document.getElementById(`page-${page}`).classList.add('active');
-    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes' };
+    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
   });
 });
@@ -848,26 +900,83 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(overlay.id); });
 });
 
-function filtrarTabela(tableId, query) {
-  const q = query.toLowerCase();
-  document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
+function filtrarProdutos(q) {
+  filtros.produtos   = q.toLowerCase();
+  PAG_STATE.produtos = 1;
+  renderTabelaProdutos(cacheProdutos);
 }
 
-function filtrarStatus(status) {
-  document.querySelectorAll('#tabelaObras tbody tr').forEach(row => {
-    if (!status) { row.style.display = ''; return; }
-    const badge = row.querySelector('.badge');
-    row.style.display = (badge && badge.textContent.toLowerCase().includes(status.toLowerCase())) ? '' : 'none';
-  });
+function filtrarObras(q) {
+  filtros.obras   = q.toLowerCase();
+  PAG_STATE.obras = 1;
+  renderTabelaObras(cacheObras);
+}
+
+function filtrarClientes(q) {
+  filtros.clientes   = q.toLowerCase();
+  PAG_STATE.clientes = 1;
+  renderTabelaClientes(cacheClientes);
+}
+
+function filtrarStatusObra(status) {
+  filtros.obraStatus = status;
+  PAG_STATE.obras    = 1;
+  renderTabelaObras(cacheObras);
+}
+
+function mudarPaginaProdutos(pg) { PAG_STATE.produtos = pg; renderTabelaProdutos(cacheProdutos); }
+function mudarPaginaObras(pg)    { PAG_STATE.obras    = pg; renderTabelaObras(cacheObras); }
+function mudarPaginaClientes(pg) { PAG_STATE.clientes = pg; renderTabelaClientes(cacheClientes); }
+
+function renderPaginacao(containerId, total, paginaAtual, callbackNome) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const totalPags = Math.ceil(total / PER_PAGE);
+  if (totalPags <= 1) { container.innerHTML = ''; return; }
+
+  const inicio = (paginaAtual - 1) * PER_PAGE + 1;
+  const fim    = Math.min(paginaAtual * PER_PAGE, total);
+
+  const btn = (label, pg, extraClass = '') => {
+    const isActive   = pg === paginaAtual && extraClass !== 'ellipsis' ? 'active' : '';
+    const isDisabled = extraClass === 'ellipsis' ? 'disabled' : '';
+    const click      = pg !== null && extraClass !== 'ellipsis' ? `onclick="${callbackNome}(${pg})"` : '';
+    return `<button class="page-btn ${isActive} ${extraClass}" ${isDisabled} ${click}>${label}</button>`;
+  };
+
+  const pages = [];
+  if (totalPags <= 7) {
+    for (let i = 1; i <= totalPags; i++) pages.push(btn(i, i));
+  } else {
+    pages.push(btn(1, 1));
+    if (paginaAtual > 3) pages.push(btn('…', null, 'ellipsis'));
+    const s = Math.max(2, paginaAtual - 1);
+    const e = Math.min(totalPags - 1, paginaAtual + 1);
+    for (let i = s; i <= e; i++) pages.push(btn(i, i));
+    if (paginaAtual < totalPags - 2) pages.push(btn('…', null, 'ellipsis'));
+    pages.push(btn(totalPags, totalPags));
+  }
+
+  container.innerHTML = `
+    <div class="pagination">
+      <span class="pagination-info">Exibindo ${inicio}–${fim} de ${total}</span>
+      <div class="pagination-controls">
+        <button class="page-btn" ${paginaAtual === 1 ? 'disabled' : `onclick="${callbackNome}(${paginaAtual - 1})"`}>
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        ${pages.join('')}
+        <button class="page-btn" ${paginaAtual === totalPags ? 'disabled' : `onclick="${callbackNome}(${paginaAtual + 1})"`}>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>`;
 }
 
 document.getElementById('globalSearch').addEventListener('input', function () {
   const q = this.value;
-  filtrarTabela('tabelaProdutos', q);
-  filtrarTabela('tabelaObras', q);
-  filtrarTabela('tabelaClientes', q);
+  filtrarProdutos(q);
+  filtrarObras(q);
+  filtrarClientes(q);
 });
 
 function showToast(msg, type = 'success') {
@@ -879,6 +988,168 @@ function showToast(msg, type = 'success') {
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateY(10px)'; toast.style.transition='.3s'; }, 2800);
   setTimeout(() => toast.remove(), 3200);
+}
+
+
+// ══════════════════════════════════════════════════
+// ADMINISTRADORES  →  GET/POST/PUT/DELETE /admin
+// ══════════════════════════════════════════════════
+
+let cacheAdmins = [];
+
+async function carregarAdmins() {
+  try {
+    const res = await apiFetch('/admin');
+    cacheAdmins = res.admins || [];
+    renderTabelaAdmins(cacheAdmins);
+  } catch (e) {
+    document.getElementById('bodyAdmins').innerHTML =
+      `<tr><td colspan="4" class="empty-row">Erro ao carregar administradores: ${e.message}</td></tr>`;
+  }
+}
+
+function renderTabelaAdmins(admins) {
+  const tbody = document.getElementById('bodyAdmins');
+  if (!admins.length) {
+    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Nenhum administrador cadastrado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = admins.map(a => `
+    <tr>
+      <td>${String(a.idLogin).padStart(3,'0')}</td>
+      <td>${a.nomeLogin}</td>
+      <td>${a.email}</td>
+      <td class="actions">
+        <button class="btn-icon" title="Editar" onclick="abrirModalEditarAdmin(${a.idLogin})">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn-icon danger" title="Excluir" onclick="deletarItem('admin', ${a.idLogin}, '${a.nomeLogin}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+function abrirModalNovoAdmin() {
+  document.getElementById('adminIdEdicao').value = '';
+  document.getElementById('adminNome').value     = '';
+  document.getElementById('adminEmail').value    = '';
+  document.getElementById('adminSenha').value    = '';
+  document.getElementById('adminNovaSenha').value = '';
+  document.getElementById('adminSenhaGroup').classList.remove('hidden');
+  document.getElementById('adminNovaSenhaGroup').classList.add('hidden');
+  document.getElementById('modalAdminTitle').innerHTML =
+    '<i class="fa-solid fa-user-shield"></i> Novo Administrador';
+  abrirModal('modalAdmin');
+}
+
+function abrirModalEditarAdmin(idLogin) {
+  const a = cacheAdmins.find(x => x.idLogin == idLogin);
+  if (!a) { showToast('Administrador não encontrado.', 'error'); return; }
+  document.getElementById('adminIdEdicao').value  = a.idLogin;
+  document.getElementById('adminNome').value      = a.nomeLogin;
+  document.getElementById('adminEmail').value     = a.email;
+  document.getElementById('adminSenha').value     = '';
+  document.getElementById('adminNovaSenha').value = '';
+  document.getElementById('adminSenhaGroup').classList.add('hidden');
+  document.getElementById('adminNovaSenhaGroup').classList.remove('hidden');
+  document.getElementById('modalAdminTitle').innerHTML =
+    '<i class="fa-solid fa-pen"></i> Editar Administrador';
+  abrirModal('modalAdmin');
+}
+
+async function salvarAdmin() {
+  const idEdicao  = document.getElementById('adminIdEdicao').value;
+  const nome      = document.getElementById('adminNome').value.trim();
+  const email     = document.getElementById('adminEmail').value.trim();
+  const senha     = document.getElementById('adminSenha').value;
+  const novaSenha = document.getElementById('adminNovaSenha').value;
+
+  if (!nome)  { showToast('Nome é obrigatório.', 'error'); return; }
+  if (!email) { showToast('Email é obrigatório.', 'error'); return; }
+
+  try {
+    if (idEdicao) {
+      const payload = { admin: { email, nomeLogin: nome, novaSenha: novaSenha || undefined } };
+      await apiFetch(`/admin/${idEdicao}`, 'PUT', payload);
+      showToast('Administrador atualizado!', 'success');
+    } else {
+      if (!senha) { showToast('Senha é obrigatória.', 'error'); return; }
+      const payload = { admin: { email, nomeLogin: nome, senha } };
+      await apiFetch('/admin', 'POST', payload);
+      showToast(`Administrador "${nome}" criado!`, 'success');
+    }
+    fecharModal('modalAdmin');
+    await carregarAdmins();
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// EXPORTAÇÃO EXCEL (SheetJS)
+// ══════════════════════════════════════════════════
+
+function _downloadXLSX(nomeArquivo, cabecalhos, linhas) {
+  const ws = XLSX.utils.aoa_to_sheet([cabecalhos, ...linhas]);
+
+  // Largura automática por coluna
+  const colWidths = cabecalhos.map((h, i) => {
+    const max = Math.max(h.length, ...linhas.map(r => String(r[i] ?? '').length));
+    return { wch: Math.min(max + 2, 50) };
+  });
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+function exportarProdutos() {
+  if (!cacheProdutos.length) { showToast('Nenhum produto para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Nome', 'Descrição', 'Qtd. Atual', 'Qtd. Mínima', 'Qtd. Máxima', 'Status'];
+  const linhas = cacheProdutos.map(p => {
+    const statusTxt = p.qtdProduto <= 0 ? 'Sem estoque'
+                    : (p.qtdMinima > 0 && p.qtdProduto < p.qtdMinima) ? 'Atenção'
+                    : 'Normal';
+    return [p.idProduto, p.nomeProduto, p.descProduto || '', p.qtdProduto, p.qtdMinima, p.qtdMaxima, statusTxt];
+  });
+  _downloadXLSX(`produtos_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Exportação concluída!', 'success');
+}
+
+function exportarObras() {
+  if (!cacheObras.length) { showToast('Nenhuma obra para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Descrição', 'Responsável', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Observações', 'Orientações'];
+  const fmtData    = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+  const linhas = cacheObras.map(o => {
+    const cliente = cacheClientes.find(c => c.idCliente === o.codCliente);
+    return [
+      o.idObra, o.descObra, o.respObra || '', o.codCliente,
+      cliente ? cliente.nomeCliente : '',
+      fmtData(o.dataInicio), fmtData(o.dataFim), o.statusObra,
+      o.obsObra || '', o.orientacaoObra || '',
+    ];
+  });
+  _downloadXLSX(`obras_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Exportação concluída!', 'success');
+}
+
+function exportarClientes() {
+  if (!cacheClientes.length) { showToast('Nenhum cliente para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Nome', 'CPF/CNPJ', 'Contato', 'CEP', 'Rua', 'Número', 'Complemento', 'Bairro', 'Cidade', 'Estado'];
+  const linhas = cacheClientes.map(c => [
+    c.idCliente, c.nomeCliente, c.CNPJCPF, c.contatoCliente || '',
+    c.cep || '', c.rua || '', c.numero || '', c.complemento || '',
+    c.bairro || '', c.cidade || '', c.estado || '',
+  ]);
+  _downloadXLSX(`clientes_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Exportação concluída!', 'success');
+}
+
+function _dataHoje() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 
