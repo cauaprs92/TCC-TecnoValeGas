@@ -59,7 +59,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function carregarTodos() {
-  await Promise.allSettled([carregarProdutos(), carregarObras(), carregarClientes(), carregarAdmins()]);
+  await Promise.allSettled([
+    carregarProdutos(),
+    carregarObras(),
+    carregarClientes(),
+    carregarAdmins(),
+    carregarResponsaveis(),
+  ]);
+  renderGraficoObras();
 }
 
 function carregarAdministrador() {
@@ -83,7 +90,6 @@ async function carregarProdutos() {
     cacheProdutos = res.produtos || [];
     renderTabelaProdutos(cacheProdutos);
     renderAlertas(cacheProdutos);
-    renderGraficoEstoque(cacheProdutos);
     renderNotificacoes(cacheProdutos);
     atualizarKPI();
   } catch (e) {
@@ -113,7 +119,7 @@ function renderTabelaProdutos(produtos) {
       const { cls, label } = statusEstoque(p);
       return `
         <tr>
-          <td>${String(p.idProduto).padStart(3,'0')}</td>
+          <td>${p.idProduto}</td>
           <td>${p.nomeProduto}</td>
           <td>${p.descProduto || '—'}</td>
           <td><span class="qty-badge ${cls}">${p.qtdProduto}</span></td>
@@ -214,19 +220,24 @@ async function carregarObras() {
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyObras').innerHTML =
-      `<tr><td colspan="8" class="empty-row">Erro ao carregar obras: ${e.message}</td></tr>`;
+      `<tr><td colspan="6" class="empty-row">Erro ao carregar obras: ${e.message}</td></tr>`;
     console.error('carregarObras:', e);
   }
 }
 
 function renderTabelaObras(obras) {
   let filtrado = obras;
-  const q = filtros.obras;
-  const s = filtros.obraStatus;
-  if (q) filtrado = filtrado.filter(o =>
-    `${o.idObra} ${o.descObra} ${o.respObra || ''} ${o.statusObra}`.toLowerCase().includes(q)
+  const tipo   = filtros.obraTipo;
+  const s      = filtros.obraStatus;
+  const de     = filtros.obraDe;
+  const ate    = filtros.obraAte;
+
+  if (tipo) filtrado = filtrado.filter(o =>
+    `${o.tipoObra || ''} ${o.descObra || ''}`.toLowerCase().includes(tipo)
   );
-  if (s) filtrado = filtrado.filter(o => o.statusObra === s);
+  if (s)   filtrado = filtrado.filter(o => o.statusObra === s);
+  if (de)  filtrado = filtrado.filter(o => o.dataInicio && o.dataInicio >= de);
+  if (ate) filtrado = filtrado.filter(o => o.dataInicio && o.dataInicio <= ate);
 
   const total     = filtrado.length;
   const totalPags = Math.ceil(total / PER_PAGE) || 1;
@@ -236,22 +247,31 @@ function renderTabelaObras(obras) {
 
   const fmtData = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
   const tbody   = document.getElementById('bodyObras');
+  const temFiltro = tipo || s || de || ate;
 
   if (!pagina.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-row">${total === 0 && (q || s) ? 'Nenhum resultado para a busca.' : 'Nenhuma obra cadastrada.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${temFiltro ? 'Nenhum resultado para a busca.' : 'Nenhuma obra cadastrada.'}</td></tr>`;
   } else {
     tbody.innerHTML = pagina.map(o => {
       const badge       = badgeStatus(o.statusObra);
       const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
-      const nomeCliente = cliente ? cliente.nomeCliente : `#${o.codCliente}`;
+      const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente #${o.codCliente}` : '—');
+      const contatoParts = [o.emailContato, o.celular1, o.celular2].filter(Boolean);
+      const contatoStr   = contatoParts.length ? contatoParts.join(' | ') : '';
+      const descEsc = (o.descObra || '').replace(/'/g, "\\'");
       return `
         <tr>
-          <td>${String(o.idObra).padStart(3,'0')}</td>
-          <td>${o.descObra}</td>
-          <td>${o.respObra || '—'}</td>
-          <td>${nomeCliente}</td>
+          <td>${o.idObra}</td>
+          <td>${o.codCliente || '—'}</td>
+          <td>
+            <div class="obra-cell">
+              <span class="obra-cell-nome">${nomeCliente}</span>
+              ${o.descObra    ? `<span class="obra-cell-desc">${o.descObra}</span>`       : ''}
+              ${contatoStr    ? `<span class="obra-cell-contato">${contatoStr}</span>`    : ''}
+              ${o.obsObra     ? `<span class="obra-cell-obs">${o.obsObra}</span>`         : ''}
+            </div>
+          </td>
           <td>${fmtData(o.dataInicio)}</td>
-          <td>${fmtData(o.dataFim)}</td>
           <td>${badge}</td>
           <td class="actions">
             <button class="btn-icon" title="Ver produtos" onclick="verProdutosObra(${o.idObra})">
@@ -260,7 +280,7 @@ function renderTabelaObras(obras) {
             <button class="btn-icon" title="Editar" onclick="abrirModalEditarObra(${o.idObra})">
               <i class="fa-solid fa-pen"></i>
             </button>
-            <button class="btn-icon danger" title="Excluir" onclick="deletarItem('obra', ${o.idObra}, '${o.descObra}')">
+            <button class="btn-icon danger" title="Excluir" onclick="deletarItem('obra', ${o.idObra}, '${descEsc}')">
               <i class="fa-solid fa-trash"></i>
             </button>
           </td>
@@ -271,32 +291,55 @@ function renderTabelaObras(obras) {
 }
 
 function _novaProdutoObraRow() {
+  const opts = cacheProdutos.map(p =>
+    `<option value="${p.idProduto}" data-estoque="${p.qtdProduto}" data-min="${p.qtdMinima}">${p.nomeProduto} (estoque: ${p.qtdProduto})</option>`
+  ).join('');
   return `
     <div class="produto-obra-row">
-      <input type="number" placeholder="ID" class="prod-id-input" min="1"
-        oninput="buscarProdutoObra(this)" />
-      <input type="text" placeholder="Nome do produto" class="prod-nome-input" readonly />
+      <select class="prod-select" onchange="selecionarProdutoObraRow(this)">
+        <option value="">Selecione um produto...</option>
+        ${opts}
+      </select>
       <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
-      <input type="number" placeholder="Qtd. a usar" class="prod-qtd-input" min="1" />
+      <input type="number" placeholder="Qtd." class="prod-qtd-input" min="1" />
       <button class="btn-icon danger" onclick="removerProdutoObra(this)">
         <i class="fa-solid fa-minus"></i>
       </button>
     </div>`;
 }
 
+function selecionarProdutoObraRow(sel) {
+  const row      = sel.closest('.produto-obra-row');
+  const estoqueEl = row.querySelector('.prod-estoque-input');
+  const opt      = sel.selectedOptions[0];
+  if (!sel.value) { estoqueEl.value = ''; estoqueEl.style.color = ''; return; }
+  const qtd = parseInt(opt.dataset.estoque) || 0;
+  const min = parseInt(opt.dataset.min)     || 0;
+  estoqueEl.value = `${qtd} em estoque`;
+  estoqueEl.style.color = qtd <= 0 ? '#DC2626' : (min > 0 && qtd <= min) ? '#D97706' : '#16A34A';
+}
+
+function _limparCamposObra() {
+  const ids = [
+    'obraIdEdicao','obraIdDisplay','obraCodCliente','obraTipo',
+    'obraClienteCNPJ','obraClienteNome','obraClienteRua','obraClienteNumero',
+    'obraClienteComplemento','obraClienteBairro','obraClienteCEP',
+    'obraClienteCidade','obraClienteEstado',
+    'obraContato','obraEmail','obraCelular1','obraCelular2',
+    'obraDesc','obraObs','obraOrientacao','obraDataInicio','obraDataFim'
+  ];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('obraStatus').value   = 'Em andamento';
+  document.getElementById('obraResp').value     = '';
+  document.getElementById('obraUnidade').value  = '';
+}
+
 function abrirModalNovaObra() {
-  document.getElementById('obraIdEdicao').value         = '';
-  document.getElementById('obraStatus').value           = 'Em andamento';
-  document.getElementById('obraResp').value             = '';
-  document.getElementById('obraDataInicio').value       = '';
-  document.getElementById('obraDataFim').value          = '';
-  document.getElementById('obraCodCliente').value       = '';
-  document.getElementById('obraClienteNome').value      = '';
-  document.getElementById('obraClienteEndereco').value  = '';
-  document.getElementById('obraDesc').value             = '';
-  document.getElementById('obraObs').value              = '';
-  document.getElementById('obraOrientacao').value       = '';
-  document.getElementById('produtosObraList').innerHTML = _novaProdutoObraRow();
+  _limparCamposObra();
+  const el = document.createElement('div');
+  el.innerHTML = _novaProdutoObraRow();
+  document.getElementById('produtosObraList').innerHTML = '';
+  document.getElementById('produtosObraList').appendChild(el.firstElementChild);
   document.getElementById('obraSecaoProdutos').classList.remove('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.add('hidden');
   document.getElementById('modalObraTitle').innerHTML =
@@ -307,15 +350,22 @@ function abrirModalNovaObra() {
 function abrirModalEditarObra(idObra) {
   const o = cacheObras.find(x => x.idObra == idObra);
   if (!o) { showToast('Obra não encontrada.', 'error'); return; }
-  document.getElementById('obraIdEdicao').value        = o.idObra;
-  document.getElementById('obraStatus').value          = o.statusObra;
-  document.getElementById('obraResp').value            = o.respObra || '';
-  document.getElementById('obraDataInicio').value      = o.dataInicio || '';
-  document.getElementById('obraDataFim').value         = o.dataFim || '';
-  document.getElementById('obraCodCliente').value      = o.codCliente;
-  document.getElementById('obraDesc').value            = o.descObra || '';
-  document.getElementById('obraObs').value             = o.obsObra || '';
-  document.getElementById('obraOrientacao').value      = o.orientacaoObra || '';
+  _limparCamposObra();
+  document.getElementById('obraIdEdicao').value          = o.idObra;
+  document.getElementById('obraIdDisplay').value         = o.idObra;
+  document.getElementById('obraStatus').value            = o.statusObra || 'Em andamento';
+  document.getElementById('obraResp').value              = o.respObra || '';
+  document.getElementById('obraDataInicio').value        = o.dataInicio || '';
+  document.getElementById('obraDataFim').value           = o.dataFim || '';
+  document.getElementById('obraCodCliente').value        = o.codCliente || '';
+  document.getElementById('obraTipo').value              = o.tipoObra || '';
+  document.getElementById('obraUnidade').value           = o.unidadeObra || '';
+  document.getElementById('obraEmail').value             = o.emailContato || '';
+  document.getElementById('obraCelular1').value          = o.celular1 || '';
+  document.getElementById('obraCelular2').value          = o.celular2 || '';
+  document.getElementById('obraDesc').value              = o.descObra || '';
+  document.getElementById('obraObs').value               = o.obsObra || '';
+  document.getElementById('obraOrientacao').value        = o.orientacaoObra || '';
   buscarClienteObra(document.getElementById('obraCodCliente'));
   document.getElementById('obraSecaoProdutos').classList.add('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.remove('hidden');
@@ -347,18 +397,21 @@ function abrirModalEditarObra(idObra) {
 }
 
 function buscarClienteObra(input) {
-  const id    = parseInt(input.value);
-  const nomeEl = document.getElementById('obraClienteNome');
-  const endEl  = document.getElementById('obraClienteEndereco');
-  if (!id || id <= 0) { nomeEl.value = ''; endEl.value = ''; return; }
+  const id = parseInt(input.value);
+  if (!id || id <= 0) return;
   const c = cacheClientes.find(x => x.idCliente === id);
-  if (!c) {
-    nomeEl.value = 'Cliente não encontrado';
-    endEl.value  = '';
-    return;
-  }
-  nomeEl.value = c.nomeCliente;
-  endEl.value  = _enderecoCliente(c);
+  if (!c) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el && !el.value) el.value = val || ''; };
+  set('obraClienteNome',        c.nomeCliente);
+  set('obraClienteCNPJ',        c.CNPJCPF);
+  set('obraClienteRua',         c.rua);
+  set('obraClienteNumero',      c.numero);
+  set('obraClienteComplemento', c.complemento);
+  set('obraClienteBairro',      c.bairro);
+  set('obraClienteCEP',         c.cep);
+  set('obraClienteCidade',      c.cidade);
+  set('obraClienteEstado',      c.estado);
+  set('obraContato',            c.contatoCliente);
 }
 
 function buscarProdutoObra(input) {
@@ -399,11 +452,15 @@ async function salvarObra() {
   const dataFim    = document.getElementById('obraDataFim').value.trim() || null;
   const cod        = document.getElementById('obraCodCliente').value.trim();
   const desc       = document.getElementById('obraDesc').value.trim();
-
   const obs        = document.getElementById('obraObs').value.trim() || null;
   const orientacao = document.getElementById('obraOrientacao').value.trim() || null;
+  const tipoObra   = document.getElementById('obraTipo').value.trim() || null;
+  const unidade    = document.getElementById('obraUnidade').value || null;
+  const email      = document.getElementById('obraEmail').value.trim() || null;
+  const cel1       = document.getElementById('obraCelular1').value.trim() || null;
+  const cel2       = document.getElementById('obraCelular2').value.trim() || null;
 
-  if (!resp)       { showToast('Selecione o responsável.', 'error'); return; }
+  if (!resp)       { showToast('Selecione o field.', 'error'); return; }
   if (!cod)        { showToast('ID do cliente é obrigatório.', 'error'); return; }
   if (!dataInicio) { showToast('Data de início é obrigatória.', 'error'); return; }
   if (!desc)       { showToast('Descrição da obra é obrigatória.', 'error'); return; }
@@ -411,13 +468,19 @@ async function salvarObra() {
   const clienteOk = cacheClientes.find(x => x.idCliente === parseInt(cod));
   if (!clienteOk) { showToast('Cliente não encontrado. Verifique o ID.', 'error'); return; }
 
-  const obra = { descObra: desc, respObra: resp, codCliente: parseInt(cod), dataInicio, dataFim, statusObra: status, obsObra: obs, orientacaoObra: orientacao };
+  const obra = {
+    descObra: desc, respObra: resp, codCliente: parseInt(cod),
+    dataInicio, dataFim, statusObra: status,
+    obsObra: obs, orientacaoObra: orientacao,
+    tipoObra, unidadeObra: unidade,
+    emailContato: email, celular1: cel1, celular2: cel2,
+  };
 
   // Modo edição — PUT completo + produtos novos opcionais
   if (idEdicao) {
     const produtosNovos = [];
     document.querySelectorAll('#produtosObraEdList .produto-obra-row').forEach(row => {
-      const pid = row.querySelector('.prod-id-input').value.trim();
+      const pid = row.querySelector('.prod-select')?.value.trim();
       const pqt = row.querySelector('.prod-qtd-input').value.trim();
       if (pid && pqt) produtosNovos.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
     });
@@ -436,7 +499,7 @@ async function salvarObra() {
   // Modo criação — valida produtos e POST
   const produtosUsados = [];
   document.querySelectorAll('#produtosObraList .produto-obra-row').forEach(row => {
-    const pid = row.querySelector('.prod-id-input').value.trim();
+    const pid = row.querySelector('.prod-select')?.value.trim();
     const pqt = row.querySelector('.prod-qtd-input').value.trim();
     if (pid && pqt) produtosUsados.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
   });
@@ -467,16 +530,22 @@ async function verProdutosObra(idObra) {
     }
     body.innerHTML = `
       <p style="color:var(--gray-500);font-size:.85rem;margin-bottom:14px;">
-        Produtos vinculados à obra <strong>#${String(idObra).padStart(3,'0')}</strong>:
+        Produtos vinculados à obra <strong>#${idObra}</strong>:
       </p>
       <table class="data-table">
-        <thead><tr><th>ID Produto</th><th>Nome</th><th>Quantidade Utilizada</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nome</th><th>Quantidade</th><th>Ações</th></tr></thead>
         <tbody>
           ${produtos.map(p => `
             <tr>
-              <td>${String(p.idProduto).padStart(3,'0')}</td>
+              <td>${p.idProduto}</td>
               <td>${p.nomeProduto || '—'}</td>
               <td>${p.qtdProdutosObra}</td>
+              <td class="actions">
+                <button class="btn-icon" title="Editar quantidade"
+                  onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${(p.nomeProduto||'').replace(/'/g,"\\'")}',${p.qtdProdutosObra})">
+                  <i class="fa-solid fa-pen"></i>
+                </button>
+              </td>
             </tr>`).join('')}
         </tbody>
       </table>`;
@@ -508,13 +577,17 @@ function removerProdutoObraEd(btn) {
 }
 
 function _novaProdutoObraRowEd() {
+  const opts = cacheProdutos.map(p =>
+    `<option value="${p.idProduto}" data-estoque="${p.qtdProduto}" data-min="${p.qtdMinima}">${p.nomeProduto} (estoque: ${p.qtdProduto})</option>`
+  ).join('');
   return `
     <div class="produto-obra-row">
-      <input type="number" placeholder="ID" class="prod-id-input" min="1"
-        oninput="buscarProdutoObra(this)" />
-      <input type="text" placeholder="Nome do produto" class="prod-nome-input" readonly />
+      <select class="prod-select" onchange="selecionarProdutoObraRow(this)">
+        <option value="">Selecione um produto...</option>
+        ${opts}
+      </select>
       <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
-      <input type="number" placeholder="Qtd. a usar" class="prod-qtd-input" min="1" />
+      <input type="number" placeholder="Qtd." class="prod-qtd-input" min="1" />
       <button class="btn-icon danger" onclick="removerProdutoObraEd(this)">
         <i class="fa-solid fa-minus"></i>
       </button>
@@ -579,7 +652,7 @@ let cacheClientes = [];
 
 const PAG_STATE = { produtos: 1, obras: 1, clientes: 1 };
 const PER_PAGE  = 10;
-const filtros   = { produtos: '', obras: '', obraStatus: '', clientes: '' };
+const filtros   = { produtos: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '' };
 
 async function carregarClientes() {
   try {
@@ -617,7 +690,7 @@ function renderTabelaClientes(clientes) {
   } else {
     tbody.innerHTML = pagina.map(c => `
       <tr>
-        <td>${String(c.idCliente).padStart(3,'0')}</td>
+        <td>${c.idCliente}</td>
         <td>${c.nomeCliente}</td>
         <td>${c.CNPJCPF}</td>
         <td>${_enderecoCliente(c)}</td>
@@ -748,8 +821,12 @@ async function confirmarExclusao(tipo, id) {
 // DASHBOARD — renders
 // ══════════════════════════════════════════════════
 
+function _limiteAlerta(p) {
+  return p.qtdMinima > 0 ? Math.ceil(p.qtdMinima * 1.10) : 0;
+}
+
 function _produtoEmAlerta(p) {
-  return p.qtdProduto <= 0 || (p.qtdMinima > 0 && p.qtdProduto < p.qtdMinima);
+  return p.qtdProduto <= 0 || (p.qtdMinima > 0 && p.qtdProduto <= _limiteAlerta(p));
 }
 
 function renderAlertas(produtos) {
@@ -792,23 +869,64 @@ function renderObrasRecentes(obras) {
     </div>`).join('');
 }
 
-function renderGraficoEstoque(produtos) {
-  const el = document.getElementById('barChart');
-  const lista = [...produtos].sort((a,b) => a.qtdProduto - b.qtdProduto).slice(0, 5);
-  if (!lista.length) { el.innerHTML = '<div class="empty-row">Nenhum produto cadastrado.</div>'; return; }
-  const max = Math.max(...lista.map(p => p.qtdProduto), 1);
-  el.innerHTML = lista.map(p => {
-    const pct = Math.round((p.qtdProduto / max) * 100);
-    const cls = p.qtdProduto <= 0 ? 'critical'
-              : (p.qtdMinima > 0 && p.qtdProduto < p.qtdMinima) ? 'warning'
-              : 'ok';
-    return `
-      <div class="bar-row">
-        <span class="bar-label">${p.nomeProduto}</span>
-        <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
-        <span class="bar-val">${p.qtdProduto}</span>
-      </div>`;
-  }).join('');
+let _obraChart = null;
+
+async function renderGraficoObras() {
+  const canvas = document.getElementById('obraChartCanvas');
+  if (!canvas) return;
+
+  let dados = [];
+  try {
+    const res = await apiFetch('/relatorio/obras-produtos');
+    dados = res.dados || [];
+  } catch {
+    dados = [];
+  }
+
+  if (_obraChart) { _obraChart.destroy(); _obraChart = null; }
+
+  if (!dados.length) {
+    canvas.closest('.chart-container').innerHTML =
+      '<div class="empty-row" style="height:100%;display:flex;align-items:center;justify-content:center">Nenhuma obra cadastrada ainda.</div>';
+    return;
+  }
+
+  const labels = dados.map(d => d.descObra.length > 22 ? d.descObra.slice(0, 22) + '…' : d.descObra);
+  const values = dados.map(d => d.totalConsumido);
+  const colors = dados.map(d =>
+    d.totalConsumido === 0 ? 'rgba(200,197,190,0.6)' : 'rgba(232,82,10,0.82)'
+  );
+
+  _obraChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Qtd. total de produtos',
+        data: values,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace('0.82', '1').replace('0.6', '1')),
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} unidades consumidas`,
+          }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
 }
 
 function renderNotificacoes(produtos) {
@@ -847,8 +965,8 @@ function atualizarKPI() {
 function statusEstoque(p) {
   if (p.qtdProduto <= 0)
     return { cls: 'critical', label: '<span class="badge badge-red">Sem estoque</span>' };
-  if (p.qtdMinima > 0 && p.qtdProduto < p.qtdMinima)
-    return { cls: 'warning',  label: '<span class="badge badge-yellow">Atenção</span>' };
+  if (p.qtdMinima > 0 && p.qtdProduto <= _limiteAlerta(p))
+    return { cls: 'warning',  label: '<span class="badge badge-yellow">Alerta</span>' };
   return   { cls: 'ok',        label: '<span class="badge badge-green">Normal</span>' };
 }
 
@@ -906,9 +1024,12 @@ function filtrarProdutos(q) {
   renderTabelaProdutos(cacheProdutos);
 }
 
-function filtrarObras(q) {
-  filtros.obras   = q.toLowerCase();
-  PAG_STATE.obras = 1;
+function filtrarObras() {
+  filtros.obraTipo   = (document.getElementById('obraFiltroTipo')?.value   || '').toLowerCase().trim();
+  filtros.obraStatus = (document.getElementById('obraFiltroStatus')?.value || '');
+  filtros.obraDe     = (document.getElementById('obraFiltroDe')?.value     || '');
+  filtros.obraAte    = (document.getElementById('obraFiltroAte')?.value    || '');
+  PAG_STATE.obras    = 1;
   renderTabelaObras(cacheObras);
 }
 
@@ -918,11 +1039,7 @@ function filtrarClientes(q) {
   renderTabelaClientes(cacheClientes);
 }
 
-function filtrarStatusObra(status) {
-  filtros.obraStatus = status;
-  PAG_STATE.obras    = 1;
-  renderTabelaObras(cacheObras);
-}
+function filtrarStatusObra(status) { filtros.obraStatus = status; PAG_STATE.obras = 1; renderTabelaObras(cacheObras); }
 
 function mudarPaginaProdutos(pg) { PAG_STATE.produtos = pg; renderTabelaProdutos(cacheProdutos); }
 function mudarPaginaObras(pg)    { PAG_STATE.obras    = pg; renderTabelaObras(cacheObras); }
@@ -972,12 +1089,7 @@ function renderPaginacao(containerId, total, paginaAtual, callbackNome) {
     </div>`;
 }
 
-document.getElementById('globalSearch').addEventListener('input', function () {
-  const q = this.value;
-  filtrarProdutos(q);
-  filtrarObras(q);
-  filtrarClientes(q);
-});
+// (barra de busca global removida — cada módulo tem sua própria busca)
 
 function showToast(msg, type = 'success') {
   const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
@@ -1016,7 +1128,7 @@ function renderTabelaAdmins(admins) {
   }
   tbody.innerHTML = admins.map(a => `
     <tr>
-      <td>${String(a.idLogin).padStart(3,'0')}</td>
+      <td>${a.idLogin}</td>
       <td>${a.nomeLogin}</td>
       <td>${a.email}</td>
       <td class="actions">
@@ -1034,9 +1146,11 @@ function abrirModalNovoAdmin() {
   document.getElementById('adminIdEdicao').value = '';
   document.getElementById('adminNome').value     = '';
   document.getElementById('adminEmail').value    = '';
-  document.getElementById('adminSenha').value    = '';
-  document.getElementById('adminNovaSenha').value = '';
+  document.getElementById('adminSenha').value      = '';
+  document.getElementById('adminSenhaAtual').value = '';
+  document.getElementById('adminNovaSenha').value  = '';
   document.getElementById('adminSenhaGroup').classList.remove('hidden');
+  document.getElementById('adminSenhaAtualGroup').classList.add('hidden');
   document.getElementById('adminNovaSenhaGroup').classList.add('hidden');
   document.getElementById('modalAdminTitle').innerHTML =
     '<i class="fa-solid fa-user-shield"></i> Novo Administrador';
@@ -1049,9 +1163,11 @@ function abrirModalEditarAdmin(idLogin) {
   document.getElementById('adminIdEdicao').value  = a.idLogin;
   document.getElementById('adminNome').value      = a.nomeLogin;
   document.getElementById('adminEmail').value     = a.email;
-  document.getElementById('adminSenha').value     = '';
-  document.getElementById('adminNovaSenha').value = '';
+  document.getElementById('adminSenha').value      = '';
+  document.getElementById('adminSenhaAtual').value = '';
+  document.getElementById('adminNovaSenha').value  = '';
   document.getElementById('adminSenhaGroup').classList.add('hidden');
+  document.getElementById('adminSenhaAtualGroup').classList.remove('hidden');
   document.getElementById('adminNovaSenhaGroup').classList.remove('hidden');
   document.getElementById('modalAdminTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Administrador';
@@ -1068,9 +1184,17 @@ async function salvarAdmin() {
   if (!nome)  { showToast('Nome é obrigatório.', 'error'); return; }
   if (!email) { showToast('Email é obrigatório.', 'error'); return; }
 
+  const loggedId = parseInt(sessionStorage.getItem('idAdmin') || '0');
+
   try {
     if (idEdicao) {
-      const payload = { admin: { email, nomeLogin: nome, novaSenha: novaSenha || undefined } };
+      // Bloqueio de edição cruzada no frontend
+      if (loggedId && loggedId !== parseInt(idEdicao)) {
+        showToast('Você só pode editar seu próprio perfil.', 'error'); return;
+      }
+      const senhaAtual = document.getElementById('adminSenhaAtual').value;
+      if (!senhaAtual) { showToast('Informe sua senha atual para confirmar.', 'error'); return; }
+      const payload = { admin: { email, nomeLogin: nome, novaSenha: novaSenha || undefined, senhaAtual } };
       await apiFetch(`/admin/${idEdicao}`, 'PUT', payload);
       showToast('Administrador atualizado!', 'success');
     } else {
@@ -1121,7 +1245,7 @@ function exportarProdutos() {
 
 function exportarObras() {
   if (!cacheObras.length) { showToast('Nenhuma obra para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Descrição', 'Responsável', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Observações', 'Orientações'];
+  const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Observações', 'Orientações'];
   const fmtData    = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '';
   const linhas = cacheObras.map(o => {
     const cliente = cacheClientes.find(c => c.idCliente === o.codCliente);
@@ -1158,8 +1282,251 @@ function _dataHoje() {
 // ══════════════════════════════════════════════════
 
 function logout() {
-  sessionStorage.removeItem('token');
-  sessionStorage.removeItem('nomeLogin');
+  sessionStorage.clear();
   showToast('Sessão encerrada. Redirecionando...', 'info');
   setTimeout(() => { window.location.href = '/'; }, 1200);
+}
+
+
+// ══════════════════════════════════════════════════
+// NAVEGAÇÃO POR KPI
+// ══════════════════════════════════════════════════
+
+function navegarPara(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
+  const pageEl  = document.getElementById(`page-${page}`);
+  if (navItem) navItem.classList.add('active');
+  if (pageEl)  pageEl.classList.add('active');
+  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores' };
+  document.getElementById('breadcrumb').textContent = labels[page] || page;
+}
+
+
+// ══════════════════════════════════════════════════
+// SUB-TABS (Admins / Responsáveis)
+// ══════════════════════════════════════════════════
+
+function mudarSubtab(section, btn) {
+  const panel = btn.dataset.subtab;
+  document.querySelectorAll(`#page-${section} .subtab`).forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`#page-${section} .subtab-panel`).forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panel).classList.add('active');
+}
+
+
+// ══════════════════════════════════════════════════
+// TOGGLE SENHA — ADMIN MODAL
+// ══════════════════════════════════════════════════
+
+function toggleAdminSenha(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const icon  = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fa-regular fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fa-regular fa-eye';
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// FILTRO DE ADMINS
+// ══════════════════════════════════════════════════
+
+function filtrarAdmins(q) {
+  const lower = q.toLowerCase();
+  const tbody = document.getElementById('bodyAdmins');
+  cacheAdmins.forEach((a, i) => {
+    const row = tbody.rows[i];
+    if (!row) return;
+    const match = `${a.idLogin} ${a.nomeLogin} ${a.email}`.toLowerCase().includes(lower);
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+
+// ══════════════════════════════════════════════════
+// EXPORTAÇÃO ADMINS
+// ══════════════════════════════════════════════════
+
+function exportarAdmins() {
+  if (!cacheAdmins.length) { showToast('Nenhum administrador para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Nome', 'Email'];
+  const linhas = cacheAdmins.map(a => [a.idLogin, a.nomeLogin, a.email]);
+  _downloadXLSX(`admins_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Exportação concluída!', 'success');
+}
+
+
+// ══════════════════════════════════════════════════
+// RESPONSÁVEIS — GET/POST/PUT/DELETE /responsavel
+// ══════════════════════════════════════════════════
+
+let cacheResponsaveis = [];
+
+async function carregarResponsaveis() {
+  try {
+    const res = await apiFetch('/responsavel');
+    cacheResponsaveis = res.responsaveis || [];
+    renderTabelaResponsaveis(cacheResponsaveis);
+    popularSelectResponsaveis();
+  } catch (e) {
+    console.error('carregarResponsaveis:', e);
+  }
+}
+
+function popularSelectResponsaveis() {
+  const sel = document.getElementById('obraResp');
+  if (!sel) return;
+  const valorAtual = sel.value;
+  sel.innerHTML = '<option value="">Selecione o responsável...</option>';
+  cacheResponsaveis.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.nomeResponsavel;
+    opt.textContent = r.nomeResponsavel;
+    sel.appendChild(opt);
+  });
+  if (valorAtual) sel.value = valorAtual;
+}
+
+function renderTabelaResponsaveis(lista) {
+  const tbody = document.getElementById('bodyResponsaveis');
+  if (!tbody) return;
+  if (!lista.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty-row">Nenhum responsável cadastrado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(r => `
+    <tr>
+      <td>${r.idResponsavel}</td>
+      <td>${r.nomeResponsavel}</td>
+      <td class="actions">
+        <button class="btn-icon" title="Editar" onclick="abrirModalEditarResponsavel(${r.idResponsavel})">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn-icon danger" title="Excluir" onclick="confirmarExcluirResponsavel(${r.idResponsavel}, '${r.nomeResponsavel}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+function filtrarResponsaveis(q) {
+  const lower = q.toLowerCase();
+  const tbody = document.getElementById('bodyResponsaveis');
+  cacheResponsaveis.forEach((r, i) => {
+    const row = tbody.rows[i];
+    if (!row) return;
+    row.style.display = `${r.idResponsavel} ${r.nomeResponsavel}`.toLowerCase().includes(lower) ? '' : 'none';
+  });
+}
+
+function abrirModalNovoResponsavel() {
+  document.getElementById('respIdEdicao').value = '';
+  document.getElementById('respNome').value     = '';
+  document.getElementById('modalResponsavelTitle').innerHTML =
+    '<i class="fa-solid fa-id-badge"></i> Novo Responsável';
+  abrirModal('modalResponsavel');
+}
+
+function abrirModalEditarResponsavel(id) {
+  const r = cacheResponsaveis.find(x => x.idResponsavel == id);
+  if (!r) { showToast('Responsável não encontrado.', 'error'); return; }
+  document.getElementById('respIdEdicao').value = r.idResponsavel;
+  document.getElementById('respNome').value     = r.nomeResponsavel;
+  document.getElementById('modalResponsavelTitle').innerHTML =
+    '<i class="fa-solid fa-pen"></i> Editar Responsável';
+  abrirModal('modalResponsavel');
+}
+
+async function salvarResponsavel() {
+  const idEdicao = document.getElementById('respIdEdicao').value;
+  const nome     = document.getElementById('respNome').value.trim();
+  if (!nome) { showToast('Nome é obrigatório.', 'error'); return; }
+
+  try {
+    if (idEdicao) {
+      await apiFetch(`/responsavel/${idEdicao}`, 'PUT', { nomeResponsavel: nome });
+      showToast('Responsável atualizado!', 'success');
+    } else {
+      await apiFetch('/responsavel', 'POST', { nomeResponsavel: nome });
+      showToast(`Responsável "${nome}" criado!`, 'success');
+    }
+    fecharModal('modalResponsavel');
+    await carregarResponsaveis();
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+function confirmarExcluirResponsavel(id, nome) {
+  document.getElementById('confirmarMsg').textContent = `Tem certeza que deseja excluir "${nome}"?`;
+  document.getElementById('btnConfirmarExcluir').onclick = () => excluirResponsavel(id);
+  abrirModal('modalConfirmar');
+}
+
+async function excluirResponsavel(id) {
+  fecharModal('modalConfirmar');
+  try {
+    await apiFetch(`/responsavel/${id}`, 'DELETE');
+    showToast('Responsável excluído.', 'success');
+    await carregarResponsaveis();
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// EDITAR PRODUTO DA OBRA (modal)
+// ══════════════════════════════════════════════════
+
+function abrirModalEditarProdObra(idObra, idProduto, nomeProduto, qtdAtual) {
+  document.getElementById('editProdObraIdObra').value    = idObra;
+  document.getElementById('editProdObraIdProduto').value = idProduto;
+  document.getElementById('editProdObraNome').textContent = nomeProduto;
+  document.getElementById('editProdObraQtd').value        = qtdAtual;
+  abrirModal('modalEditarProdObra');
+}
+
+async function confirmarEditarProdObra() {
+  const idObra    = document.getElementById('editProdObraIdObra').value;
+  const idProduto = document.getElementById('editProdObraIdProduto').value;
+  const qtd       = parseInt(document.getElementById('editProdObraQtd').value);
+  if (!qtd || qtd < 1) { showToast('Informe uma quantidade válida.', 'error'); return; }
+  try {
+    await apiFetch(`/obra/${idObra}/produto/${idProduto}`, 'PATCH', { quantidade: qtd });
+    fecharModal('modalEditarProdObra');
+    showToast('Quantidade atualizada!', 'success');
+    await Promise.all([carregarObras(), carregarProdutos()]);
+    // Re-abre o modal de ver produtos com dados atualizados
+    verProdutosObra(parseInt(idObra));
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// RELATÓRIO DE CONSUMO
+// ══════════════════════════════════════════════════
+
+async function gerarRelatorio() {
+  try {
+    const res  = await apiFetch('/relatorio/produtos-consumidos');
+    const data = res.dados || [];
+    if (!data.length) { showToast('Nenhum dado de consumo registrado.', 'warning'); return; }
+
+    const cabecalhos = ['ID', 'Produto', 'Total Consumido', 'Estoque Atual', 'Qtd. Mínima'];
+    const linhas = data.map(d => [d.idProduto, d.nomeProduto, d.totalConsumido, d.estoqueAtual, d.qtdMinima]);
+    _downloadXLSX(`relatorio_consumo_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+    showToast('Relatório exportado com sucesso!', 'success');
+  } catch (e) {
+    showToast(`Erro ao gerar relatório: ${e.message}`, 'error');
+  }
 }

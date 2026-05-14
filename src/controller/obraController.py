@@ -149,3 +149,10 @@ class ObraController:
 
     def buscar_produtos_da_obra(self, idObra: int) -> list:
         return self.daoProdObras.buscar_produtos_da_obra(idObra)
+
+    def atualizar_produto_obra(self, idObra: int, idProduto: int, nova_qtd: int) -> tuple:
+        if not self.dao.buscar_por_id(idObra):
+            return False, "Obra não encontrada."
+        if nova_qtd < 1:
+            return False, "Quantidade deve ser maior que zero."
+        return self.daoProdObras.atualizar_quantidade_produto_obra(idObra, idProduto, nova_qtd)

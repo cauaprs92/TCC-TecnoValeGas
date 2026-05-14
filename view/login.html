@@ -3,219 +3,322 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TecnovaleGAS — Login</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <title>TecnoVale Gás — Login</title>
+  <link rel="icon" href="/images/tecnovale.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,700;1,800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --orange: #F97316;
+      --orange:      #F97316;
       --orange-dark: #EA580C;
-      --dark: #0F172A;
-      --dark-2: #1E293B;
-      --dark-3: #334155;
-      --gray-400: #94A3B8;
-      --gray-500: #64748B;
-      --white: #FFFFFF;
-      --radius: 14px;
     }
 
     body {
-      font-family: 'Barlow', sans-serif;
-      background: var(--dark);
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── Painel esquerdo ── */
+    .panel-left {
+      flex: 1;
+      background: linear-gradient(138
+      deg, #0F172A 0%, #0F172A 75%, #7c2d12 90%, #C2410C 100%);
+      display: flex;
+      flex-direction: column;
+      padding: 44px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .brand-logo img { height: 140px; width: auto; }
+
+    .panel-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 40px;
+      z-index: 1;
+    }
+
+    .panel-content {
+      z-index: 1;
+      text-align: left;
+    }
+
+    .panel-content h1 {
+      font-size: clamp(54px, 6.5vw, 84px);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.0;
+      margin-bottom: 22px;
+      font-style: italic;
+    }
+
+    .panel-content p {
+      font-size: 17px;
+      font-style: italic;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.75;
+      max-width: 400px;
+    }
+
+    .panel-content p strong {
+      color: var(--orange);
+      font-style: italic;
+      font-weight: 600;
+    }
+
+    .panel-footer {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 1;
+    }
+
+    .shield-icon {
+      width: 42px; height: 42px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      color: rgba(255,255,255,0.55);
+      font-size: 18px;
+    }
+
+    .panel-footer p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.55;
+    }
+
+    /* ── Painel direito ── */
+    .panel-right {
+      flex: 1;
+      background: #F1F5F9;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 40px 24px;
     }
 
     .login-card {
-      background: var(--dark-2);
-      border: 1px solid var(--dark-3);
-      border-radius: var(--radius);
-      padding: 48px 40px;
+      background: #fff;
+      border-radius: 20px;
+      padding: 48px 44px;
       width: 100%;
-      max-width: 420px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+      max-width: 448px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.09);
     }
 
-    .login-logo {
+    .card-logo {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 36px;
+      margin-bottom: 38px;
     }
 
-    .login-logo .logo-icon {
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      background: var(--orange);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; color: var(--white);
+    .card-logo img { height: 56px; width: auto; }
+
+    .card-logo-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
-    .login-logo .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
-    .login-logo .logo-main { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; color: var(--white); }
-    .login-logo .logo-accent { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 800; color: var(--orange); }
+    .form-group { margin-bottom: 22px; }
 
-    h1 { font-size: 22px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
-    .subtitle { font-size: 14px; color: var(--gray-400); margin-bottom: 32px; }
-
-    .form-group { margin-bottom: 20px; }
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
 
     label {
-      display: block;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      color: var(--gray-400);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: .05em;
+      color: #0F172A;
     }
+
+    .forgot-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--orange);
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .forgot-link:hover { opacity: .75; }
 
     .input-wrap { position: relative; }
-
-    .input-wrap i.icon-left {
-      position: absolute;
-      left: 14px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--gray-500);
-      font-size: 15px;
-    }
 
     input[type="email"],
     input[type="password"],
     input[type="text"] {
       width: 100%;
-      background: var(--dark);
-      border: 1.5px solid var(--dark-3);
+      border: 1.5px solid #E2E8F0;
       border-radius: 10px;
-      padding: 12px 44px;
-      font-size: 15px;
-      color: var(--white);
-      font-family: 'Barlow', sans-serif;
+      padding: 13px 16px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: #0F172A;
       outline: none;
-      transition: border-color .2s;
+      transition: border-color .2s, box-shadow .2s;
+      background: #fff;
     }
 
-    input:focus { border-color: var(--orange); }
-    input::placeholder { color: var(--gray-500); }
+    input[type="password"],
+    input[type="text"].pwd-input {
+      padding-right: 48px;
+    }
+
+    input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.13);
+    }
+
+    input::placeholder { color: #94A3B8; }
 
     .btn-toggle-senha {
       position: absolute;
-      right: 12px; top: 50%;
+      right: 14px; top: 50%;
       transform: translateY(-50%);
       background: none; border: none;
-      color: var(--gray-500); cursor: pointer;
-      font-size: 15px;
-      padding: 4px;
+      color: #94A3B8; cursor: pointer;
+      font-size: 16px; padding: 4px;
+      line-height: 1;
+      transition: color .15s;
     }
     .btn-toggle-senha:hover { color: var(--orange); }
 
     .btn-login {
       width: 100%;
       background: var(--orange);
-      color: var(--white);
+      color: #fff;
       border: none;
       border-radius: 10px;
-      padding: 14px;
+      padding: 15px;
+      font-family: 'Inter', sans-serif;
       font-size: 15px;
       font-weight: 700;
-      font-family: 'Barlow', sans-serif;
       cursor: pointer;
-      margin-top: 8px;
-      transition: background .2s, transform .1s;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 6px;
+      transition: background .2s, transform .1s, box-shadow .2s;
+      letter-spacing: .2px;
     }
-    .btn-login:hover  { background: var(--orange-dark); }
+    .btn-login:hover  { background: var(--orange-dark); box-shadow: 0 4px 18px rgba(249,115,22,0.38); }
     .btn-login:active { transform: scale(.98); }
     .btn-login:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 
     .error-msg {
       display: none;
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.35);
-      border-radius: 8px;
-      padding: 12px 16px;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 9px;
+      padding: 11px 14px;
       font-size: 13px;
-      color: #FCA5A5;
+      color: #DC2626;
       margin-bottom: 20px;
       align-items: center;
       gap: 8px;
     }
     .error-msg.visible { display: flex; }
+
+    @media (max-width: 768px) {
+      .panel-left { display: none; }
+      body { background: #F1F5F9; justify-content: center; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="login-card">
+  <!-- ── Lado Esquerdo ── -->
+  <div class="panel-left">
+    <div class="brand-logo">
+      <img src="/images/Logo%20nova.png" alt="TecnoVale Gás" />
+    </div>
 
-    <div class="login-logo">
-      <div class="logo-icon"><i class="fa-solid fa-helmet-safety"></i></div>
-      <div class="logo-text">
-        <span class="logo-main">Tecno</span>
-        <span class="logo-accent">ValeGAS</span>
+    <div class="panel-center">
+      <div class="panel-content">
+        <h1>Bem-vindo</h1>
+        <p>
+          Há quase 15 anos levando eficiência e confiança ao setor de
+          <strong>distribuição de gás.</strong>
+        </p>
+      </div>
+
+      <div class="panel-footer">
+        <div class="shield-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <p>Compromisso, qualidade e excelência que movem nossa história todos os dias.</p>
       </div>
     </div>
+  </div>
 
-    <h1>Bem-vindo de volta</h1>
-    <p class="subtitle">Faça login para acessar o sistema de estoque</p>
+  <!-- ── Lado Direito ── -->
+  <div class="panel-right">
+    <div class="login-card">
 
-    <div class="error-msg" id="errorMsg">
-      <i class="fa-solid fa-circle-xmark"></i>
-      <span id="errorText">Email ou senha incorretos.</span>
-    </div>
+      <div class="card-logo">
+        <img src="/images/tecnovale-removebg-preview.png" alt="TecnoVale Gás" />
+      </div>
 
-    <div class="form-group">
-      <label for="email">E-mail</label>
-      <div class="input-wrap">
-        <i class="fa-solid fa-envelope icon-left"></i>
+      <div class="error-msg" id="errorMsg">
+        <i class="fa-solid fa-circle-xmark"></i>
+        <span id="errorText">Email ou senha incorretos.</span>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label-row">
+          <label for="email">Email</label>
+        </div>
         <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" />
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="senha">Senha</label>
-      <div class="input-wrap">
-        <i class="fa-solid fa-lock icon-left"></i>
-        <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password" />
-        <button class="btn-toggle-senha" type="button" onclick="toggleSenha()" id="btnToggleSenha">
-          <i class="fa-solid fa-eye" id="iconSenha"></i>
-        </button>
+      <div class="form-group">
+        <div class="form-label-row">
+          <label for="senha">Password</label>
+          <a href="#" class="forgot-link" onclick="return false;">Esqueceu a senha?</a>
+        </div>
+        <div class="input-wrap">
+          <input type="password" id="senha" class="pwd-input" placeholder="Digite sua senha" autocomplete="current-password" />
+          <button class="btn-toggle-senha" type="button" onclick="toggleSenha()" id="btnToggle">
+            <i class="fa-regular fa-eye" id="iconSenha"></i>
+          </button>
+        </div>
       </div>
+
+      <button class="btn-login" id="btnLogin" onclick="fazerLogin()">Entrar</button>
+
     </div>
-
-    <button class="btn-login" id="btnLogin" onclick="fazerLogin()">
-      <i class="fa-solid fa-right-to-bracket"></i>
-      Entrar
-    </button>
-
   </div>
 
   <script>
     const API_BASE = 'http://localhost:5000';
 
-    // Se já está logado, redireciona direto para o dashboard
-    if (sessionStorage.getItem('token')) {
-      window.location.href = '/dashboard';
-    }
+    if (sessionStorage.getItem('token')) window.location.href = '/dashboard';
 
-    // Enter dispara o login
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter') fazerLogin();
-    });
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
 
     function toggleSenha() {
       const input = document.getElementById('senha');
       const icon  = document.getElementById('iconSenha');
       if (input.type === 'password') {
         input.type = 'text';
-        icon.className = 'fa-solid fa-eye-slash';
+        icon.className = 'fa-regular fa-eye-slash';
       } else {
         input.type = 'password';
-        icon.className = 'fa-solid fa-eye';
+        icon.className = 'fa-regular fa-eye';
       }
     }
 
@@ -224,30 +327,24 @@
       document.getElementById('errorMsg').classList.add('visible');
     }
 
-    function ocultarErro() {
-      document.getElementById('errorMsg').classList.remove('visible');
-    }
-
     async function fazerLogin() {
       const email = document.getElementById('email').value.trim();
       const senha = document.getElementById('senha').value.trim();
       const btn   = document.getElementById('btnLogin');
 
-      ocultarErro();
-
+      document.getElementById('errorMsg').classList.remove('visible');
       if (!email) { mostrarErro('Informe o e-mail.'); return; }
-      if (!senha)  { mostrarErro('Informe a senha.'); return; }
+      if (!senha) { mostrarErro('Informe a senha.'); return; }
 
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+      btn.disabled    = true;
+      btn.textContent = 'Entrando...';
 
       try {
-        const res = await fetch(`${API_BASE}/login`, {
-          method: 'POST',
+        const res  = await fetch(`${API_BASE}/login`, {
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, senha }),
+          body:    JSON.stringify({ email, senha }),
         });
-
         const data = await res.json();
 
         if (!res.ok || !data.status) {
@@ -255,19 +352,16 @@
           return;
         }
 
-        // Salva token e nome do usuário
-        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('token',     data.token);
         sessionStorage.setItem('nomeLogin', data.nomeLogin || 'Administrador');
-
-        // Redireciona para o dashboard
+        sessionStorage.setItem('idAdmin',   data.idAdmin   || '');
         window.location.href = '/dashboard';
 
-      } catch (err) {
+      } catch {
         mostrarErro('Não foi possível conectar ao servidor. Verifique se a API está rodando.');
-        console.error('Login error:', err);
       } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Entrar';
+        btn.disabled    = false;
+        btn.textContent = 'Entrar';
       }
     }
   </script>

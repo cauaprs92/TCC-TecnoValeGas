@@ -14,21 +14,21 @@ class LoginController:
         cursor = conexao.cursor()
         try:
             cursor.execute(
-                "SELECT nomeLogin, senha FROM login WHERE email = %s",
+                "SELECT idLogin, nomeLogin, senha FROM login WHERE email = %s",
                 (email.strip(),)
             )
             resultado = cursor.fetchone()
             if not resultado:
                 return False, "Email ou senha incorretos."
 
-            nome_login, hash_salvo = resultado
+            id_login, nome_login, hash_salvo = resultado
             senha_bytes = senha.strip().encode("utf-8")
             hash_bytes  = hash_salvo.encode("utf-8") if isinstance(hash_salvo, str) else hash_salvo
 
             if not bcrypt.checkpw(senha_bytes, hash_bytes):
                 return False, "Email ou senha incorretos."
 
-            return True, nome_login
+            return True, (id_login, nome_login)
         except Exception as e:
             return False, f"Erro ao autenticar: {e}"
         finally:

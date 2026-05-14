@@ -1,7 +1,7 @@
 import jwt
 import time
 import secrets
-from flask import request, jsonify
+from flask import request, jsonify, g
 from functools import wraps
 
 
@@ -64,6 +64,8 @@ class JwtMiddleware:
             jwt_instance = MeuTokenJWT()
 
             if jwt_instance.validar_token(authorization):
+                g.jwt_payload = jwt_instance.payload or {}
+                g.admin_id    = g.jwt_payload.get("idAdmin")
                 return f(*args, **kwargs)
             else:
                 return jsonify({"status": False, "msg": "token inválido"}), 401

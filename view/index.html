@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ConstroEstoque — Gestão de Obras</title>
+  <title>TecnoVale Gás — Gestão de Estoque</title>
+  <link rel="icon" href="/images/tecnovale-removebg-preview.png" type="image/png" />
   <link rel="stylesheet" href="index.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
@@ -13,10 +14,7 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon"><i class="fa-solid fa-helmet-safety"></i></div>
-      <div class="logo-text">
-        <span class="logo-main">Tecno</span><span class="logo-accent">ValeGAS</span>
-      </div>
+      <img src="/images/logo%20nova2.png" alt="TecnoVale Gás" class="sidebar-logo-img" />
     </div>
 
     <nav class="sidebar-nav">
@@ -64,10 +62,6 @@
         <div class="breadcrumb" id="breadcrumb">Dashboard</div>
       </div>
       <div class="topbar-right">
-        <div class="search-box">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" placeholder="Buscar..." id="globalSearch" />
-        </div>
         <button class="btn-notif" id="btnNotif">
           <i class="fa-solid fa-bell"></i>
           <!-- Contador de alertas críticos — preenchido por renderNotificacoes() -->
@@ -88,32 +82,35 @@
         <div class="page-header">
           <h1>Dashboard</h1>
           <span class="page-subtitle">Visão geral do sistema</span>
+          <button class="btn btn-secondary" style="margin-left:auto" onclick="gerarRelatorio()">
+            <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
+          </button>
         </div>
 
-        <!-- KPIs — preenchidos por renderKPIs() -->
+        <!-- KPIs — clicáveis, navegam para a seção correspondente -->
         <div class="kpi-grid">
-          <div class="kpi-card">
+          <div class="kpi-card kpi-nav" onclick="navegarPara('estoque')" title="Ir para Estoque">
             <div class="kpi-icon orange"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-produtos">—</span>
               <span class="kpi-label">Produtos Cadastrados</span>
             </div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card kpi-nav" onclick="navegarPara('obras')" title="Ir para Obras">
             <div class="kpi-icon dark"><i class="fa-solid fa-hard-hat"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-obras">—</span>
               <span class="kpi-label">Obras Ativas</span>
             </div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card kpi-nav" onclick="navegarPara('clientes')" title="Ir para Clientes">
             <div class="kpi-icon orange"><i class="fa-solid fa-users"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-clientes">—</span>
               <span class="kpi-label">Clientes</span>
             </div>
           </div>
-          <div class="kpi-card kpi-alert">
+          <div class="kpi-card kpi-alert kpi-nav" onclick="navegarPara('estoque')" title="Ver alertas no Estoque">
             <div class="kpi-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-alertas">—</span>
@@ -143,13 +140,13 @@
             </div>
           </div>
 
-          <!-- Gráfico de barras — preenchido por renderGraficoEstoque() -->
+          <!-- Gráfico Chart.js — preenchido por renderGraficoObras() -->
           <div class="card card-full">
             <div class="card-header">
-              <h2><i class="fa-solid fa-chart-bar"></i> Produtos com Menor Estoque</h2>
+              <h2><i class="fa-solid fa-chart-bar"></i> Produtos Utilizados por Obra</h2>
             </div>
-            <div class="bar-chart-container" id="barChart">
-              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+            <div class="chart-container">
+              <canvas id="obraChartCanvas"></canvas>
             </div>
           </div>
         </div>
@@ -164,7 +161,7 @@
         <div class="toolbar">
           <div class="search-inline">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Buscar produto..." id="searchProduto"
+            <input type="text" placeholder="Buscar por nome, ID ou descrição..." id="searchProduto"
               oninput="filtrarProdutos(this.value)" />
           </div>
           <button class="btn btn-secondary" onclick="exportarProdutos()">
@@ -174,6 +171,10 @@
             <i class="fa-solid fa-plus"></i> Novo Produto
           </button>
         </div>
+        <!-- FAB: atalho de cadastro rápido -->
+        <button class="btn-fab" onclick="abrirModalNovoProduto()" title="Cadastrar produto">
+          <i class="fa-solid fa-plus"></i>
+        </button>
         <div class="card">
           <table class="data-table" id="tabelaProdutos">
             <thead>
@@ -199,21 +200,43 @@
           <h1>Obras / Projetos</h1>
           <span class="page-subtitle">Controle de obras e materiais utilizados</span>
         </div>
-        <div class="toolbar">
-          <div class="search-inline">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Buscar obra..." id="searchObra"
-              oninput="filtrarObras(this.value)" />
+
+        <!-- Filtros -->
+        <div class="card obras-filtros-card">
+          <div class="obras-filtros">
+            <div class="filtro-group">
+              <label class="filtro-label">Tipo de Obra</label>
+              <input type="text" class="filtro-input" id="obraFiltroTipo"
+                placeholder="Ex: Instalação..." oninput="filtrarObras()" />
+            </div>
+            <div class="filtro-group">
+              <label class="filtro-label">Período</label>
+              <div class="filtro-periodo">
+                <input type="date" id="obraFiltroDe" onchange="filtrarObras()" />
+                <span class="filtro-sep">até</span>
+                <input type="date" id="obraFiltroAte" onchange="filtrarObras()" />
+              </div>
+            </div>
+            <div class="filtro-group">
+              <label class="filtro-label">Status</label>
+              <select class="filtro-input" id="obraFiltroStatus" onchange="filtrarObras()">
+                <option value="">- Todos -</option>
+                <option value="Em andamento">Em andamento</option>
+                <option value="Pausada">Pausada</option>
+                <option value="Concluida">Concluída</option>
+                <option value="Cancelada">Cancelada</option>
+              </select>
+            </div>
+            <div class="filtro-group filtro-actions">
+              <button class="btn btn-primary" onclick="filtrarObras()">
+                <i class="fa-solid fa-magnifying-glass"></i> Localizar
+              </button>
+            </div>
           </div>
-          <div class="toolbar-filters">
-            <select class="select-filter" onchange="filtrarStatusObra(this.value)">
-              <option value="">Todos os status</option>
-              <option value="Em andamento">Em andamento</option>
-              <option value="Pausada">Pausada</option>
-              <option value="Concluida">Concluída</option>
-              <option value="Cancelada">Cancelada</option>
-            </select>
-          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top:0">
+          <div style="flex:1"></div>
           <button class="btn btn-secondary" onclick="exportarObras()">
             <i class="fa-solid fa-file-excel"></i> Exportar Excel
           </button>
@@ -221,17 +244,21 @@
             <i class="fa-solid fa-plus"></i> Nova Obra
           </button>
         </div>
+
         <div class="card">
           <table class="data-table" id="tabelaObras">
             <thead>
               <tr>
-                <th>ID</th><th>Descrição</th><th>Responsável</th>
-                <th>Cliente</th><th>Início</th><th>Fim</th><th>Status</th><th>Ações</th>
+                <th style="width:54px">Id</th>
+                <th style="width:80px">Código</th>
+                <th>Obra</th>
+                <th style="width:96px">Início</th>
+                <th style="width:120px">Status</th>
+                <th style="width:90px">Ações</th>
               </tr>
             </thead>
-            <!-- Linhas injetadas por renderTabelaObras(obras) -->
             <tbody id="bodyObras">
-              <tr><td colspan="8" class="loading-cell">
+              <tr><td colspan="6" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando obras...
               </td></tr>
             </tbody>
@@ -284,29 +311,70 @@
           <h1>Administradores</h1>
           <span class="page-subtitle">Gerencie os usuários do sistema</span>
         </div>
-        <div class="toolbar">
-          <div class="search-inline">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Buscar administrador..." id="searchAdmin"
-              oninput="filtrarTabela('tabelaAdmins', this.value)" />
-          </div>
-          <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
-            <i class="fa-solid fa-plus"></i> Novo Administrador
+
+        <!-- Sub-tabs -->
+        <div class="subtabs">
+          <button class="subtab active" data-subtab="admins-list" onclick="mudarSubtab('admins', this)">
+            <i class="fa-solid fa-user-shield"></i> Administradores
+          </button>
+          <button class="subtab" data-subtab="responsaveis-list" onclick="mudarSubtab('admins', this)">
+            <i class="fa-solid fa-id-badge"></i> Responsáveis
           </button>
         </div>
-        <div class="card">
-          <table class="data-table" id="tabelaAdmins">
-            <thead>
-              <tr>
-                <th>ID</th><th>Nome</th><th>Email</th><th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="bodyAdmins">
-              <tr><td colspan="4" class="loading-cell">
-                <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
-              </td></tr>
-            </tbody>
-          </table>
+
+        <!-- Painel: Administradores -->
+        <div class="subtab-panel active" id="admins-list">
+          <div class="toolbar">
+            <div class="search-inline">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" placeholder="Buscar administrador..." id="searchAdmin"
+                oninput="filtrarAdmins(this.value)" />
+            </div>
+            <button class="btn btn-secondary" onclick="exportarAdmins()">
+              <i class="fa-solid fa-file-excel"></i> Exportar Excel
+            </button>
+            <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
+              <i class="fa-solid fa-plus"></i> Novo Administrador
+            </button>
+          </div>
+          <div class="card">
+            <table class="data-table" id="tabelaAdmins">
+              <thead>
+                <tr><th>ID</th><th>Nome</th><th>Email</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="bodyAdmins">
+                <tr><td colspan="4" class="loading-cell">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Painel: Responsáveis -->
+        <div class="subtab-panel" id="responsaveis-list">
+          <div class="toolbar">
+            <div class="search-inline">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" placeholder="Buscar responsável..." id="searchResp"
+                oninput="filtrarResponsaveis(this.value)" />
+            </div>
+            <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()">
+              <i class="fa-solid fa-plus"></i> Novo Responsável
+            </button>
+          </div>
+          <div class="card">
+            <table class="data-table" id="tabelaResponsaveis">
+              <thead>
+                <tr><th>ID</th><th>Nome</th><th>Ações</th></tr>
+              </thead>
+              <tbody id="bodyResponsaveis">
+                <tr><td colspan="3" class="loading-cell">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -369,25 +437,48 @@
       <div class="modal-body">
         <input type="hidden" id="obraIdEdicao" />
 
-        <!-- Status — sempre visível -->
-        <div class="form-group">
-          <label>Status</label>
-          <select id="obraStatus">
-            <option value="Em andamento">Em andamento</option>
-            <option value="Pausada">Pausada</option>
-            <option value="Concluida">Concluída</option>
-            <option value="Cancelada">Cancelada</option>
-          </select>
+        <!-- ── Identificação ── -->
+        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+          <div class="form-group">
+            <label>Id</label>
+            <input type="text" id="obraIdDisplay" disabled placeholder="Auto" />
+          </div>
+          <div class="form-group">
+            <label>Código (Cliente)</label>
+            <input type="number" id="obraCodCliente" placeholder="001" min="1"
+              oninput="buscarClienteObra(this)" />
+          </div>
+          <div class="form-group">
+            <label>Unidade</label>
+            <select id="obraUnidade">
+              <option value="">- Selecione -</option>
+              <option value="Mauá">Mauá</option>
+              <option value="SJC">SJC</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row" style="grid-template-columns:1fr 1fr">
+          <div class="form-group">
+            <label>Tipo de Obra</label>
+            <input type="text" id="obraTipo" placeholder="Ex: Instalação, Manutenção..." />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="obraStatus">
+              <option value="Em andamento">Em andamento</option>
+              <option value="Pausada">Pausada</option>
+              <option value="Concluida">Concluída</option>
+              <option value="Cancelada">Cancelada</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-row" style="grid-template-columns:2fr 1fr 1fr">
           <div class="form-group">
-            <label>Responsável</label>
+            <label>Field</label>
             <select id="obraResp">
-              <option value="">Selecione o responsável...</option>
-              <option value="Mateus">Mateus</option>
-              <option value="Cauã">Cauã</option>
-              <option value="João">João</option>
+              <option value="">Selecione o field...</option>
             </select>
           </div>
           <div class="form-group">
@@ -400,70 +491,111 @@
           </div>
         </div>
 
+        <!-- ── Cliente ── -->
         <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
 
-        <div class="form-row">
-          <div class="form-group" style="flex:0 0 130px">
-            <label>ID do Cliente</label>
-            <input type="number" id="obraCodCliente" placeholder="001" min="1"
-              oninput="buscarClienteObra(this)" />
-          </div>
-          <div class="form-group" style="flex:1">
-            <label>Nome</label>
-            <input type="text" id="obraClienteNome" readonly
-              placeholder="Preenchido automaticamente" />
-          </div>
-        </div>
         <div class="form-group">
-          <label>Endereço</label>
-          <input type="text" id="obraClienteEndereco" readonly
-            placeholder="Preenchido automaticamente" />
+          <label>CNPJ / CPF</label>
+          <input type="text" id="obraClienteCNPJ" placeholder="00.000.000/0000-00" />
         </div>
 
-        <div class="form-section-title"><i class="fa-solid fa-align-left"></i> Descrição</div>
         <div class="form-group">
+          <label>Cliente (Nome)</label>
+          <input type="text" id="obraClienteNome" placeholder="Nome do cliente" />
+        </div>
+
+        <div class="form-row" style="grid-template-columns:3fr 1fr">
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" id="obraClienteRua" placeholder="Rua / Av." />
+          </div>
+          <div class="form-group">
+            <label>Número</label>
+            <input type="text" id="obraClienteNumero" placeholder="123" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Complemento</label>
+            <input type="text" id="obraClienteComplemento" placeholder="Apto, Sala..." />
+          </div>
+          <div class="form-group">
+            <label>Bairro</label>
+            <input type="text" id="obraClienteBairro" placeholder="Bairro" />
+          </div>
+        </div>
+
+        <div class="form-row" style="grid-template-columns:1fr 2fr 1fr">
+          <div class="form-group">
+            <label>CEP</label>
+            <input type="text" id="obraClienteCEP" placeholder="00000-000" />
+          </div>
+          <div class="form-group">
+            <label>Cidade</label>
+            <input type="text" id="obraClienteCidade" placeholder="São Paulo" />
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <input type="text" id="obraClienteEstado" placeholder="SP" maxlength="2" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Contato (Nome)</label>
+          <input type="text" id="obraContato" placeholder="Nome do contato" />
+        </div>
+
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="obraEmail" placeholder="contato@empresa.com" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone / Celular 1</label>
+            <input type="text" id="obraCelular1" placeholder="(11) 99999-9999" />
+          </div>
+          <div class="form-group">
+            <label>Telefone / Celular 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <input type="text" id="obraCelular2" placeholder="(11) 99999-9999" />
+          </div>
+        </div>
+
+        <!-- ── Descrição / Obs / Orientação ── -->
+        <div class="form-section-title"><i class="fa-solid fa-align-left"></i> Dados da Obra</div>
+
+        <div class="form-group">
+          <label>Descrição</label>
           <textarea id="obraDesc" rows="3"
-            placeholder="Ex: Instalação de gás residencial no Condomínio Alfa, bloco B..."></textarea>
+            placeholder="Descreva o serviço a ser realizado..."></textarea>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Observações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <textarea id="obraObs" rows="2"
-              placeholder="Ex: Acesso somente pela entrada lateral..."></textarea>
-          </div>
-          <div class="form-group">
-            <label>Orientações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <textarea id="obraOrientacao" rows="2"
-              placeholder="Ex: Uso de EPI obrigatório..."></textarea>
-          </div>
+        <div class="form-group">
+          <label>Orientação <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+          <textarea id="obraOrientacao" rows="2"
+            placeholder="Ex: Uso de EPI obrigatório..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Observações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+          <textarea id="obraObs" rows="2"
+            placeholder="Ex: Acesso somente pela entrada lateral..."></textarea>
         </div>
 
         <!-- Produtos — visível apenas no modo criação -->
         <div id="obraSecaoProdutos">
           <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
-          <div id="produtosObraList">
-            <div class="produto-obra-row">
-              <input type="number" placeholder="ID" class="prod-id-input" min="1"
-                oninput="buscarProdutoObra(this)" />
-              <input type="text" placeholder="Nome do produto" class="prod-nome-input" readonly />
-              <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
-              <input type="number" placeholder="Qtd. a usar" class="prod-qtd-input" min="1" />
-              <button class="btn-icon danger" onclick="removerProdutoObra(this)">
-                <i class="fa-solid fa-minus"></i>
-              </button>
-            </div>
-          </div>
+          <div id="produtosObraList"></div>
           <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
             <i class="fa-solid fa-plus"></i> Adicionar Produto
           </button>
-        </div><!-- #obraSecaoProdutos -->
+        </div>
 
         <!-- Produtos somente leitura + adição — visível apenas no modo edição -->
         <div id="obraSecaoProdutosVer" class="hidden">
           <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
           <div id="obraProdutosVerList"></div>
-
           <div class="form-section-title" style="margin-top:14px">
             <i class="fa-solid fa-plus"></i> Adicionar Produtos
           </div>
@@ -597,12 +729,32 @@
 
         <div class="form-group" id="adminSenhaGroup">
           <label>Senha</label>
-          <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
+          <div class="input-pwd-wrap">
+            <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
+            <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminSenha', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group hidden" id="adminSenhaAtualGroup">
+          <label>Senha Atual <span style="font-weight:400;opacity:.6">(obrigatória para alterar dados)</span></label>
+          <div class="input-pwd-wrap">
+            <input type="password" id="adminSenhaAtual" placeholder="Confirme sua senha atual" />
+            <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminSenhaAtual', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
         </div>
 
         <div class="form-group hidden" id="adminNovaSenhaGroup">
           <label>Nova Senha <span style="font-weight:400;opacity:.6">(deixe em branco para manter)</span></label>
-          <input type="password" id="adminNovaSenha" placeholder="Mínimo 6 caracteres" />
+          <div class="input-pwd-wrap">
+            <input type="password" id="adminNovaSenha" placeholder="Mínimo 6 caracteres" />
+            <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminNovaSenha', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -634,7 +786,56 @@
     </div>
   </div>
 
+  <!-- ===== MODAL: RESPONSÁVEL ===== -->
+  <div class="modal-overlay hidden" id="modalResponsavel">
+    <div class="modal modal-small">
+      <div class="modal-header">
+        <h2 id="modalResponsavelTitle"><i class="fa-solid fa-id-badge"></i> Novo Responsável</h2>
+        <button class="modal-close" onclick="fecharModal('modalResponsavel')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="respIdEdicao" />
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" id="respNome" placeholder="Ex: Carlos Silva" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalResponsavel')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarResponsavel()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: EDITAR PRODUTO DA OBRA ===== -->
+  <div class="modal-overlay hidden" id="modalEditarProdObra">
+    <div class="modal modal-small">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-pen"></i> Editar Quantidade</h2>
+        <button class="modal-close" onclick="fecharModal('modalEditarProdObra')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editProdObraIdObra" />
+        <input type="hidden" id="editProdObraIdProduto" />
+        <p id="editProdObraNome" style="font-weight:600;margin-bottom:14px;color:var(--dark)"></p>
+        <div class="form-group">
+          <label>Nova Quantidade</label>
+          <input type="number" id="editProdObraQtd" min="1" placeholder="Ex: 5" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="fecharModal('modalEditarProdObra')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarEditarProdObra()">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container" id="toastContainer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
   <script src="index.js"></script>
 </body>

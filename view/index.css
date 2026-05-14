@@ -23,8 +23,8 @@
   --shadow-sm:     0 1px 3px rgba(0,0,0,.08);
   --shadow-md:     0 4px 16px rgba(0,0,0,.12);
   --shadow-lg:     0 12px 40px rgba(0,0,0,.2);
-  --font:          'Barlow', sans-serif;
-  --font-cond:     'Barlow Condensed', sans-serif;
+  --font:          'Inter', sans-serif;
+  --font-cond:     'Inter', sans-serif;
   --transition:    .18s ease;
 }
 
@@ -76,8 +76,9 @@ body {
   box-shadow: 0 2px 8px rgba(232,82,10,.4);
 }
 .logo-text { display: flex; align-items: baseline; gap: 1px; }
-.logo-main  { font-family: var(--font-cond); font-size: 18px; font-weight: 700; color: #fff; letter-spacing: .5px; }
-.logo-accent{ font-family: var(--font-cond); font-size: 18px; font-weight: 700; color: var(--orange); letter-spacing: .5px; }
+.sidebar-logo-img { width: 60px; height: 60px; object-fit: contain; flex-shrink: 0; }
+.logo-main  { font-family: var(--font-cond); font-size: 15px; font-weight: 800; color: #fff; letter-spacing: .5px; }
+.logo-accent{ font-family: var(--font-cond); font-size: 15px; font-weight: 800; color: var(--orange); letter-spacing: .5px; }
 
 .sidebar-nav {
   flex: 1; padding: 14px 10px;
@@ -372,12 +373,15 @@ body {
 .form-section-title { font-size: .82rem; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: .5px; margin: 8px 0 12px; display: flex; align-items: center; gap: 7px; }
 
 .produto-obra-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-.produto-obra-row input { border: 1px solid var(--gray-200); border-radius: 7px; padding: 8px 10px; font-family: var(--font); font-size: .85rem; outline: none; transition: border var(--transition); }
-.produto-obra-row input:focus { border-color: var(--orange); }
+.produto-obra-row input,
+.produto-obra-row select { border: 1px solid var(--gray-200); border-radius: 7px; padding: 8px 10px; font-family: var(--font); font-size: .85rem; outline: none; transition: border var(--transition); background: #fff; }
+.produto-obra-row input:focus,
+.produto-obra-row select:focus { border-color: var(--orange); }
 .prod-id-input      { flex: 0 0 80px; }
 .prod-nome-input    { flex: 1; }
-.prod-estoque-input { flex: 0 0 130px; font-weight: 600; }
-.prod-qtd-input     { flex: 0 0 110px; }
+.prod-select        { flex: 1; }
+.prod-estoque-input { flex: 0 0 140px; font-weight: 600; }
+.prod-qtd-input     { flex: 0 0 90px; }
 .form-group input[readonly] { background: var(--gray-50); color: var(--gray-500); cursor: default; }
 .obra-edit-context { font-size: .88rem; color: var(--gray-700); background: var(--gray-100); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; border-left: 3px solid var(--orange); }
 
@@ -391,6 +395,111 @@ body {
 .toast.success i { color: #4ADE80; }
 .toast.error   i { color: #F87171; }
 .toast.warning i { color: #FCD34D; }
+
+/* ── CHART ── */
+.chart-container { padding: 16px 20px; height: 280px; position: relative; }
+
+/* ── OBRAS FILTROS ── */
+.obras-filtros-card { padding: 16px 20px; margin-bottom: 8px; }
+.obras-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.filtro-group { display: flex; flex-direction: column; gap: 5px; min-width: 160px; }
+.filtro-label { font-size: .78rem; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .4px; }
+.filtro-input {
+  height: 36px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0 10px;
+  font-size: .87rem;
+  color: var(--gray-700);
+  background: #fff;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.filtro-input:focus { border-color: var(--orange); }
+.filtro-periodo { display: flex; align-items: center; gap: 6px; }
+.filtro-periodo input[type="date"] {
+  height: 36px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 0 8px;
+  font-size: .85rem;
+  color: var(--gray-700);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.filtro-periodo input[type="date"]:focus { border-color: var(--orange); }
+.filtro-sep { font-size: .82rem; color: var(--gray-500); white-space: nowrap; }
+.filtro-actions { justify-content: flex-end; }
+
+/* ── OBRA TABELA — célula multi-linha ── */
+.obra-cell { display: flex; flex-direction: column; gap: 3px; padding: 4px 0; }
+.obra-cell-nome { font-weight: 700; font-size: .87rem; color: var(--gray-700); text-transform: uppercase; }
+.obra-cell-desc { font-size: .82rem; color: #0891B2; line-height: 1.4; }
+.obra-cell-contato { font-size: .78rem; color: var(--gray-500); }
+.obra-cell-obs { font-size: .78rem; color: var(--orange); }
+
+/* ── FAB ── */
+.btn-fab {
+  position: fixed;
+  bottom: 80px; right: 28px;
+  width: 52px; height: 52px;
+  background: var(--orange);
+  color: #fff; border: none;
+  border-radius: 50%; cursor: pointer;
+  font-size: 1.25rem;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(232,82,10,.45);
+  transition: background var(--transition), transform var(--transition);
+  z-index: 150;
+}
+.btn-fab:hover  { background: var(--orange-dark); transform: scale(1.08); }
+.btn-fab:active { transform: scale(.95); }
+.page:not(#page-estoque) .btn-fab { display: none; }
+
+/* ── KPI NAVEGÁVEL ── */
+.kpi-card.kpi-nav { cursor: pointer; }
+.kpi-card.kpi-nav:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--orange); }
+
+/* ── SUBTABS ── */
+.subtabs {
+  display: flex; gap: 4px;
+  margin-bottom: 18px;
+  border-bottom: 2px solid var(--gray-200);
+  padding-bottom: 0;
+}
+.subtab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 18px;
+  background: none; border: none; cursor: pointer;
+  font-family: var(--font); font-size: .85rem; font-weight: 600;
+  color: var(--gray-500);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color var(--transition), border-color var(--transition);
+}
+.subtab:hover { color: var(--dark); }
+.subtab.active { color: var(--orange); border-bottom-color: var(--orange); }
+.subtab-panel { display: none; }
+.subtab-panel.active { display: block; animation: fadeIn .18s ease; }
+
+/* ── ADMIN PASSWORD TOGGLE ── */
+.input-pwd-wrap { position: relative; }
+.input-pwd-wrap input { padding-right: 44px; }
+.btn-pwd-toggle {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  color: var(--gray-500); cursor: pointer;
+  font-size: .9rem; padding: 4px;
+  transition: color var(--transition);
+}
+.btn-pwd-toggle:hover { color: var(--orange); }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeIn   { from { opacity:0 } to { opacity:1 } }

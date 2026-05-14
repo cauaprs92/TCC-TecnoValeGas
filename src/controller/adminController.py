@@ -42,9 +42,18 @@ class AdminController:
             return True, f"Administrador '{nome.strip()}' criado com sucesso!"
         return False, "Erro ao criar administrador."
 
-    def atualizar(self, id_login: int, email: str, nome: str, nova_senha: str = None) -> tuple:
+    def atualizar(self, id_login: int, email: str, nome: str, nova_senha: str = None, senha_atual: str = None) -> tuple:
         if not self.dao.buscar_por_id(id_login):
             return False, "Administrador não encontrado."
+
+        # Verificação de senha atual obrigatória para edição de perfil próprio
+        if senha_atual is not None:
+            hash_salvo = self.dao.buscar_hash_senha(id_login)
+            if not hash_salvo:
+                return False, "Erro ao verificar credenciais."
+            hash_bytes = hash_salvo.encode("utf-8") if isinstance(hash_salvo, str) else hash_salvo
+            if not bcrypt.checkpw(senha_atual.encode("utf-8"), hash_bytes):
+                return False, "Senha atual incorreta."
 
         valido, msg = self._validar_campos(email, nome, nova_senha)
         if not valido:

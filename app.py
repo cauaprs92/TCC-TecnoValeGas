@@ -1,7 +1,7 @@
 import os
 import sys
 import traceback
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, abort
 from flask_cors import CORS
 from werkzeug.exceptions import NotFound
 
@@ -13,9 +13,10 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from src.error_response import ErrorResponse
-from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp
+from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp, responsavel_bp, relatorio_bp
 
-STATIC_DIR = os.path.join(BASE_DIR, "view")
+STATIC_DIR  = os.path.join(BASE_DIR, "view")
+IMAGES_DIR  = os.path.join(BASE_DIR, "images")
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
 
@@ -28,6 +29,8 @@ app.register_blueprint(cliente_bp)
 app.register_blueprint(produto_bp)
 app.register_blueprint(obra_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(responsavel_bp)
+app.register_blueprint(relatorio_bp)
 
 
 # ─── Servir o frontend ────────────────────────────────────────────────────────
@@ -35,6 +38,12 @@ app.register_blueprint(admin_bp)
 def index():
     """Redireciona para a tela de login."""
     return send_from_directory(STATIC_DIR, "login.html")
+
+@app.route("/images/<path:filename>")
+def serve_image(filename):
+    """Serve imagens da pasta /images na raiz do projeto."""
+    return send_from_directory(IMAGES_DIR, filename)
+
 
 @app.route("/dashboard")
 def dashboard():

@@ -17,15 +17,21 @@ def handle_error(e: ErrorResponse):
 
 def _serializar(o):
     return {
-        "idObra":          o[0],
-        "codCliente":      o[1],
-        "descObra":        o[2],
-        "dataInicio":      str(o[3]) if o[3] else None,
-        "dataFim":         str(o[4]) if o[4] else None,
-        "statusObra":      o[5],
-        "respObra":        o[6],
-        "obsObra":         o[7],
-        "orientacaoObra":  o[8],
+        "idObra":         o[0],
+        "codCliente":     o[1],
+        "descObra":       o[2],
+        "dataInicio":     str(o[3]) if o[3] else None,
+        "dataFim":        str(o[4]) if o[4] else None,
+        "statusObra":     o[5],
+        "respObra":       o[6],
+        "obsObra":        o[7],
+        "orientacaoObra": o[8],
+        "tipoObra":       o[9]  if len(o) > 9  else None,
+        "fieldObra":      o[10] if len(o) > 10 else None,
+        "unidadeObra":    o[11] if len(o) > 11 else None,
+        "emailContato":   o[12] if len(o) > 12 else None,
+        "celular1":       o[13] if len(o) > 13 else None,
+        "celular2":       o[14] if len(o) > 14 else None,
     }
 
 
@@ -107,6 +113,22 @@ def atualizar(idObra: int):
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
+    return jsonify({"status": True, "msg": mensagem}), 200
+
+
+# ─── PATCH /obra/<idObra>/produto/<idProduto> ────────────────────────────────
+# Atualiza a quantidade de um produto vinculado a uma obra
+@obra_bp.route("/<int:idObra>/produto/<int:idProduto>", methods=["PATCH"])
+@jwt.validate_token
+@middleware.validate_id_param
+def atualizar_produto_obra(idObra: int, idProduto: int):
+    body      = request.get_json() or {}
+    nova_qtd  = body.get("quantidade")
+    if nova_qtd is None or int(nova_qtd) < 1:
+        raise ErrorResponse(400, "Quantidade inválida.", {"message": "Informe uma quantidade >= 1."})
+    sucesso, mensagem = controller.atualizar_produto_obra(idObra, idProduto, int(nova_qtd))
+    if not sucesso:
+        raise ErrorResponse(400, mensagem, {"message": mensagem})
     return jsonify({"status": True, "msg": mensagem}), 200
 
 

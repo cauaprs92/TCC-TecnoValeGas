@@ -175,6 +175,49 @@ class ProdutosObrasDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
+    def atualizar_quantidade_produto_obra(self, id_obra: int, id_produto: int, nova_qtd: int) -> tuple:
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False, "Sem conexão com o banco."
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(
+                "SELECT qtdProdutosObra FROM produtosObras WHERE idObra = %s AND idProduto = %s",
+                (id_obra, id_produto)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return False, "Produto não vinculado a esta obra."
+
+            qtd_atual = row[0]
+            diferenca = nova_qtd - qtd_atual
+
+            if diferenca > 0:
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto - %s WHERE idProduto = %s AND qtdProduto >= %s",
+                    (diferenca, id_produto, diferenca)
+                )
+                if cursor.rowcount == 0:
+                    raise Exception(f"Estoque insuficiente para o produto ID {id_produto}.")
+            elif diferenca < 0:
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (abs(diferenca), id_produto)
+                )
+
+            cursor.execute(
+                "UPDATE produtosObras SET qtdProdutosObra = %s WHERE idObra = %s AND idProduto = %s",
+                (nova_qtd, id_obra, id_produto)
+            )
+            conexao.commit()
+            return True, "Quantidade atualizada com sucesso!"
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao atualizar quantidade do produto na obra: {e}")
+            return False, str(e)
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def buscar_produtos_da_obra(self, id_obra: int) -> list:
         sql = """
             SELECT p.idProduto, p.nomeProduto, po.qtdProdutosObra

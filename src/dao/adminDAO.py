@@ -109,6 +109,22 @@ class AdminDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
+    def buscar_hash_senha(self, id_login: int):
+        sql = "SELECT senha FROM login WHERE idLogin = %s"
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return None
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, (id_login,))
+            row = cursor.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            print(f"Erro ao buscar hash de senha: {e}")
+            return None
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def contar(self) -> int:
         conexao = Conexao.obter_conexao()
         if not conexao:

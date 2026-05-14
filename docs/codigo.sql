@@ -95,10 +95,29 @@
         FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
     );
 
+     create table responsavel (
+    idResponsavel   int primary key NOT NULL AUTO_INCREMENT,
+    nomeResponsavel VARCHAR(100) NOT NULL UNIQUE
+    );
+
+    -- ── MIGRAÇÃO obras — novos campos (rodar uma vez) ────────────────────────
+    -- ALTER TABLE obras
+    --   ADD COLUMN tipoObra     VARCHAR(100),
+    --   ADD COLUMN fieldObra    VARCHAR(100),
+    --   ADD COLUMN unidadeObra  VARCHAR(20),
+    --   ADD COLUMN emailContato VARCHAR(100),
+    --   ADD COLUMN celular1     VARCHAR(20),
+    --   ADD COLUMN celular2     VARCHAR(20);
+
 
     SELECT * FROM produtos;
     SELECT * FROM clientes;
     SELECT * FROM produtosObras;
+    SELECT * FROM obras;
+    SELECT * FROM responsavel;
+
+
+   
 
 
     ## para reiniciar o banco

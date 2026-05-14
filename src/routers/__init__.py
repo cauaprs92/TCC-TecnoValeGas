@@ -1,8 +1,10 @@
-from .clienteRoteador import cliente_bp
-from .produtoRoteador import produto_bp
-from .obraRoteador    import obra_bp
-from .loginRoteador   import login_bp
-from .adminRoteador   import admin_bp
+from .clienteRoteador     import cliente_bp
+from .produtoRoteador     import produto_bp
+from .obraRoteador        import obra_bp
+from .loginRoteador       import login_bp
+from .adminRoteador       import admin_bp
+from .responsavelRoteador import responsavel_bp
+from .relatorioRoteador   import relatorio_bp
 
 __all__ = [
     "cliente_bp",
@@ -10,4 +12,6 @@ __all__ = [
     "obra_bp",
     "login_bp",
     "admin_bp",
+    "responsavel_bp",
+    "relatorio_bp",
 ]

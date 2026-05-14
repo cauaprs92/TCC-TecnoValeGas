@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from src.controller.adminController import AdminController
 from src.middleware.adminMiddleware  import AdminMiddleware
 from src.middleware.jwtMiddleware    import JwtMiddleware
@@ -45,12 +45,18 @@ def criar():
 @middleware.validate_id_param
 @middleware.validate_update_body
 def atualizar(idLogin: int):
+    logged_id = g.get("admin_id")
+    # Bloqueio de edição cruzada: admin só pode editar o próprio perfil
+    if logged_id and int(logged_id) != idLogin:
+        raise ErrorResponse(403, "Você só pode editar seu próprio perfil.", {"message": "Edição cruzada não permitida."})
+
     admin = request.get_json()["admin"]
     sucesso, mensagem = controller.atualizar(
         idLogin,
         admin.get("email"),
         admin.get("nomeLogin"),
-        admin.get("novaSenha") or None,
+        admin.get("novaSenha")   or None,
+        admin.get("senhaAtual")  or None,
     )
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
@@ -62,6 +68,10 @@ def atualizar(idLogin: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def deletar(idLogin: int):
+    logged_id = g.get("admin_id")
+    # Admin não pode se auto-deletar
+    if logged_id and int(logged_id) == idLogin:
+        raise ErrorResponse(403, "Você não pode excluir sua própria conta.", {"message": "Auto-exclusão não permitida."})
     sucesso, mensagem = controller.deletar(idLogin)
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
