@@ -970,8 +970,8 @@ async function renderGraficoObras() {
       datasets: [{
         label: 'Qtd. consumida',
         data: values,
-        backgroundColor: 'rgba(232,82,10,0.82)',
-        borderColor: 'rgba(232,82,10,1)',
+        backgroundColor: '#D96B2B',
+        borderColor: '#D96B2B',
         borderWidth: 1,
         borderRadius: 6,
       }]
