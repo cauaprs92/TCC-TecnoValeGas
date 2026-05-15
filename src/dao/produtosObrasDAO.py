@@ -10,8 +10,10 @@ class ProdutosObrasDAO:
         try:
             cursor.execute("""
                 INSERT INTO obras
-                  (codCliente, descObra, dataInicio, dataFim, statusObra, respObra, obsObra, orientacaoObra)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                  (codCliente, descObra, dataInicio, dataFim, statusObra, respObra,
+                   obsObra, orientacaoObra, tipoObra, fieldObra, unidadeObra,
+                   emailContato, celular1, celular2)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 obra["codCliente"],
                 obra["descObra"],
@@ -21,6 +23,12 @@ class ProdutosObrasDAO:
                 obra.get("respObra", ""),
                 obra.get("obsObra"),
                 obra.get("orientacaoObra"),
+                obra.get("tipoObra"),
+                obra.get("fieldObra"),
+                obra.get("unidadeObra"),
+                obra.get("emailContato"),
+                obra.get("celular1"),
+                obra.get("celular2"),
             ))
 
             id_obra_gerado = cursor.lastrowid

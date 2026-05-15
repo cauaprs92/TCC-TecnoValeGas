@@ -79,6 +79,12 @@
     respObra       VARCHAR(255),
     obsObra        VARCHAR(255),
     orientacaoObra VARCHAR(255),
+    tipoObra       VARCHAR(100),
+    fieldObra      VARCHAR(100),
+    unidadeObra    VARCHAR(20),
+    emailContato   VARCHAR(100),
+    celular1       VARCHAR(20),
+    celular2       VARCHAR(20),
     FOREIGN KEY (codCliente) REFERENCES clientes(idCliente)
     );
 
@@ -108,13 +114,13 @@
     );
 
     -- ── MIGRAÇÃO obras — novos campos (rodar uma vez) ────────────────────────
-    -- ALTER TABLE obras
-    --   ADD COLUMN tipoObra     VARCHAR(100),
-    --   ADD COLUMN fieldObra    VARCHAR(100),
-    --   ADD COLUMN unidadeObra  VARCHAR(20),
-    --   ADD COLUMN emailContato VARCHAR(100),
-    --   ADD COLUMN celular1     VARCHAR(20),
-    --   ADD COLUMN celular2     VARCHAR(20);
+    ALTER TABLE obras
+      ADD COLUMN tipoObra     VARCHAR(100),
+      ADD COLUMN fieldObra    VARCHAR(100),
+      ADD COLUMN unidadeObra  VARCHAR(20),
+      ADD COLUMN emailContato VARCHAR(100),
+      ADD COLUMN celular1     VARCHAR(20),
+      ADD COLUMN celular2     VARCHAR(20);
 
 
     SELECT * FROM produtos;
