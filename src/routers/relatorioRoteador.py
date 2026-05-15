@@ -87,3 +87,46 @@ def produtos_consumidos():
         return jsonify({"status": False, "msg": str(e)}), 500
     finally:
         Conexao.fechar_conexao(conexao, cursor)
+
+
+# ─── GET /relatorio/grafico-produtos ─────────────────────────────────────────
+@relatorio_bp.route("/grafico-produtos", methods=["GET"])
+@jwt.validate_token
+def grafico_produtos():
+    sql = """
+        SELECT p.idProduto, p.nomeProduto,
+               o.idObra, o.descObra, c.nomeCliente,
+               po.qtdProdutosObra
+        FROM produtos p
+        JOIN produtosObras po ON p.idProduto = po.idProduto
+        JOIN obras o          ON o.idObra    = po.idObra
+        LEFT JOIN clientes c  ON c.idCliente = o.codCliente
+        ORDER BY p.idProduto, o.idObra
+    """
+    conexao = Conexao.obter_conexao()
+    if not conexao:
+        return jsonify({"status": False, "msg": "Erro de conexão."}), 500
+    cursor = conexao.cursor()
+    try:
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        produtos = {}
+        for r in rows:
+            pid = r[0]
+            if pid not in produtos:
+                produtos[pid] = {"idProduto": pid, "nomeProduto": r[1], "totalConsumido": 0, "obras": []}
+            produtos[pid]["totalConsumido"] += int(r[5])
+            produtos[pid]["obras"].append({
+                "idObra":      r[2],
+                "descObra":    r[3],
+                "nomeCliente": r[4] or f"Cliente #{r[2]}",
+                "qtd":         int(r[5]),
+            })
+
+        data = sorted(produtos.values(), key=lambda x: x["totalConsumido"], reverse=True)
+        return jsonify({"status": True, "dados": data}), 200
+    except Exception as e:
+        return jsonify({"status": False, "msg": str(e)}), 500
+    finally:
+        Conexao.fechar_conexao(conexao, cursor)

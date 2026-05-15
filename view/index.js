@@ -264,7 +264,7 @@ function renderTabelaObras(obras) {
     tbody.innerHTML = pagina.map(o => {
       const badge       = badgeStatus(o.statusObra);
       const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
-      const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente #${o.codCliente}` : '—');
+      const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '—');
       const contatoParts = [o.emailContato, o.celular1, o.celular2].filter(Boolean);
       const contatoStr   = contatoParts.length ? contatoParts.join(' | ') : '';
       const descEsc = (o.descObra || '').replace(/'/g, "\\'");
@@ -932,7 +932,7 @@ function renderObrasRecentes(obras) {
   el.innerHTML = recentes.map(o => `
     <div class="obra-item">
       <div class="obra-status ${statusCls[o.statusObra] || 'concluida'}"></div>
-      <div class="obra-info"><strong>${o.descObra}</strong><span>Cliente #${o.codCliente}</span></div>
+      <div class="obra-info"><strong>${o.descObra}</strong><span>Cliente ${o.codCliente}</span></div>
       ${badgeStatus(o.statusObra)}
     </div>`).join('');
 }
@@ -945,7 +945,7 @@ async function renderGraficoObras() {
 
   let dados = [];
   try {
-    const res = await apiFetch('/relatorio/obras-produtos');
+    const res = await apiFetch('/relatorio/grafico-produtos');
     dados = res.dados || [];
   } catch {
     dados = [];
@@ -955,25 +955,23 @@ async function renderGraficoObras() {
 
   if (!dados.length) {
     canvas.closest('.chart-container').innerHTML =
-      '<div class="empty-row" style="height:100%;display:flex;align-items:center;justify-content:center">Nenhuma obra cadastrada ainda.</div>';
+      '<div class="empty-row" style="height:100%;display:flex;align-items:center;justify-content:center">Nenhum produto utilizado em obras ainda.</div>';
     return;
   }
 
-  const labels = dados.map(d => d.descObra.length > 22 ? d.descObra.slice(0, 22) + '…' : d.descObra);
-  const values = dados.map(d => d.totalConsumido);
-  const colors = dados.map(d =>
-    d.totalConsumido === 0 ? 'rgba(200,197,190,0.6)' : 'rgba(232,82,10,0.82)'
-  );
+  const truncar = (str, n) => str.length > n ? str.slice(0, n) + '…' : str;
+  const labels  = dados.map(d => `${d.idProduto} — ${truncar(d.nomeProduto, 18)}`);
+  const values  = dados.map(d => d.totalConsumido);
 
   _obraChart = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels,
       datasets: [{
-        label: 'Qtd. total de produtos',
+        label: 'Qtd. consumida',
         data: values,
-        backgroundColor: colors,
-        borderColor: colors.map(c => c.replace('0.82', '1').replace('0.6', '1')),
+        backgroundColor: 'rgba(232,82,10,0.82)',
+        borderColor: 'rgba(232,82,10,1)',
         borderWidth: 1,
         borderRadius: 6,
       }]
@@ -985,13 +983,25 @@ async function renderGraficoObras() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ` ${ctx.parsed.y} unidades consumidas`,
-          }
+            title: ctx => {
+              const d = dados[ctx[0].dataIndex];
+              return `${d.idProduto} — ${d.nomeProduto}`;
+            },
+            label: ctx => {
+              const d = dados[ctx.dataIndex];
+              const linhas = [`Total: ${d.totalConsumido} un.`, ''];
+              d.obras.forEach(o => {
+                linhas.push(`Obra ${o.idObra} (${o.nomeCliente}): ${o.qtd} un.`);
+              });
+              return linhas;
+            },
+          },
+          displayColors: false,
         }
       },
       scales: {
         y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } },
-        x: { grid: { display: false } }
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
       }
     }
   });
