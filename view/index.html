@@ -438,15 +438,10 @@
         <input type="hidden" id="obraIdEdicao" />
 
         <!-- ── Identificação ── -->
-        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="form-row" style="grid-template-columns:1fr 1fr">
           <div class="form-group">
             <label>Id</label>
             <input type="text" id="obraIdDisplay" disabled placeholder="Auto" />
-          </div>
-          <div class="form-group">
-            <label>Código (Cliente)</label>
-            <input type="number" id="obraCodCliente" placeholder="001" min="1"
-              oninput="buscarClienteObra(this)" />
           </div>
           <div class="form-group">
             <label>Unidade</label>
@@ -493,6 +488,12 @@
 
         <!-- ── Cliente ── -->
         <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
+
+        <div class="form-group">
+          <label>Código (Cliente)</label>
+          <input type="number" id="obraCodCliente" placeholder="001" min="1"
+            oninput="buscarClienteObra(this)" />
+        </div>
 
         <div class="form-group">
           <label>CNPJ / CPF</label>
