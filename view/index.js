@@ -83,8 +83,7 @@ function carregarAdministrador() {
   const nome = sessionStorage.getItem('nomeLogin') || 'Administrador';
   const avatarEl = document.getElementById('userAvatar');
   const nameEl   = document.getElementById('userName');
-  if (nameEl)   nameEl.textContent   = nome;
-  if (avatarEl) avatarEl.textContent = nome.charAt(0).toUpperCase();
+  if (nameEl) nameEl.textContent = nome;
 }
 
 
