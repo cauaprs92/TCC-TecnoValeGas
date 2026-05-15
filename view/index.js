@@ -300,33 +300,71 @@ function renderTabelaObras(obras) {
   renderPaginacao('paginacaoObras', total, PAG_STATE.obras, 'mudarPaginaObras');
 }
 
-function _novaProdutoObraRow() {
-  const opts = cacheProdutos.map(p =>
-    `<option value="${p.idProduto}" data-estoque="${p.qtdProduto}" data-min="${p.qtdMinima}">${p.nomeProduto} (estoque: ${p.qtdProduto})</option>`
-  ).join('');
+function _prodSearchHTML(btnRemove) {
   return `
     <div class="produto-obra-row">
-      <select class="prod-select" onchange="selecionarProdutoObraRow(this)">
-        <option value="">Selecione um produto...</option>
-        ${opts}
-      </select>
+      <div class="prod-search-wrap">
+        <input type="text" class="prod-search" placeholder="Buscar produto (nome ou ID)..."
+          oninput="buscarProdutoInput(this)"
+          onfocus="buscarProdutoInput(this)"
+          onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
+          autocomplete="off" />
+        <input type="hidden" class="prod-select" />
+        <div class="prod-dropdown hidden"></div>
+      </div>
       <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
       <input type="number" placeholder="Qtd." class="prod-qtd-input" min="1" />
-      <button class="btn-icon danger" onclick="removerProdutoObra(this)">
-        <i class="fa-solid fa-minus"></i>
-      </button>
+      ${btnRemove}
     </div>`;
 }
 
-function selecionarProdutoObraRow(sel) {
-  const row      = sel.closest('.produto-obra-row');
+function _novaProdutoObraRow() {
+  return _prodSearchHTML(`<button class="btn-icon danger" onclick="removerProdutoObra(this)"><i class="fa-solid fa-minus"></i></button>`);
+}
+
+function buscarProdutoInput(input) {
+  const q    = input.value.toLowerCase().trim();
+  const wrap = input.closest('.prod-search-wrap');
+  const drop = wrap.querySelector('.prod-dropdown');
+  const hidden = wrap.querySelector('.prod-select');
+
+  const matches = q
+    ? cacheProdutos.filter(p =>
+        p.nomeProduto.toLowerCase().includes(q) || String(p.idProduto).includes(q)
+      )
+    : cacheProdutos;
+
+  if (!matches.length) { drop.classList.add('hidden'); return; }
+
+  drop.innerHTML = matches.map(p => {
+    const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
+    return `<div class="prod-dropdown-item" onmousedown="selecionarProdutoDropdown(this,${p.idProduto})">
+      <span class="prod-id">#${p.idProduto}</span>${p.nomeProduto}
+      <span style="float:right;color:${cor};font-size:.75rem">${p.qtdProduto} em estoque</span>
+    </div>`;
+  }).join('');
+  drop.classList.remove('hidden');
+}
+
+function selecionarProdutoDropdown(item, idProduto) {
+  const wrap    = item.closest('.prod-search-wrap');
+  const row     = wrap.closest('.produto-obra-row');
+  const p       = cacheProdutos.find(x => x.idProduto === idProduto);
+  if (!p) return;
+
+  wrap.querySelector('.prod-search').value = `#${p.idProduto} — ${p.nomeProduto}`;
+  wrap.querySelector('.prod-select').value = p.idProduto;
+  wrap.querySelector('.prod-dropdown').classList.add('hidden');
+
   const estoqueEl = row.querySelector('.prod-estoque-input');
-  const opt      = sel.selectedOptions[0];
-  if (!sel.value) { estoqueEl.value = ''; estoqueEl.style.color = ''; return; }
-  const qtd = parseInt(opt.dataset.estoque) || 0;
-  const min = parseInt(opt.dataset.min)     || 0;
-  estoqueEl.value = `${qtd} em estoque`;
-  estoqueEl.style.color = qtd <= 0 ? '#DC2626' : (min > 0 && qtd <= min) ? '#D97706' : '#16A34A';
+  const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
+  estoqueEl.value = `${p.qtdProduto} em estoque`;
+  estoqueEl.style.color = cor;
+}
+
+function fecharDropdownProduto(input) {
+  const drop = input.closest('.prod-search-wrap').querySelector('.prod-dropdown');
+  drop.classList.add('hidden');
 }
 
 function _limparCamposObra() {
@@ -591,21 +629,7 @@ function removerProdutoObraEd(btn) {
 }
 
 function _novaProdutoObraRowEd() {
-  const opts = cacheProdutos.map(p =>
-    `<option value="${p.idProduto}" data-estoque="${p.qtdProduto}" data-min="${p.qtdMinima}">${p.nomeProduto} (estoque: ${p.qtdProduto})</option>`
-  ).join('');
-  return `
-    <div class="produto-obra-row">
-      <select class="prod-select" onchange="selecionarProdutoObraRow(this)">
-        <option value="">Selecione um produto...</option>
-        ${opts}
-      </select>
-      <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
-      <input type="number" placeholder="Qtd." class="prod-qtd-input" min="1" />
-      <button class="btn-icon danger" onclick="removerProdutoObraEd(this)">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-    </div>`;
+  return _prodSearchHTML(`<button class="btn-icon danger" onclick="removerProdutoObraEd(this)"><i class="fa-solid fa-minus"></i></button>`);
 }
 
 
