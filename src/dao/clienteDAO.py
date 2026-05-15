@@ -22,8 +22,9 @@ class ClienteDAO:
         sql = """
             INSERT INTO clientes
                 (idCliente, nomeCliente, CNPJCPF, contatoCliente,
+                 emailCliente, telefone2,
                  cep, rua, numero, complemento, bairro, cidade, estado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -35,6 +36,8 @@ class ClienteDAO:
                 cliente._nomeCliente,
                 cliente._CNPJCPF,
                 cliente._contatoCliente,
+                cliente._emailCliente,
+                cliente._telefone2,
                 cliente._cep,
                 cliente._rua,
                 cliente._numero,
@@ -55,6 +58,7 @@ class ClienteDAO:
     def buscar_todos(self) -> list:
         sql = """
             SELECT idCliente, nomeCliente, CNPJCPF, contatoCliente,
+                   emailCliente, telefone2,
                    cep, rua, numero, complemento, bairro, cidade, estado
             FROM clientes
         """
@@ -74,6 +78,7 @@ class ClienteDAO:
     def buscar_por_id(self, id_cliente: int):
         sql = """
             SELECT idCliente, nomeCliente, CNPJCPF, contatoCliente,
+                   emailCliente, telefone2,
                    cep, rua, numero, complemento, bairro, cidade, estado
             FROM clientes WHERE idCliente = %s
         """
@@ -95,6 +100,7 @@ class ClienteDAO:
         sql = """
             UPDATE clientes
             SET nomeCliente=%s, CNPJCPF=%s, contatoCliente=%s,
+                emailCliente=%s, telefone2=%s,
                 cep=%s, rua=%s, numero=%s, complemento=%s,
                 bairro=%s, cidade=%s, estado=%s
             WHERE idCliente=%s
@@ -108,6 +114,8 @@ class ClienteDAO:
                 cliente._nomeCliente,
                 cliente._CNPJCPF,
                 cliente._contatoCliente,
+                cliente._emailCliente,
+                cliente._telefone2,
                 cliente._cep,
                 cliente._rua,
                 cliente._numero,
@@ -145,15 +153,17 @@ class ClienteDAO:
 
     def _linha_para_cliente(self, linha) -> Cliente:
         c = Cliente()
-        c._idCliente     = linha[0]
-        c._nomeCliente   = linha[1]
-        c._CNPJCPF       = linha[2]
+        c._idCliente      = linha[0]
+        c._nomeCliente    = linha[1]
+        c._CNPJCPF        = linha[2]
         c._contatoCliente = linha[3]
-        c._cep           = linha[4]
-        c._rua           = linha[5]
-        c._numero        = linha[6]
-        c._complemento   = linha[7]
-        c._bairro        = linha[8]
-        c._cidade        = linha[9]
-        c._estado        = linha[10]
+        c._emailCliente   = linha[4]
+        c._telefone2      = linha[5]
+        c._cep            = linha[6]
+        c._rua            = linha[7]
+        c._numero         = linha[8]
+        c._complemento    = linha[9]
+        c._bairro         = linha[10]
+        c._cidade         = linha[11]
+        c._estado         = linha[12]
         return c

@@ -637,8 +637,20 @@
               oninput="mascaraCpfCnpj(this)" maxlength="18" />
           </div>
           <div class="form-group">
-            <label>Telefone</label>
+            <label>E-mail <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <input type="email" id="cliEmail" placeholder="contato@empresa.com" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone 1</label>
             <input type="text" id="cliContato" placeholder="(00) 00000-0000"
+              oninput="mascaraTelefone(this)" maxlength="15" />
+          </div>
+          <div class="form-group">
+            <label>Telefone 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+            <input type="text" id="cliTelefone2" placeholder="(00) 00000-0000"
               oninput="mascaraTelefone(this)" maxlength="15" />
           </div>
         </div>

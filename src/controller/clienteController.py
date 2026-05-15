@@ -21,6 +21,7 @@ class ClienteController:
         return True, ""
 
     def cadastrar(self, nomeCliente, CNPJCPF, contatoCliente,
+                  emailCliente, telefone2,
                   cep, rua, numero, complemento, bairro, cidade, estado) -> tuple:
         valido, mensagem = self._validar_nome(nomeCliente)
         if not valido:
@@ -41,17 +42,19 @@ class ClienteController:
         idCliente = self.dao.proximo_id()
 
         dadosCliente = Cliente()
-        dadosCliente._idCliente     = idCliente
-        dadosCliente._nomeCliente   = nomeCliente.strip()
-        dadosCliente._CNPJCPF       = CNPJCPF.strip()
+        dadosCliente._idCliente      = idCliente
+        dadosCliente._nomeCliente    = nomeCliente.strip()
+        dadosCliente._CNPJCPF        = CNPJCPF.strip()
         dadosCliente._contatoCliente = contatoCliente.strip() if contatoCliente else ""
-        dadosCliente._cep           = cep.strip() if cep else ""
-        dadosCliente._rua           = rua.strip()
-        dadosCliente._numero        = str(numero).strip()
-        dadosCliente._complemento   = complemento.strip() if complemento else ""
-        dadosCliente._bairro        = bairro.strip() if bairro else ""
-        dadosCliente._cidade        = cidade.strip()
-        dadosCliente._estado        = estado.strip().upper()
+        dadosCliente._emailCliente   = emailCliente.strip() if emailCliente else None
+        dadosCliente._telefone2      = telefone2.strip() if telefone2 else None
+        dadosCliente._cep            = cep.strip() if cep else ""
+        dadosCliente._rua            = rua.strip()
+        dadosCliente._numero         = str(numero).strip()
+        dadosCliente._complemento    = complemento.strip() if complemento else ""
+        dadosCliente._bairro         = bairro.strip() if bairro else ""
+        dadosCliente._cidade         = cidade.strip()
+        dadosCliente._estado         = estado.strip().upper()
 
         sucesso = self.dao.inserir(dadosCliente)
         if sucesso:
@@ -65,6 +68,7 @@ class ClienteController:
         return self.dao.buscar_por_id(idCliente)
 
     def editar(self, idCliente, nomeCliente, CNPJCPF, contatoCliente,
+               emailCliente, telefone2,
                cep, rua, numero, complemento, bairro, cidade, estado) -> tuple:
         valido, mensagem = self._validar_nome(nomeCliente)
         if not valido:
@@ -83,17 +87,19 @@ class ClienteController:
             return False, "Estado é obrigatório."
 
         dadosCliente = Cliente()
-        dadosCliente._idCliente     = int(idCliente)
-        dadosCliente._nomeCliente   = nomeCliente.strip()
-        dadosCliente._CNPJCPF       = CNPJCPF.strip()
+        dadosCliente._idCliente      = int(idCliente)
+        dadosCliente._nomeCliente    = nomeCliente.strip()
+        dadosCliente._CNPJCPF        = CNPJCPF.strip()
         dadosCliente._contatoCliente = contatoCliente.strip() if contatoCliente else ""
-        dadosCliente._cep           = cep.strip() if cep else ""
-        dadosCliente._rua           = rua.strip()
-        dadosCliente._numero        = str(numero).strip()
-        dadosCliente._complemento   = complemento.strip() if complemento else ""
-        dadosCliente._bairro        = bairro.strip() if bairro else ""
-        dadosCliente._cidade        = cidade.strip()
-        dadosCliente._estado        = estado.strip().upper()
+        dadosCliente._emailCliente   = emailCliente.strip() if emailCliente else None
+        dadosCliente._telefone2      = telefone2.strip() if telefone2 else None
+        dadosCliente._cep            = cep.strip() if cep else ""
+        dadosCliente._rua            = rua.strip()
+        dadosCliente._numero         = str(numero).strip()
+        dadosCliente._complemento    = complemento.strip() if complemento else ""
+        dadosCliente._bairro         = bairro.strip() if bairro else ""
+        dadosCliente._cidade         = cidade.strip()
+        dadosCliente._estado         = estado.strip().upper()
 
         sucesso = self.dao.atualizar(dadosCliente)
         if sucesso:

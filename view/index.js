@@ -411,7 +411,9 @@ function buscarClienteObra(input) {
   set('obraClienteCEP',         c.cep);
   set('obraClienteCidade',      c.cidade);
   set('obraClienteEstado',      c.estado);
-  set('obraContato',            c.contatoCliente);
+  set('obraEmail',              c.emailCliente);
+  set('obraCelular1',           c.contatoCliente);
+  set('obraCelular2',           c.telefone2);
 }
 
 function buscarProdutoObra(input) {
@@ -675,7 +677,7 @@ function _enderecoCliente(c) {
 function renderTabelaClientes(clientes) {
   const q        = filtros.clientes;
   const filtrado = q ? clientes.filter(c =>
-    `${c.idCliente} ${c.nomeCliente} ${c.CNPJCPF} ${c.contatoCliente || ''}`.toLowerCase().includes(q)
+    `${c.idCliente} ${c.nomeCliente} ${c.CNPJCPF} ${c.contatoCliente || ''} ${c.emailCliente || ''} ${c.telefone2 || ''}`.toLowerCase().includes(q)
   ) : clientes;
 
   const total     = filtrado.length;
@@ -694,7 +696,12 @@ function renderTabelaClientes(clientes) {
         <td>${c.nomeCliente}</td>
         <td>${c.CNPJCPF}</td>
         <td>${_enderecoCliente(c)}</td>
-        <td>${c.contatoCliente || '—'}</td>
+        <td style="line-height:1.7">
+          ${c.contatoCliente ? `<div><i class="fa-solid fa-phone fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.contatoCliente}</div>` : ''}
+          ${c.telefone2      ? `<div><i class="fa-solid fa-phone fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.telefone2}</div>` : ''}
+          ${c.emailCliente   ? `<div><i class="fa-regular fa-envelope fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.emailCliente}</div>` : ''}
+          ${!c.contatoCliente && !c.telefone2 && !c.emailCliente ? '—' : ''}
+        </td>
         <td class="actions">
           <button class="btn-icon" title="Editar" onclick="abrirModalEditarCliente(${c.idCliente})">
             <i class="fa-solid fa-pen"></i>
@@ -709,7 +716,7 @@ function renderTabelaClientes(clientes) {
 }
 
 function _limparModalCliente() {
-  ['cliIdEdicao','cliNome','cliCpfCnpj','cliContato',
+  ['cliIdEdicao','cliNome','cliCpfCnpj','cliContato','cliEmail','cliTelefone2',
    'cliCep','cliRua','cliNumero','cliComplemento','cliBairro','cliCidade','cliEstado']
     .forEach(id => { document.getElementById(id).value = ''; });
 }
@@ -728,8 +735,10 @@ function abrirModalEditarCliente(idCliente) {
   document.getElementById('cliIdEdicao').value    = c.idCliente;
   document.getElementById('cliNome').value        = c.nomeCliente;
   document.getElementById('cliCpfCnpj').value     = c.CNPJCPF;
-  document.getElementById('cliContato').value     = c.contatoCliente || '';
-  document.getElementById('cliCep').value         = c.cep           || '';
+  document.getElementById('cliContato').value    = c.contatoCliente || '';
+  document.getElementById('cliEmail').value      = c.emailCliente   || '';
+  document.getElementById('cliTelefone2').value  = c.telefone2      || '';
+  document.getElementById('cliCep').value        = c.cep            || '';
   document.getElementById('cliRua').value         = c.rua           || '';
   document.getElementById('cliNumero').value      = c.numero        || '';
   document.getElementById('cliComplemento').value = c.complemento   || '';
@@ -746,6 +755,8 @@ async function salvarCliente() {
   const nome         = document.getElementById('cliNome').value.trim();
   const cpfcnpj      = document.getElementById('cliCpfCnpj').value.trim();
   const contato      = document.getElementById('cliContato').value.trim();
+  const email        = document.getElementById('cliEmail').value.trim();
+  const telefone2    = document.getElementById('cliTelefone2').value.trim();
   const cep          = document.getElementById('cliCep').value.trim();
   const rua          = document.getElementById('cliRua').value.trim();
   const numero       = document.getElementById('cliNumero').value.trim();
@@ -769,6 +780,7 @@ async function salvarCliente() {
 
   const payload = {
     cliente: { nomeCliente: nome, CNPJCPF: cpfcnpj, contatoCliente: contato,
+               emailCliente: email, telefone2,
                cep, rua, numero, complemento, bairro, cidade, estado }
   };
 

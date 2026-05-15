@@ -41,6 +41,8 @@
     nomeCliente    VARCHAR(45)  NOT NULL,
     CNPJCPF        VARCHAR(18)  NOT NULL,
     contatoCliente VARCHAR(15),
+    emailCliente   VARCHAR(255),
+    telefone2      VARCHAR(15),
     cep            VARCHAR(9),
     rua            VARCHAR(255),
     numero         VARCHAR(20),
@@ -61,6 +63,11 @@
     --   ADD COLUMN bairro      VARCHAR(100),
     --   ADD COLUMN cidade      VARCHAR(100),
     --   ADD COLUMN estado      VARCHAR(2);
+
+    -- ── MIGRAÇÃO — campos de contato (rodar se a tabela já existir) ──────────
+    -- ALTER TABLE clientes
+    --   ADD COLUMN emailCliente VARCHAR(255) AFTER contatoCliente,
+    --   ADD COLUMN telefone2    VARCHAR(15)  AFTER emailCliente;
 
     create table obras(
     idObra         int primary key AUTO_INCREMENT,
