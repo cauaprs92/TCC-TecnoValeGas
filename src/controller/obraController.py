@@ -5,7 +5,7 @@ from src.controller.produtoController import ProdutoController
 
 class ObraController:
 
-    STATUS_VALIDOS = ["Em andamento", "Concluida", "Cancelada", "Pausada"]
+    STATUS_VALIDOS = ["À iniciar", "Em andamento", "Concluida", "Cancelada", "Pausada"]
 
     def __init__(self):
         self.dao          = ObraDAO()

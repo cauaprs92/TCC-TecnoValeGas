@@ -52,10 +52,16 @@ async function apiFetch(endpoint, method = 'GET', body = null) {
 // INICIALIZAÇÃO
 // ══════════════════════════════════════════════════
 
+let fpInicio, fpFim;
+
 document.addEventListener('DOMContentLoaded', () => {
   verificarAutenticacao();
   carregarAdministrador();
   carregarTodos();
+
+  const fpOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true };
+  fpInicio = flatpickr('#obraDataInicio', fpOpts);
+  fpFim    = flatpickr('#obraDataFim',    fpOpts);
 });
 
 async function carregarTodos() {
@@ -245,7 +251,7 @@ function renderTabelaObras(obras) {
   const inicio = (PAG_STATE.obras - 1) * PER_PAGE;
   const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
 
-  const fmtData = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+  const fmtData = d => { if (!d) return '—'; const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`; };
   const tbody   = document.getElementById('bodyObras');
   const temFiltro = tipo || s || de || ate;
 
@@ -329,6 +335,8 @@ function _limparCamposObra() {
     'obraDesc','obraObs','obraOrientacao','obraDataInicio','obraDataFim'
   ];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  if (fpInicio) fpInicio.clear();
+  if (fpFim)    fpFim.clear();
   document.getElementById('obraStatus').value   = 'Em andamento';
   document.getElementById('obraResp').value     = '';
   document.getElementById('obraUnidade').value  = '';
@@ -355,8 +363,8 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraIdDisplay').value         = o.idObra;
   document.getElementById('obraStatus').value            = o.statusObra || 'Em andamento';
   document.getElementById('obraResp').value              = o.respObra || '';
-  document.getElementById('obraDataInicio').value        = o.dataInicio || '';
-  document.getElementById('obraDataFim').value           = o.dataFim || '';
+  fpInicio.setDate(o.dataInicio || '', false);
+  fpFim.setDate(o.dataFim    || '', false);
   document.getElementById('obraCodCliente').value        = o.codCliente || '';
   document.getElementById('obraTipo').value              = o.tipoObra || '';
   document.getElementById('obraUnidade').value           = o.unidadeObra || '';
@@ -450,8 +458,8 @@ async function salvarObra() {
   const idEdicao   = document.getElementById('obraIdEdicao').value;
   const status     = document.getElementById('obraStatus').value;
   const resp       = document.getElementById('obraResp').value;
-  const dataInicio = document.getElementById('obraDataInicio').value.trim();
-  const dataFim    = document.getElementById('obraDataFim').value.trim() || null;
+  const dataInicio = _brParaIso(document.getElementById('obraDataInicio').value.trim());
+  const dataFim    = _brParaIso(document.getElementById('obraDataFim').value.trim()) || null;
   const cod        = document.getElementById('obraCodCliente').value.trim();
   const desc       = document.getElementById('obraDesc').value.trim();
   const obs        = document.getElementById('obraObs').value.trim() || null;
@@ -621,6 +629,25 @@ function mascaraTelefone(input) {
   v = v.replace(/^(\d{2})(\d)/, '($1) $2');
   v = v.replace(/(\d{5})(\d{1,4})$/, '$1-$2');
   input.value = v;
+}
+
+function mascaraData(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 8);
+  if (v.length > 4) v = v.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3');
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,2})/, '$1/$2');
+  input.value = v;
+}
+
+function _isoParaBr(d) {
+  if (!d) return '';
+  const [y, m, dia] = d.split('-');
+  return `${dia}/${m}/${y}`;
+}
+
+function _brParaIso(d) {
+  if (!d || d.length < 10) return '';
+  const [dia, m, y] = d.split('/');
+  return `${y}-${m}-${dia}`;
 }
 
 function mascaraCep(input) {
@@ -1260,7 +1287,7 @@ function exportarProdutos() {
 function exportarObras() {
   if (!cacheObras.length) { showToast('Nenhuma obra para exportar.', 'warning'); return; }
   const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Observações', 'Orientações'];
-  const fmtData    = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+  const fmtData    = d => { if (!d) return ''; const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`; };
   const linhas = cacheObras.map(o => {
     const cliente = cacheClientes.find(c => c.idCliente === o.codCliente);
     return [
