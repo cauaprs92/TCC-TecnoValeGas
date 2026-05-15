@@ -62,6 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const fpOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true };
   fpInicio = flatpickr('#obraDataInicio', fpOpts);
   fpFim    = flatpickr('#obraDataFim',    fpOpts);
+
+  const fpFiltroOpts = { ...fpOpts, onChange: filtrarObras };
+  flatpickr('#obraFiltroDe',  fpFiltroOpts);
+  flatpickr('#obraFiltroAte', fpFiltroOpts);
 });
 
 async function carregarTodos() {
@@ -1068,8 +1072,8 @@ function filtrarProdutos(q) {
 function filtrarObras() {
   filtros.obraTipo   = (document.getElementById('obraFiltroTipo')?.value   || '').toLowerCase().trim();
   filtros.obraStatus = (document.getElementById('obraFiltroStatus')?.value || '');
-  filtros.obraDe     = (document.getElementById('obraFiltroDe')?.value     || '');
-  filtros.obraAte    = (document.getElementById('obraFiltroAte')?.value    || '');
+  filtros.obraDe     = _brParaIso(document.getElementById('obraFiltroDe')?.value  || '');
+  filtros.obraAte    = _brParaIso(document.getElementById('obraFiltroAte')?.value || '');
   PAG_STATE.obras    = 1;
   renderTabelaObras(cacheObras);
 }

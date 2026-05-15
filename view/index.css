@@ -422,17 +422,20 @@ body {
 }
 .filtro-input:focus { border-color: var(--orange); }
 .filtro-periodo { display: flex; align-items: center; gap: 6px; }
-.filtro-periodo input[type="date"] {
+.filtro-periodo input {
   height: 36px;
   border: 1.5px solid var(--gray-200);
   border-radius: var(--radius);
   padding: 0 8px;
   font-size: .85rem;
+  font-family: var(--font);
   color: var(--gray-700);
+  background: #fff;
   outline: none;
+  width: 120px;
   transition: border-color var(--transition);
 }
-.filtro-periodo input[type="date"]:focus { border-color: var(--orange); }
+.filtro-periodo input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(249,115,22,.1); }
 .filtro-sep { font-size: .82rem; color: var(--gray-500); white-space: nowrap; }
 .filtro-actions { justify-content: flex-end; }
 
@@ -529,3 +532,12 @@ body {
 .page-btn.ellipsis:hover { background: none; }
 
 .hidden { display: none !important; }
+
+/* ── Flatpickr — override para tema laranja ── */
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover { background: var(--orange); border-color: var(--orange); }
+.flatpickr-day:hover { background: rgba(249,115,22,.1); }
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg { fill: var(--orange); }
+.flatpickr-current-month .numInputWrapper span.arrowUp:after { border-bottom-color: var(--orange); }
+.flatpickr-current-month .numInputWrapper span.arrowDown:after { border-top-color: var(--orange); }
