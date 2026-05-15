@@ -670,8 +670,10 @@ async function carregarClientes() {
 }
 
 function _enderecoCliente(c) {
-  return [c.rua, c.numero ? `nº ${c.numero}` : null, c.bairro, c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade]
-    .filter(Boolean).join(', ') || '—';
+  const linha1 = [c.rua, c.numero ? `nº ${c.numero}` : null].filter(Boolean).join(', ');
+  const linha2 = [c.bairro, c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade].filter(Boolean).join(', ');
+  if (!linha1 && !linha2) return '—';
+  return [linha1, linha2].filter(Boolean).join('<br>');
 }
 
 function renderTabelaClientes(clientes) {
@@ -695,7 +697,7 @@ function renderTabelaClientes(clientes) {
         <td>${c.idCliente}</td>
         <td>${c.nomeCliente}</td>
         <td>${c.CNPJCPF}</td>
-        <td>${_enderecoCliente(c)}</td>
+        <td style="white-space:normal;min-width:160px">${_enderecoCliente(c)}</td>
         <td style="line-height:1.7">
           ${c.contatoCliente ? `<div><i class="fa-solid fa-phone fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.contatoCliente}</div>` : ''}
           ${c.telefone2      ? `<div><i class="fa-solid fa-phone fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.telefone2}</div>` : ''}
