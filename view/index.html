@@ -508,7 +508,8 @@
 
         <div class="form-group">
           <label>CNPJ / CPF</label>
-          <input type="text" id="obraClienteCNPJ" placeholder="00.000.000/0000-00" />
+          <input type="text" id="obraClienteCNPJ" placeholder="00.000.000/0000-00"
+            oninput="mascaraCpfCnpj(this)" maxlength="18" />
         </div>
 
         <div class="form-group">
@@ -566,11 +567,13 @@
         <div class="form-row">
           <div class="form-group">
             <label>Telefone / Celular 1</label>
-            <input type="text" id="obraCelular1" placeholder="(11) 99999-9999" />
+            <input type="text" id="obraCelular1" placeholder="(11) 99999-9999"
+              oninput="mascaraTelefone(this)" maxlength="15" />
           </div>
           <div class="form-group">
             <label>Telefone / Celular 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <input type="text" id="obraCelular2" placeholder="(11) 99999-9999" />
+            <input type="text" id="obraCelular2" placeholder="(11) 99999-9999"
+              oninput="mascaraTelefone(this)" maxlength="15" />
           </div>
         </div>
 
