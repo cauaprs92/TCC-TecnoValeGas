@@ -114,7 +114,7 @@ function renderTabelaProdutos(produtos) {
     `${p.idProduto} ${p.nomeProduto} ${p.descProduto || ''}`.toLowerCase().includes(q)
   ) : produtos;
 
-  const total = filtrado.length;
+  const total     = filtrado.length;
   const totalPags = Math.ceil(total / PER_PAGE) || 1;
   if (PAG_STATE.produtos > totalPags) PAG_STATE.produtos = 1;
   const inicio = (PAG_STATE.produtos - 1) * PER_PAGE;
@@ -122,25 +122,43 @@ function renderTabelaProdutos(produtos) {
 
   const tbody = document.getElementById('bodyProdutos');
   if (!pagina.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${total === 0 && q ? 'Nenhum resultado para a busca.' : 'Nenhum produto cadastrado.'}</td></tr>`;
+    tbody.innerHTML = _emptyState(
+      'boxes-stacked',
+      total === 0 && q ? 'Nenhum resultado encontrado' : 'Nenhum produto cadastrado',
+      total === 0 && q
+        ? `A busca por "${q}" não retornou resultados.`
+        : 'Comece cadastrando o primeiro produto do estoque.',
+      !q ? 'Cadastrar Produto' : '', 'abrirModalNovoProduto()', 5
+    );
   } else {
     tbody.innerHTML = pagina.map(p => {
       const { cls, label } = statusEstoque(p);
+      const nomeSafe = p.nomeProduto.replace(/'/g, "\\'");
+      const limites  = [
+        p.qtdMinima ? `Mín: ${p.qtdMinima}` : null,
+        p.qtdMaxima && p.qtdMaxima < 9999 ? `Máx: ${p.qtdMaxima}` : null,
+      ].filter(Boolean).join(' · ');
       return `
         <tr>
-          <td>${p.idProduto}</td>
-          <td>${p.nomeProduto}</td>
-          <td>${p.descProduto || '—'}</td>
-          <td><span class="qty-badge ${cls}">${p.qtdProduto}</span></td>
-          <td>${label}</td>
-          <td class="actions">
-            <button class="btn-icon" title="Editar" onclick="abrirModalEditarProduto(${p.idProduto})">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button class="btn-icon danger" title="Excluir" onclick="deletarItem('produto', ${p.idProduto}, '${p.nomeProduto}')">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+          <td><span class="cell-id">${p.idProduto}</span></td>
+          <td>
+            <div class="cell-stack">
+              <span class="cell-primary">${p.nomeProduto}</span>
+              ${p.descProduto ? `<span class="cell-secondary">${p.descProduto}</span>` : ''}
+            </div>
           </td>
+          <td>
+            <div class="cell-stack">
+              <span class="qty-badge ${cls}">${p.qtdProduto} un.</span>
+              ${limites ? `<span class="cell-secondary" style="margin-top:5px">${limites}</span>` : ''}
+            </div>
+          </td>
+          <td>${label}</td>
+          <td>${_actionMenu([
+            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarProduto(${p.idProduto})` },
+            { divider: true },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('produto',${p.idProduto},'${nomeSafe}')` },
+          ])}</td>
         </tr>`;
     }).join('');
   }
@@ -259,40 +277,42 @@ function renderTabelaObras(obras) {
   const temFiltro = tipo || s || de || ate;
 
   if (!pagina.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${temFiltro ? 'Nenhum resultado para a busca.' : 'Nenhuma obra cadastrada.'}</td></tr>`;
+    tbody.innerHTML = _emptyState(
+      'hard-hat',
+      temFiltro ? 'Nenhuma obra encontrada' : 'Nenhuma obra cadastrada',
+      temFiltro ? 'Tente ajustar os filtros de busca.' : 'Comece cadastrando a primeira obra.',
+      !temFiltro ? 'Nova Obra' : '', 'abrirModalNovaObra()', 6
+    );
   } else {
     tbody.innerHTML = pagina.map(o => {
       const badge       = badgeStatus(o.statusObra);
       const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
       const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '—');
-      const contatoParts = [o.emailContato, o.celular1, o.celular2].filter(Boolean);
-      const contatoStr   = contatoParts.length ? contatoParts.join(' | ') : '';
       const descEsc = (o.descObra || '').replace(/'/g, "\\'");
+      const tags = [o.tipoObra, o.respObra].filter(Boolean);
       return `
         <tr>
-          <td>${o.idObra}</td>
-          <td>${o.codCliente || '—'}</td>
+          <td><span class="cell-id">${o.idObra}</span></td>
           <td>
-            <div class="obra-cell">
-              <span class="obra-cell-nome">${nomeCliente}</span>
-              ${o.descObra    ? `<span class="obra-cell-desc">${o.descObra}</span>`       : ''}
-              ${contatoStr    ? `<span class="obra-cell-contato">${contatoStr}</span>`    : ''}
-              ${o.obsObra     ? `<span class="obra-cell-obs">${o.obsObra}</span>`         : ''}
+            <div class="cell-stack">
+              <span class="cell-primary">${nomeCliente}</span>
+              ${o.codCliente ? `<span class="cell-secondary">Cód. ${o.codCliente}</span>` : ''}
             </div>
           </td>
-          <td>${fmtData(o.dataInicio)}</td>
-          <td>${badge}</td>
-          <td class="actions">
-            <button class="btn-icon" title="Ver produtos" onclick="verProdutosObra(${o.idObra})">
-              <i class="fa-solid fa-eye"></i>
-            </button>
-            <button class="btn-icon" title="Editar" onclick="abrirModalEditarObra(${o.idObra})">
-              <i class="fa-solid fa-pen"></i>
-            </button>
-            <button class="btn-icon danger" title="Excluir" onclick="deletarItem('obra', ${o.idObra}, '${descEsc}')">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+          <td>
+            <div class="cell-stack">
+              <span class="cell-primary">${o.descObra || '—'}</span>
+              ${tags.length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${tags.map(t=>`<span class="cell-tag"><i class="fa-solid fa-tag"></i>${t}</span>`).join('')}</div>` : ''}
+            </div>
           </td>
+          <td><span class="cell-secondary">${fmtData(o.dataInicio)}</span></td>
+          <td>${badge}</td>
+          <td>${_actionMenu([
+            { icon:'fa-eye',   label:'Ver Produtos', onclick:`verProdutosObra(${o.idObra})` },
+            { icon:'fa-pen',   label:'Editar',       onclick:`abrirModalEditarObra(${o.idObra})` },
+            { divider: true },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('obra',${o.idObra},'${descEsc}')` },
+          ])}</td>
         </tr>`;
     }).join('');
   }
@@ -744,29 +764,39 @@ function renderTabelaClientes(clientes) {
 
   const tbody = document.getElementById('bodyClientes');
   if (!pagina.length) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">${total === 0 && q ? 'Nenhum resultado para a busca.' : 'Nenhum cliente cadastrado.'}</td></tr>`;
+    tbody.innerHTML = _emptyState(
+      'users',
+      total === 0 && q ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado',
+      total === 0 && q
+        ? `A busca por "${q}" não retornou resultados.`
+        : 'Comece cadastrando o primeiro cliente.',
+      !q ? 'Cadastrar Cliente' : '', 'abrirModalNovoCliente()', 6
+    );
   } else {
-    tbody.innerHTML = pagina.map(c => `
-      <tr>
-        <td>${c.idCliente}</td>
-        <td>${c.nomeCliente}</td>
-        <td>${c.CNPJCPF}</td>
-        <td style="white-space:normal;min-width:160px">${_enderecoCliente(c)}</td>
-        <td style="line-height:1.7">
-          ${c.contatoCliente ? `<div><i class="fa-solid fa-phone fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.contatoCliente}</div>` : ''}
-          ${c.telefone2      ? `<div><i class="fa-solid fa-phone fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.telefone2}</div>` : ''}
-          ${c.emailCliente   ? `<div><i class="fa-regular fa-envelope fa-xs" style="color:var(--gray-400);width:14px"></i> ${c.emailCliente}</div>` : ''}
-          ${!c.contatoCliente && !c.telefone2 && !c.emailCliente ? '—' : ''}
-        </td>
-        <td class="actions">
-          <button class="btn-icon" title="Editar" onclick="abrirModalEditarCliente(${c.idCliente})">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button class="btn-icon danger" title="Excluir" onclick="deletarItem('cliente', ${c.idCliente}, '${c.nomeCliente}')">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>`).join('');
+    tbody.innerHTML = pagina.map(c => {
+      const nomeSafe  = c.nomeCliente.replace(/'/g, "\\'");
+      const loc1 = [c.rua, c.numero ? `nº ${c.numero}` : null].filter(Boolean).join(', ');
+      const loc2 = [c.bairro, c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade].filter(Boolean).join(', ');
+      const locHtml = [loc1, loc2].filter(Boolean).join('<br>') || '—';
+      const contatoHtml = [
+        c.contatoCliente ? `<span class="cell-secondary"><i class="fa-solid fa-phone fa-xs" style="width:13px;opacity:.45"></i> ${c.contatoCliente}</span>` : '',
+        c.telefone2      ? `<span class="cell-secondary"><i class="fa-solid fa-phone fa-xs" style="width:13px;opacity:.45"></i> ${c.telefone2}</span>` : '',
+        c.emailCliente   ? `<span class="cell-secondary"><i class="fa-regular fa-envelope fa-xs" style="width:13px;opacity:.45"></i> ${c.emailCliente}</span>` : '',
+      ].filter(Boolean).join('') || '<span class="cell-secondary">—</span>';
+      return `
+        <tr>
+          <td><span class="cell-id">${c.idCliente}</span></td>
+          <td><span class="cell-primary">${c.nomeCliente}</span></td>
+          <td><span class="cell-secondary">${c.CNPJCPF}</span></td>
+          <td style="min-width:160px"><div class="cell-stack" style="line-height:1.6">${locHtml}</div></td>
+          <td><div class="cell-stack" style="gap:4px">${contatoHtml}</div></td>
+          <td>${_actionMenu([
+            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarCliente(${c.idCliente})` },
+            { divider: true },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('cliente',${c.idCliente},'${nomeSafe}')` },
+          ])}</td>
+        </tr>`;
+    }).join('');
   }
   renderPaginacao('paginacaoClientes', total, PAG_STATE.clientes, 'mudarPaginaClientes');
 }
@@ -901,22 +931,33 @@ function renderAlertas(produtos) {
   const alertas = produtos.filter(_produtoEmAlerta);
   const el = document.getElementById('alertList');
   if (!alertas.length) {
-    el.innerHTML = '<div class="empty-row">Nenhum alerta de estoque.</div>';
+    el.innerHTML = `
+      <div class="alert-item">
+        <div class="alert-icon" style="background:#EAF7EE;color:#2D8A4E">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="alert-info">
+          <strong>Tudo em ordem!</strong>
+          <span>Nenhum produto abaixo do estoque mínimo.</span>
+        </div>
+      </div>`;
     return;
   }
   el.innerHTML = alertas.map(p => {
     const critico = p.qtdProduto <= 0;
-    const info = critico
-      ? 'Sem estoque'
-      : `Estoque baixo: ${p.qtdProduto}/${p.qtdMinima} unidades`;
+    const info    = critico
+      ? 'Produto completamente esgotado'
+      : `Atual: ${p.qtdProduto} un. · Mínimo: ${p.qtdMinima} un.`;
     return `
       <div class="alert-item ${critico ? 'critical' : 'warning'}">
-        <div class="alert-dot"></div>
+        <div class="alert-icon">
+          <i class="fa-solid ${critico ? 'fa-box-open' : 'fa-triangle-exclamation'}"></i>
+        </div>
         <div class="alert-info">
           <strong>${p.nomeProduto}</strong>
           <span>${info}</span>
         </div>
-        <span class="badge ${critico ? 'badge-red' : 'badge-yellow'}">${critico ? 'Crítico' : 'Atenção'}</span>
+        <span class="badge ${critico ? 'badge-red' : 'badge-yellow'}">${critico ? 'Esgotado' : 'Atenção'}</span>
       </div>`;
   }).join('');
 }
@@ -925,16 +966,26 @@ function renderObrasRecentes(obras) {
   const el = document.getElementById('obraRecentList');
   const recentes = [...obras].sort((a,b) => b.idObra - a.idObra).slice(0, 5);
   if (!recentes.length) {
-    el.innerHTML = '<div class="empty-row">Nenhuma obra cadastrada.</div>';
+    el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--gray-400);font-size:.84rem">Nenhuma obra cadastrada.</div>`;
     return;
   }
-  const statusCls = { 'Em andamento': 'em-andamento', 'Pausada': 'pausada', 'Concluida': 'concluida', 'Cancelada': 'cancelada' };
-  el.innerHTML = recentes.map(o => `
-    <div class="obra-item">
-      <div class="obra-status ${statusCls[o.statusObra] || 'concluida'}"></div>
-      <div class="obra-info"><strong>${o.descObra}</strong><span>Cliente ${o.codCliente}</span></div>
-      ${badgeStatus(o.statusObra)}
-    </div>`).join('');
+  const statusCls = {
+    'Em andamento':'em-andamento','Pausada':'pausada',
+    'Concluida':'concluida','Cancelada':'cancelada','À iniciar':'a-iniciar'
+  };
+  el.innerHTML = recentes.map(o => {
+    const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
+    const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '');
+    return `
+      <div class="obra-item">
+        <div class="status-dot ${statusCls[o.statusObra] || 'concluida'}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="obra-item-nome">${o.descObra || '—'}</div>
+          ${nomeCliente ? `<div class="obra-item-sub">${nomeCliente}</div>` : ''}
+        </div>
+        ${badgeStatus(o.statusObra)}
+      </div>`;
+  }).join('');
 }
 
 let _obraChart = null;
@@ -970,10 +1021,11 @@ async function renderGraficoObras() {
       datasets: [{
         label: 'Qtd. consumida',
         data: values,
-        backgroundColor: '#D96B2B',
-        borderColor: '#D96B2B',
-        borderWidth: 1,
+        backgroundColor: 'rgba(47,94,196,0.8)',
+        borderColor: 'transparent',
+        borderWidth: 0,
         borderRadius: 6,
+        borderSkipped: false,
       }]
     },
     options: {
@@ -982,6 +1034,13 @@ async function renderGraficoObras() {
       plugins: {
         legend: { display: false },
         tooltip: {
+          backgroundColor: '#fff',
+          titleColor: '#1A1D2E',
+          bodyColor: '#7B8196',
+          borderColor: '#E2E5EB',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8,
           callbacks: {
             title: ctx => {
               const d = dados[ctx[0].dataIndex];
@@ -989,7 +1048,7 @@ async function renderGraficoObras() {
             },
             label: ctx => {
               const d = dados[ctx.dataIndex];
-              const linhas = [`Total: ${d.totalConsumido} un.`, ''];
+              const linhas = [`Total consumido: ${d.totalConsumido} un.`, ''];
               d.obras.forEach(o => {
                 linhas.push(`Obra ${o.idObra} (${o.nomeCliente}): ${o.qtd} un.`);
               });
@@ -1000,8 +1059,17 @@ async function renderGraficoObras() {
         }
       },
       scales: {
-        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)' } },
-        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, color: '#7B8196', font: { size: 11 } },
+          grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+          border: { display: false }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 }, color: '#7B8196' },
+          border: { display: false }
+        }
       }
     }
   });
@@ -1033,6 +1101,7 @@ function atualizarKPI() {
   document.getElementById('kpi-obras').textContent    = cacheObras.filter(o => o.statusObra === 'Em andamento').length;
   document.getElementById('kpi-clientes').textContent = cacheClientes.length;
   document.getElementById('kpi-alertas').textContent  = cacheProdutos.filter(_produtoEmAlerta).length;
+  atualizarStats();
 }
 
 
@@ -1054,8 +1123,89 @@ function badgeStatus(status) {
     'Pausada':       '<span class="badge badge-yellow">Pausada</span>',
     'Concluida':     '<span class="badge badge-gray">Concluída</span>',
     'Cancelada':     '<span class="badge badge-red">Cancelada</span>',
+    'À iniciar':     '<span class="badge badge-blue">À iniciar</span>',
   };
   return map[status] || `<span class="badge badge-gray">${status}</span>`;
+}
+
+// ── Action dropdown helper ──
+function _actionMenu(items) {
+  const html = items.map(it => {
+    if (it.divider) return '<div class="action-dd-divider"></div>';
+    return `<button class="action-dd-item${it.danger ? ' danger' : ''}"
+      onclick="${it.onclick};closeActionMenus()">
+      <i class="fa-solid ${it.icon}"></i>${it.label}
+    </button>`;
+  }).join('');
+  return `<div class="action-wrap">
+    <button class="action-btn" onclick="toggleActionMenu(this);event.stopPropagation()">
+      <i class="fa-solid fa-ellipsis-vertical"></i>
+    </button>
+    <div class="action-dropdown">${html}</div>
+  </div>`;
+}
+function toggleActionMenu(btn) {
+  const drop = btn.nextElementSibling;
+  const open = drop.classList.contains('show');
+  closeActionMenus();
+  if (!open) {
+    const rect = btn.getBoundingClientRect();
+    drop.style.top   = (rect.bottom + 6) + 'px';
+    drop.style.right = (window.innerWidth - rect.right) + 'px';
+    drop.classList.add('show');
+  }
+}
+function closeActionMenus() {
+  document.querySelectorAll('.action-dropdown.show').forEach(d => d.classList.remove('show'));
+}
+
+// ── Empty state helper ──
+function _emptyState(icon, title, desc, btnLabel, btnOnclick, colspan) {
+  const btn = btnLabel
+    ? `<button class="btn btn-primary" onclick="${btnOnclick}" style="margin-top:4px">
+         <i class="fa-solid fa-plus"></i> ${btnLabel}
+       </button>`
+    : '';
+  return `<tr><td colspan="${colspan || 6}">
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="fa-solid ${icon}"></i></div>
+      <div class="empty-state-title">${title}</div>
+      <div class="empty-state-desc">${desc}</div>
+      ${btn}
+    </div>
+  </td></tr>`;
+}
+
+// ── Page stats helper ──
+function _setStatEl(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function atualizarStats() {
+  // Estoque
+  const okCount    = cacheProdutos.filter(p => !_produtoEmAlerta(p)).length;
+  const alertCount = cacheProdutos.filter(p => _produtoEmAlerta(p) && p.qtdProduto > 0).length;
+  const zeroCount  = cacheProdutos.filter(p => p.qtdProduto <= 0).length;
+  _setStatEl('stat-prod-total', cacheProdutos.length);
+  _setStatEl('stat-prod-ok',    okCount);
+  _setStatEl('stat-prod-alert', alertCount);
+  _setStatEl('stat-prod-zero',  zeroCount);
+  // Obras
+  _setStatEl('stat-obra-total',     cacheObras.length);
+  _setStatEl('stat-obra-ainiciar',  cacheObras.filter(o => o.statusObra === 'À iniciar').length);
+  _setStatEl('stat-obra-andamento', cacheObras.filter(o => o.statusObra === 'Em andamento').length);
+  _setStatEl('stat-obra-pausada',   cacheObras.filter(o => o.statusObra === 'Pausada').length);
+  _setStatEl('stat-obra-concluida', cacheObras.filter(o => o.statusObra === 'Concluida').length);
+  // Clientes
+  const clientesComObra = new Set(
+    cacheObras.filter(o => o.statusObra === 'Em andamento').map(o => o.codCliente)
+  );
+  _setStatEl('stat-cli-total',  cacheClientes.length);
+  _setStatEl('stat-cli-ativos', clientesComObra.size);
+  _setStatEl('stat-cli-email',  cacheClientes.filter(c => c.emailCliente).length);
+  // Admins
+  _setStatEl('stat-admin-total', cacheAdmins.length);
+  _setStatEl('stat-resp-total',  cacheResponsaveis.length);
 }
 
 
@@ -1086,8 +1236,9 @@ document.getElementById('btnNotif').addEventListener('click', e => {
   e.stopPropagation();
   document.getElementById('notifDropdown').classList.toggle('hidden');
 });
-document.addEventListener('click', () => {
+document.addEventListener('click', e => {
   document.getElementById('notifDropdown').classList.add('hidden');
+  if (!e.target.closest('.action-wrap')) closeActionMenus();
 });
 
 function abrirModal(id)  { document.getElementById(id).classList.remove('hidden'); }
@@ -1192,6 +1343,7 @@ async function carregarAdmins() {
     const res = await apiFetch('/admin');
     cacheAdmins = res.admins || [];
     renderTabelaAdmins(cacheAdmins);
+    atualizarStats();
   } catch (e) {
     document.getElementById('bodyAdmins').innerHTML =
       `<tr><td colspan="4" class="empty-row">Erro ao carregar administradores: ${e.message}</td></tr>`;
@@ -1201,23 +1353,31 @@ async function carregarAdmins() {
 function renderTabelaAdmins(admins) {
   const tbody = document.getElementById('bodyAdmins');
   if (!admins.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="empty-row">Nenhum administrador cadastrado.</td></tr>`;
+    tbody.innerHTML = _emptyState(
+      'user-shield', 'Nenhum administrador cadastrado',
+      'Cadastre um administrador para gerenciar o sistema.',
+      'Novo Administrador', 'abrirModalNovoAdmin()', 4
+    );
     return;
   }
-  tbody.innerHTML = admins.map(a => `
-    <tr>
-      <td>${a.idLogin}</td>
-      <td>${a.nomeLogin}</td>
-      <td>${a.email}</td>
-      <td class="actions">
-        <button class="btn-icon" title="Editar" onclick="abrirModalEditarAdmin(${a.idLogin})">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn-icon danger" title="Excluir" onclick="deletarItem('admin', ${a.idLogin}, '${a.nomeLogin}')">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </td>
-    </tr>`).join('');
+  tbody.innerHTML = admins.map(a => {
+    const nomeSafe = a.nomeLogin.replace(/'/g, "\\'");
+    return `
+      <tr>
+        <td><span class="cell-id">${a.idLogin}</span></td>
+        <td>
+          <div class="cell-stack">
+            <span class="cell-primary">${a.nomeLogin}</span>
+          </div>
+        </td>
+        <td><span class="cell-secondary">${a.email}</span></td>
+        <td>${_actionMenu([
+          { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarAdmin(${a.idLogin})` },
+          { divider: true },
+          { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('admin',${a.idLogin},'${nomeSafe}')` },
+        ])}</td>
+      </tr>`;
+  }).join('');
 }
 
 function abrirModalNovoAdmin() {
@@ -1453,6 +1613,7 @@ async function carregarResponsaveis() {
     cacheResponsaveis = res.responsaveis || [];
     renderTabelaResponsaveis(cacheResponsaveis);
     popularSelectResponsaveis();
+    atualizarStats();
   } catch (e) {
     console.error('carregarResponsaveis:', e);
   }
@@ -1476,22 +1637,26 @@ function renderTabelaResponsaveis(lista) {
   const tbody = document.getElementById('bodyResponsaveis');
   if (!tbody) return;
   if (!lista.length) {
-    tbody.innerHTML = `<tr><td colspan="3" class="empty-row">Nenhum responsável cadastrado.</td></tr>`;
+    tbody.innerHTML = _emptyState(
+      'id-badge', 'Nenhum responsável cadastrado',
+      'Cadastre os fields responsáveis pelas obras.',
+      'Novo Responsável', 'abrirModalNovoResponsavel()', 3
+    );
     return;
   }
-  tbody.innerHTML = lista.map(r => `
-    <tr>
-      <td>${r.idResponsavel}</td>
-      <td>${r.nomeResponsavel}</td>
-      <td class="actions">
-        <button class="btn-icon" title="Editar" onclick="abrirModalEditarResponsavel(${r.idResponsavel})">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn-icon danger" title="Excluir" onclick="confirmarExcluirResponsavel(${r.idResponsavel}, '${r.nomeResponsavel}')">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </td>
-    </tr>`).join('');
+  tbody.innerHTML = lista.map(r => {
+    const nomeSafe = r.nomeResponsavel.replace(/'/g, "\\'");
+    return `
+      <tr>
+        <td><span class="cell-id">${r.idResponsavel}</span></td>
+        <td><span class="cell-primary">${r.nomeResponsavel}</span></td>
+        <td>${_actionMenu([
+          { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarResponsavel(${r.idResponsavel})` },
+          { divider: true },
+          { icon:'fa-trash', label:'Excluir', danger:true, onclick:`confirmarExcluirResponsavel(${r.idResponsavel},'${nomeSafe}')` },
+        ])}</td>
+      </tr>`;
+  }).join('');
 }
 
 function filtrarResponsaveis(q) {

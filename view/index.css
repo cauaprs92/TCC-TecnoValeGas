@@ -335,6 +335,7 @@ body {
 .data-table tbody tr:hover { background: var(--gray-50); }
 .data-table td { padding: 16px 16px; font-size: .855rem; color: var(--dark); }
 .actions { display: flex; gap: 6px; }
+.data-table td:last-child { text-align: right; }
 
 /* ── BUTTONS ── */
 .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-family: var(--font); font-size: .855rem; font-weight: 600; transition: all var(--transition); white-space: nowrap; }
@@ -543,3 +544,194 @@ body {
 .flatpickr-months .flatpickr-next-month:hover svg { fill: var(--gray-700); }
 .flatpickr-current-month .numInputWrapper span.arrowUp:after { border-bottom-color: var(--gray-700); }
 .flatpickr-current-month .numInputWrapper span.arrowDown:after { border-top-color: var(--gray-700); }
+
+/* ════════════════════════════════════════════
+   REDESIGN 2.0 — Corporate SaaS
+   ════════════════════════════════════════════ */
+
+/* ── PAGE STATS BAR (CRUD pages) ── */
+.page-stats {
+  display: flex;
+  background: #fff;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-item {
+  flex: 1;
+  padding: 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-right: 1px solid var(--gray-100);
+  transition: background .2s ease;
+}
+.stat-item:last-child { border-right: none; }
+.stat-item:hover { background: var(--gray-50); }
+.stat-num { font-size: 1.5rem; font-weight: 700; color: var(--dark); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: .70rem; color: var(--gray-500); font-weight: 600; text-transform: uppercase; letter-spacing: .35px; margin-top: 1px; }
+.stat-item.s-danger  .stat-num { color: #C0392B; }
+.stat-item.s-warning .stat-num { color: #916A00; }
+.stat-item.s-success .stat-num { color: #2D8A4E; }
+.stat-item.s-info    .stat-num { color: #2F5EC4; }
+
+/* ── ACTION DROPDOWN ── */
+.action-wrap { position: relative; display: inline-flex; }
+.action-btn {
+  width: 30px; height: 30px;
+  border: 1.5px solid var(--gray-200);
+  background: #fff; border-radius: 7px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gray-400); font-size: .82rem;
+  transition: all .2s ease;
+}
+.action-btn:hover { background: var(--gray-50); color: var(--gray-700); border-color: var(--gray-300); }
+.action-dropdown {
+  position: fixed;
+  min-width: 180px; background: #fff;
+  border: 1.5px solid var(--gray-200); border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.05);
+  z-index: 9999;
+  display: none; padding: 4px;
+  animation: fadeDown .14s ease;
+}
+.action-dropdown.show { display: block; }
+.action-dd-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 9px 12px;
+  background: none; border: none; border-radius: 7px;
+  text-align: left; cursor: pointer;
+  font-family: var(--font); font-size: .835rem;
+  color: var(--gray-700); transition: background .14s ease;
+  white-space: nowrap;
+}
+.action-dd-item:hover { background: var(--gray-50); color: var(--dark); }
+.action-dd-item i { width: 14px; text-align: center; color: var(--gray-400); font-size: .78rem; }
+.action-dd-item.danger { color: #C0392B; }
+.action-dd-item.danger i { color: #C0392B; }
+.action-dd-item.danger:hover { background: #FEF2F2; }
+.action-dd-divider { height: 1px; background: var(--gray-100); margin: 4px 0; }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 56px 32px; text-align: center;
+}
+.empty-state-icon {
+  width: 50px; height: 50px; border-radius: 12px;
+  background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; color: var(--gray-400); margin-bottom: 14px;
+}
+.empty-state-title { font-size: .95rem; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+.empty-state-desc { font-size: .83rem; color: var(--gray-500); max-width: 260px; line-height: 1.55; margin-bottom: 18px; }
+
+/* ── RICH TABLE CELLS ── */
+.cell-stack { display: flex; flex-direction: column; gap: 2px; }
+.cell-primary { font-weight: 600; font-size: .875rem; color: var(--dark); }
+.cell-secondary { font-size: .775rem; color: var(--gray-500); line-height: 1.4; }
+.cell-id { font-size: .76rem; color: var(--gray-400); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cell-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .70rem; color: var(--gray-500);
+  background: var(--gray-50); border: 1px solid var(--gray-200);
+  border-radius: 4px; padding: 2px 7px; margin-top: 5px; white-space: nowrap;
+}
+.cell-tag i { font-size: .62rem; }
+
+/* ── STATUS DOT (obras recentes) ── */
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+}
+.status-dot.em-andamento { background:#2D8A4E; box-shadow:0 0 0 3px rgba(45,138,78,.18); }
+.status-dot.pausada      { background:#916A00; box-shadow:0 0 0 3px rgba(145,106,0,.18); }
+.status-dot.concluida    { background:var(--gray-400); }
+.status-dot.cancelada    { background:#C0392B; box-shadow:0 0 0 3px rgba(192,57,43,.18); }
+.status-dot.a-iniciar    { background:#2F5EC4; box-shadow:0 0 0 3px rgba(47,94,196,.18); }
+
+/* ── ALERT LIST UPGRADE ── */
+.alert-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 22px; border-bottom: 1px solid var(--gray-100);
+  transition: background .15s ease;
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-item:hover { background: var(--gray-50); }
+.alert-dot { display: none; }
+.alert-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; flex-shrink: 0;
+}
+.alert-item.critical .alert-icon { background:#FEF2F2; color:#C0392B; }
+.alert-item.warning  .alert-icon { background:#FFFBEB; color:#916A00; }
+
+/* ── OBRAS RECENTES UPGRADE ── */
+.obra-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 22px; border-bottom: 1px solid var(--gray-100);
+  transition: background .15s ease;
+}
+.obra-item:last-child { border-bottom: none; }
+.obra-item:hover { background: var(--gray-50); }
+.obra-status { display: none; }
+
+/* ── FILTER CARD ── */
+.obras-filtros-card {
+  background: var(--gray-50) !important;
+  border: 1.5px solid var(--gray-200) !important;
+  box-shadow: none !important;
+}
+.obras-filtros { gap: 14px; align-items: flex-end; }
+.filtro-group { min-width: 140px; }
+
+/* ── TOOLBAR ── */
+.toolbar-spacer { flex: 1; }
+.toolbar { gap: 10px; }
+
+/* ── TABLE COLUMN SIZES ── */
+.col-id      { width: 44px; color: var(--gray-400); }
+.col-actions { width: 52px; text-align: right; padding-right: 20px !important; }
+
+/* ── TRANSITIONS GLOBAIS ── */
+.btn, .card, .kpi-card, .badge, .nav-item,
+.action-btn, .stat-item, .action-dd-item,
+.form-group input, .form-group select, .form-group textarea {
+  transition: all .2s ease;
+}
+.data-table tbody tr { transition: background .15s ease; }
+
+/* ── SKELETON ── */
+.skel {
+  display: inline-block;
+  background: linear-gradient(90deg,var(--gray-100) 25%,#fff 50%,var(--gray-100) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px; height: 12px;
+}
+.skel-sm  { width: 56px; }
+.skel-md  { width: 110px; }
+.skel-lg  { width: 180px; }
+@keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+/* ── CHART CONTAINER ── */
+.chart-container { padding: 20px 24px; height: 300px; }
+
+/* ── BADGE (add blue) ── */
+.badge-blue { background:#E8F0FE; color:#2F5EC4; }
+
+/* ── KPI CARD REDESIGN ── */
+.kpi-value { font-size: 1.7rem; }
+.kpi-label { font-size: .74rem; }
+
+/* ── SUBTABS ── */
+.subtabs { margin-bottom: 20px; padding-bottom: 0; }
+.subtab  { font-size: .84rem; padding: 10px 18px; }
+
+/* ── QTY BADGE SIZE ── */
+.qty-badge { font-size: .8rem; padding: 3px 9px; }
+

@@ -159,36 +159,57 @@
       <section class="page" id="page-estoque">
         <div class="page-header">
           <h1>Estoque / Produtos</h1>
-          <span class="page-subtitle">Gerencie todos os produtos</span>
+          <span class="page-subtitle">Gerencie todos os produtos cadastrados</span>
         </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsEstoque">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-prod-total">—</span>
+            <span class="stat-label">Total de Produtos</span>
+          </div>
+          <div class="stat-item s-success">
+            <span class="stat-num" id="stat-prod-ok">—</span>
+            <span class="stat-label">Estoque Normal</span>
+          </div>
+          <div class="stat-item s-warning">
+            <span class="stat-num" id="stat-prod-alert">—</span>
+            <span class="stat-label">Em Alerta</span>
+          </div>
+          <div class="stat-item s-danger">
+            <span class="stat-num" id="stat-prod-zero">—</span>
+            <span class="stat-label">Sem Estoque</span>
+          </div>
+        </div>
+
         <div class="toolbar">
           <div class="search-inline">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Buscar por nome, ID ou descrição..." id="searchProduto"
+            <input type="text" placeholder="Buscar produto por nome, ID ou descrição..." id="searchProduto"
               oninput="filtrarProdutos(this.value)" />
           </div>
+          <div class="toolbar-spacer"></div>
           <button class="btn btn-secondary" onclick="exportarProdutos()">
-            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
           <button class="btn btn-primary" onclick="abrirModalNovoProduto()">
             <i class="fa-solid fa-plus"></i> Novo Produto
           </button>
         </div>
-        <!-- FAB: atalho de cadastro rápido -->
-        <button class="btn-fab" onclick="abrirModalNovoProduto()" title="Cadastrar produto">
-          <i class="fa-solid fa-plus"></i>
-        </button>
+
         <div class="card">
           <table class="data-table" id="tabelaProdutos">
             <thead>
               <tr>
-                <th>ID</th><th>Nome</th><th>Descrição</th>
-                <th>Quantidade</th><th>Status</th><th>Ações</th>
+                <th class="col-id">#</th>
+                <th>Produto</th>
+                <th>Estoque</th>
+                <th>Status</th>
+                <th class="col-actions"></th>
               </tr>
             </thead>
-            <!-- Linhas injetadas por renderTabelaProdutos(produtos) -->
             <tbody id="bodyProdutos">
-              <tr><td colspan="6" class="loading-cell">
+              <tr><td colspan="5" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando produtos...
               </td></tr>
             </tbody>
@@ -202,6 +223,30 @@
         <div class="page-header">
           <h1>Obras / Projetos</h1>
           <span class="page-subtitle">Controle de obras e materiais utilizados</span>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsObras">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-obra-total">—</span>
+            <span class="stat-label">Total de Obras</span>
+          </div>
+          <div class="stat-item s-info">
+            <span class="stat-num" id="stat-obra-ainiciar">—</span>
+            <span class="stat-label">À Iniciar</span>
+          </div>
+          <div class="stat-item s-success">
+            <span class="stat-num" id="stat-obra-andamento">—</span>
+            <span class="stat-label">Em Andamento</span>
+          </div>
+          <div class="stat-item s-warning">
+            <span class="stat-num" id="stat-obra-pausada">—</span>
+            <span class="stat-label">Pausadas</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num" id="stat-obra-concluida">—</span>
+            <span class="stat-label">Concluídas</span>
+          </div>
         </div>
 
         <!-- Filtros -->
@@ -240,9 +285,9 @@
         </div>
 
         <div class="toolbar" style="margin-top:0">
-          <div style="flex:1"></div>
+          <div class="toolbar-spacer"></div>
           <button class="btn btn-secondary" onclick="exportarObras()">
-            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
           <button class="btn btn-primary" onclick="abrirModalNovaObra()">
             <i class="fa-solid fa-plus"></i> Nova Obra
@@ -253,12 +298,12 @@
           <table class="data-table" id="tabelaObras">
             <thead>
               <tr>
-                <th style="width:54px">Id</th>
-                <th style="width:80px">Código</th>
+                <th class="col-id">#</th>
+                <th>Cliente</th>
                 <th>Obra</th>
                 <th style="width:96px">Início</th>
-                <th style="width:120px">Status</th>
-                <th style="width:90px">Ações</th>
+                <th style="width:130px">Status</th>
+                <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody id="bodyObras">
@@ -277,14 +322,32 @@
           <h1>Clientes</h1>
           <span class="page-subtitle">Cadastro de clientes e contratantes</span>
         </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsClientes">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-cli-total">—</span>
+            <span class="stat-label">Total de Clientes</span>
+          </div>
+          <div class="stat-item s-success">
+            <span class="stat-num" id="stat-cli-ativos">—</span>
+            <span class="stat-label">Com Obra Ativa</span>
+          </div>
+          <div class="stat-item s-info">
+            <span class="stat-num" id="stat-cli-email">—</span>
+            <span class="stat-label">Com E-mail</span>
+          </div>
+        </div>
+
         <div class="toolbar">
           <div class="search-inline">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Buscar cliente..." id="searchCliente"
+            <input type="text" placeholder="Buscar por nome, CNPJ, telefone ou e-mail..." id="searchCliente"
               oninput="filtrarClientes(this.value)" />
           </div>
+          <div class="toolbar-spacer"></div>
           <button class="btn btn-secondary" onclick="exportarClientes()">
-            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
           <button class="btn btn-primary" onclick="abrirModalNovoCliente()">
             <i class="fa-solid fa-plus"></i> Novo Cliente
@@ -294,11 +357,14 @@
           <table class="data-table" id="tabelaClientes">
             <thead>
               <tr>
-                <th>ID</th><th>Nome</th><th>CPF / CNPJ</th>
-                <th>Endereço</th><th>Contato</th><th>Ações</th>
+                <th class="col-id">#</th>
+                <th>Cliente</th>
+                <th>Documento</th>
+                <th>Localização</th>
+                <th>Contato</th>
+                <th class="col-actions"></th>
               </tr>
             </thead>
-            <!-- Linhas injetadas por renderTabelaClientes(clientes) -->
             <tbody id="bodyClientes">
               <tr><td colspan="6" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando clientes...
@@ -313,7 +379,19 @@
       <section class="page" id="page-admins">
         <div class="page-header">
           <h1>Administradores</h1>
-          <span class="page-subtitle">Gerencie os usuários do sistema</span>
+          <span class="page-subtitle">Gerencie os usuários e responsáveis do sistema</span>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsAdmins">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-admin-total">—</span>
+            <span class="stat-label">Administradores</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num" id="stat-resp-total">—</span>
+            <span class="stat-label">Responsáveis (Fields)</span>
+          </div>
         </div>
 
         <!-- Sub-tabs -->
@@ -334,8 +412,9 @@
               <input type="text" placeholder="Buscar administrador..." id="searchAdmin"
                 oninput="filtrarAdmins(this.value)" />
             </div>
+            <div class="toolbar-spacer"></div>
             <button class="btn btn-secondary" onclick="exportarAdmins()">
-              <i class="fa-solid fa-file-excel"></i> Exportar Excel
+              <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
             </button>
             <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
               <i class="fa-solid fa-plus"></i> Novo Administrador
@@ -344,7 +423,12 @@
           <div class="card">
             <table class="data-table" id="tabelaAdmins">
               <thead>
-                <tr><th>ID</th><th>Nome</th><th>Email</th><th>Ações</th></tr>
+                <tr>
+                  <th class="col-id">#</th>
+                  <th>Administrador</th>
+                  <th>Acesso</th>
+                  <th class="col-actions"></th>
+                </tr>
               </thead>
               <tbody id="bodyAdmins">
                 <tr><td colspan="4" class="loading-cell">
@@ -370,7 +454,11 @@
           <div class="card">
             <table class="data-table" id="tabelaResponsaveis">
               <thead>
-                <tr><th>ID</th><th>Nome</th><th>Ações</th></tr>
+                <tr>
+                  <th class="col-id">#</th>
+                  <th>Responsável / Field</th>
+                  <th class="col-actions"></th>
+                </tr>
               </thead>
               <tbody id="bodyResponsaveis">
                 <tr><td colspan="3" class="loading-cell">
