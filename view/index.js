@@ -109,16 +109,27 @@ async function carregarProdutos() {
 }
 
 function renderTabelaProdutos(produtos) {
-  const q        = filtros.produtos;
-  const filtrado = q ? produtos.filter(p =>
-    `${p.idProduto} ${p.nomeProduto} ${p.descProduto || ''}`.toLowerCase().includes(q)
-  ) : produtos;
+  const q             = filtros.produtos;
+  const statusFiltro  = filtros.produtosStatus;
 
-  const total     = filtrado.length;
-  const totalPags = Math.ceil(total / PER_PAGE) || 1;
+  const filtradoPorStatus = statusFiltro === 'ok'
+    ? produtos.filter(p => !_produtoEmAlerta(p) && p.qtdProduto > 0)
+    : statusFiltro === 'alerta'
+      ? produtos.filter(p => _produtoEmAlerta(p) && p.qtdProduto > 0)
+      : statusFiltro === 'zero'
+        ? produtos.filter(p => p.qtdProduto <= 0)
+        : produtos;
+
+  const filtrado = q ? filtradoPorStatus.filter(p =>
+    `${p.idProduto} ${p.nomeProduto} ${p.descProduto || ''}`.toLowerCase().includes(q)
+  ) : filtradoPorStatus;
+
+  const ordenado   = ordenarLista(filtrado, 'produtos');
+  const total       = ordenado.length;
+  const totalPags   = Math.ceil(total / PER_PAGE) || 1;
   if (PAG_STATE.produtos > totalPags) PAG_STATE.produtos = 1;
-  const inicio = (PAG_STATE.produtos - 1) * PER_PAGE;
-  const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
+  const inicio      = (PAG_STATE.produtos - 1) * PER_PAGE;
+  const pagina      = ordenado.slice(inicio, inicio + PER_PAGE);
 
   const tbody = document.getElementById('bodyProdutos');
   if (!pagina.length) {
@@ -163,6 +174,7 @@ function renderTabelaProdutos(produtos) {
     }).join('');
   }
   renderPaginacao('paginacaoProdutos', total, PAG_STATE.produtos, 'mudarPaginaProdutos');
+  atualizarIndicadoresOrdenacao('produtos');
 }
 
 function abrirModalNovoProduto() {
@@ -266,11 +278,12 @@ function renderTabelaObras(obras) {
   if (de)  filtrado = filtrado.filter(o => o.dataInicio && o.dataInicio >= de);
   if (ate) filtrado = filtrado.filter(o => o.dataInicio && o.dataInicio <= ate);
 
-  const total     = filtrado.length;
-  const totalPags = Math.ceil(total / PER_PAGE) || 1;
+  const ordenado   = ordenarLista(filtrado, 'obras');
+  const total       = ordenado.length;
+  const totalPags   = Math.ceil(total / PER_PAGE) || 1;
   if (PAG_STATE.obras > totalPags) PAG_STATE.obras = 1;
-  const inicio = (PAG_STATE.obras - 1) * PER_PAGE;
-  const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
+  const inicio      = (PAG_STATE.obras - 1) * PER_PAGE;
+  const pagina      = ordenado.slice(inicio, inicio + PER_PAGE);
 
   const fmtData = d => { if (!d) return '—'; const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`; };
   const tbody   = document.getElementById('bodyObras');
@@ -317,6 +330,7 @@ function renderTabelaObras(obras) {
     }).join('');
   }
   renderPaginacao('paginacaoObras', total, PAG_STATE.obras, 'mudarPaginaObras');
+  atualizarIndicadoresOrdenacao('obras');
 }
 
 function _prodSearchHTML(btnRemove) {
@@ -358,8 +372,9 @@ function buscarProdutoInput(input) {
   drop.innerHTML = matches.map(p => {
     const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
     return `<div class="prod-dropdown-item" onmousedown="selecionarProdutoDropdown(this,${p.idProduto})">
-      <span class="prod-id">#${p.idProduto}</span>${p.nomeProduto}
-      <span style="float:right;color:${cor};font-size:.75rem">${p.qtdProduto} em estoque</span>
+      <span class="prod-id">${p.idProduto}</span>
+      <span class="prod-name">${p.nomeProduto}</span>
+      <span class="prod-stock" style="color:${cor}">${p.qtdProduto} em estoque</span>
     </div>`;
   }).join('');
   drop.classList.remove('hidden');
@@ -371,7 +386,7 @@ function selecionarProdutoDropdown(item, idProduto) {
   const p       = cacheProdutos.find(x => x.idProduto === idProduto);
   if (!p) return;
 
-  wrap.querySelector('.prod-search').value = `#${p.idProduto} — ${p.nomeProduto}`;
+  wrap.querySelector('.prod-search').value = `${p.idProduto} — ${p.nomeProduto}`;
   wrap.querySelector('.prod-select').value = p.idProduto;
   wrap.querySelector('.prod-dropdown').classList.add('hidden');
 
@@ -728,7 +743,110 @@ let cacheClientes = [];
 
 const PAG_STATE = { produtos: 1, obras: 1, clientes: 1 };
 const PER_PAGE  = 10;
-const filtros   = { produtos: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '' };
+const filtros   = {
+  produtos: '', produtosStatus: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '', clientesStatus: ''
+};
+const ORDER_STATE = {
+  produtos: { key: 'id', dir: 'asc' },
+  obras: { key: 'id', dir: 'asc' },
+  clientes: { key: 'id', dir: 'asc' },
+  admins: { key: 'id', dir: 'asc' },
+  responsaveis: { key: 'id', dir: 'asc' },
+};
+
+function _compararValores(a, b, asc = true) {
+  if (a === b) return 0;
+  if (a === null || a === undefined || a === '') return asc ? 1 : -1;
+  if (b === null || b === undefined || b === '') return asc ? -1 : 1;
+  if (typeof a === 'number' && typeof b === 'number') return asc ? a - b : b - a;
+  const av = String(a).toLowerCase();
+  const bv = String(b).toLowerCase();
+  return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+}
+
+function _getSortValue(item, table, key) {
+  switch (table) {
+    case 'produtos':
+      if (key === 'id') return item.idProduto;
+      if (key === 'nome') return item.nomeProduto || '';
+      if (key === 'estoque') return item.qtdProduto ?? 0;
+      if (key === 'status') return item.qtdProduto <= 0 ? 'Sem estoque' : 'Em estoque';
+      return '';
+    case 'obras':
+      if (key === 'id') return item.idObra;
+      if (key === 'cliente') {
+        const cliente = cacheClientes.find(c => c.idCliente === item.codCliente);
+        return cliente ? cliente.nomeCliente : '';
+      }
+      if (key === 'obra') return item.descObra || '';
+      if (key === 'inicio') return item.dataInicio || '';
+      if (key === 'status') return item.statusObra || '';
+      return '';
+    case 'clientes':
+      if (key === 'id') return item.idCliente;
+      if (key === 'nome') return item.nomeCliente || '';
+      if (key === 'documento') return item.CNPJCPF || '';
+      if (key === 'localizacao') {
+        const linha1 = [item.rua, item.numero ? `nº ${item.numero}` : null].filter(Boolean).join(', ');
+        const linha2 = [item.bairro, item.cidade && item.estado ? `${item.cidade}/${item.estado}` : item.cidade].filter(Boolean).join(', ');
+        return [linha1, linha2].filter(Boolean).join(' | ');
+      }
+      if (key === 'contato') return `${item.contatoCliente || ''} ${item.telefone2 || ''} ${item.emailCliente || ''}`.trim();
+      return '';
+    case 'admins':
+      if (key === 'id') return item.idLogin;
+      if (key === 'nome') return item.nomeLogin || '';
+      if (key === 'acesso') return item.email || '';
+      return '';
+    case 'responsaveis':
+      if (key === 'id') return item.idResponsavel;
+      return item.nomeResponsavel || '';
+    default:
+      return '';
+  }
+}
+
+function ordenarLista(lista, table) {
+  const state = ORDER_STATE[table];
+  if (!state) return lista;
+  const asc = state.dir === 'asc';
+  return [...lista].sort((a, b) => {
+    const aVal = _getSortValue(a, table, state.key);
+    const bVal = _getSortValue(b, table, state.key);
+    return _compararValores(aVal, bVal, asc);
+  });
+}
+
+function ordenarTabela(table, key) {
+  const state = ORDER_STATE[table];
+  if (!state) return;
+  if (state.key === key) {
+    state.dir = state.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.key = key;
+    state.dir = 'asc';
+  }
+  if (table === 'produtos') renderTabelaProdutos(cacheProdutos);
+  if (table === 'obras') renderTabelaObras(cacheObras);
+  if (table === 'clientes') renderTabelaClientes(cacheClientes);
+  if (table === 'admins') renderTabelaAdmins(cacheAdmins);
+  if (table === 'responsaveis') renderTabelaResponsaveis(cacheResponsaveis);
+}
+
+function atualizarIndicadoresOrdenacao(table) {
+  const tableId = {
+    produtos: 'tabelaProdutos', obras: 'tabelaObras', clientes: 'tabelaClientes',
+    admins: 'tabelaAdmins', responsaveis: 'tabelaResponsaveis'
+  }[table];
+  const state = ORDER_STATE[table];
+  if (!tableId || !state) return;
+  document.querySelectorAll(`#${tableId} th.sortable`).forEach(th => {
+    const key = th.dataset.sortKey;
+    const arrow = key === state.key ? (state.dir === 'asc' ? '↑' : '↓') : '';
+    const span = th.querySelector('.sort-arrow');
+    if (span) span.textContent = arrow;
+  });
+}
 
 async function carregarClientes() {
   try {
@@ -751,16 +869,28 @@ function _enderecoCliente(c) {
 }
 
 function renderTabelaClientes(clientes) {
-  const q        = filtros.clientes;
-  const filtrado = q ? clientes.filter(c =>
-    `${c.idCliente} ${c.nomeCliente} ${c.CNPJCPF} ${c.contatoCliente || ''} ${c.emailCliente || ''} ${c.telefone2 || ''}`.toLowerCase().includes(q)
-  ) : clientes;
+  const q             = filtros.clientes;
+  const statusFiltro  = filtros.clientesStatus;
+  const clientesComObraAtiva = new Set(
+    cacheObras.filter(o => o.statusObra === 'Em andamento').map(o => String(o.codCliente))
+  );
 
-  const total     = filtrado.length;
-  const totalPags = Math.ceil(total / PER_PAGE) || 1;
+  const filtradoPorStatus = statusFiltro === 'comObraAtiva'
+    ? clientes.filter(c => clientesComObraAtiva.has(String(c.idCliente)))
+    : statusFiltro === 'comEmail'
+      ? clientes.filter(c => c.emailCliente)
+      : clientes;
+
+  const filtrado = q ? filtradoPorStatus.filter(c =>
+    `${c.idCliente} ${c.nomeCliente} ${c.CNPJCPF} ${c.contatoCliente || ''} ${c.emailCliente || ''} ${c.telefone2 || ''}`.toLowerCase().includes(q)
+  ) : filtradoPorStatus;
+
+  const ordenado   = ordenarLista(filtrado, 'clientes');
+  const total       = ordenado.length;
+  const totalPags   = Math.ceil(total / PER_PAGE) || 1;
   if (PAG_STATE.clientes > totalPags) PAG_STATE.clientes = 1;
-  const inicio = (PAG_STATE.clientes - 1) * PER_PAGE;
-  const pagina = filtrado.slice(inicio, inicio + PER_PAGE);
+  const inicio      = (PAG_STATE.clientes - 1) * PER_PAGE;
+  const pagina      = ordenado.slice(inicio, inicio + PER_PAGE);
 
   const tbody = document.getElementById('bodyClientes');
   if (!pagina.length) {
@@ -799,6 +929,7 @@ function renderTabelaClientes(clientes) {
     }).join('');
   }
   renderPaginacao('paginacaoClientes', total, PAG_STATE.clientes, 'mudarPaginaClientes');
+  atualizarIndicadoresOrdenacao('clientes');
 }
 
 function _limparModalCliente() {
@@ -1014,6 +1145,23 @@ async function renderGraficoObras() {
   const labels  = dados.map(d => `${d.idProduto} — ${truncar(d.nomeProduto, 18)}`);
   const values  = dados.map(d => d.totalConsumido);
 
+  const getBarColor = total => {
+    if (total <= 400) return 'rgba(239,68,68,0.85)';      // vermelho
+    if (total <= 200) return 'rgba(249,115,22,0.85)';     // laranja
+    if (total <= 100) return 'rgba(37,99,235,0.85)';      // azul
+    return 'rgba(16,185,129,0.85)';                        // verde acima de 400
+  };
+
+  const getBarBorderColor = total => {
+    if (total <= 400) return 'rgba(185,28,28,0.95)';
+    if (total <= 200) return 'rgba(194,65,12,0.95)';
+    if (total <= 100) return 'rgba(30,64,175,0.95)';
+    return 'rgba(5,150,105,0.95)';
+  };
+
+  const backgroundColors = values.map(getBarColor);
+  const borderColors = values.map(getBarBorderColor);
+
   _obraChart = new Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
@@ -1021,9 +1169,9 @@ async function renderGraficoObras() {
       datasets: [{
         label: 'Qtd. consumida',
         data: values,
-        backgroundColor: 'rgba(47,94,196,0.8)',
-        borderColor: 'transparent',
-        borderWidth: 0,
+        backgroundColor: backgroundColors,
+        borderColor: borderColors,
+        borderWidth: 1,
         borderRadius: 6,
         borderSkipped: false,
       }]
@@ -1077,10 +1225,13 @@ async function renderGraficoObras() {
 
 function renderNotificacoes(produtos) {
   const alertas  = produtos.filter(_produtoEmAlerta);
-  const criticos = alertas.filter(p => p.qtdProduto <= 0);
   const badge = document.getElementById('notifBadge');
-  if (criticos.length) { badge.textContent = criticos.length; badge.classList.remove('hidden'); }
-  else badge.classList.add('hidden');
+  if (alertas.length) {
+    badge.textContent = alertas.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
   const list = document.getElementById('notifList');
   if (!alertas.length) {
     list.innerHTML = '<div class="notif-item"><i class="fa-solid fa-circle-check" style="color:#16A34A"></i><div><strong>Tudo certo!</strong><p>Nenhum produto abaixo do mínimo.</p></div></div>';
@@ -1253,6 +1404,20 @@ function filtrarProdutos(q) {
   renderTabelaProdutos(cacheProdutos);
 }
 
+function filtrarProdutosStatus(status) {
+  filtros.produtosStatus = status || '';
+  PAG_STATE.produtos = 1;
+  _realcarCartoesFiltro('produtos', filtros.produtosStatus);
+  renderTabelaProdutos(cacheProdutos);
+}
+
+function filtrarClientesStatus(status) {
+  filtros.clientesStatus = status || '';
+  PAG_STATE.clientes = 1;
+  _realcarCartoesFiltro('clientes', filtros.clientesStatus);
+  renderTabelaClientes(cacheClientes);
+}
+
 function filtrarObras() {
   filtros.obraTipo   = (document.getElementById('obraFiltroTipo')?.value   || '').toLowerCase().trim();
   filtros.obraStatus = (document.getElementById('obraFiltroStatus')?.value || '');
@@ -1262,13 +1427,25 @@ function filtrarObras() {
   renderTabelaObras(cacheObras);
 }
 
+function _realcarCartoesFiltro(grupo, valor) {
+  document.querySelectorAll(`.stat-item[data-filter-group="${grupo}"]`).forEach(el => {
+    el.classList.toggle('active', el.dataset.filterValue === (valor || ''));
+  });
+}
+
 function filtrarClientes(q) {
   filtros.clientes   = q.toLowerCase();
   PAG_STATE.clientes = 1;
   renderTabelaClientes(cacheClientes);
 }
 
-function filtrarStatusObra(status) { filtros.obraStatus = status; PAG_STATE.obras = 1; renderTabelaObras(cacheObras); }
+function filtrarStatusObra(status) {
+  filtros.obraStatus = status;
+  const select = document.getElementById('obraFiltroStatus');
+  if (select) select.value = status || '';
+  PAG_STATE.obras = 1;
+  renderTabelaObras(cacheObras);
+}
 
 function mudarPaginaProdutos(pg) { PAG_STATE.produtos = pg; renderTabelaProdutos(cacheProdutos); }
 function mudarPaginaObras(pg)    { PAG_STATE.obras    = pg; renderTabelaObras(cacheObras); }
@@ -1352,7 +1529,8 @@ async function carregarAdmins() {
 
 function renderTabelaAdmins(admins) {
   const tbody = document.getElementById('bodyAdmins');
-  if (!admins.length) {
+  const ordenado = ordenarLista(admins, 'admins');
+  if (!ordenado.length) {
     tbody.innerHTML = _emptyState(
       'user-shield', 'Nenhum administrador cadastrado',
       'Cadastre um administrador para gerenciar o sistema.',
@@ -1360,7 +1538,7 @@ function renderTabelaAdmins(admins) {
     );
     return;
   }
-  tbody.innerHTML = admins.map(a => {
+  tbody.innerHTML = ordenado.map(a => {
     const nomeSafe = a.nomeLogin.replace(/'/g, "\\'");
     return `
       <tr>
@@ -1378,6 +1556,7 @@ function renderTabelaAdmins(admins) {
         ])}</td>
       </tr>`;
   }).join('');
+  atualizarIndicadoresOrdenacao('admins');
 }
 
 function abrirModalNovoAdmin() {
@@ -1636,7 +1815,8 @@ function popularSelectResponsaveis() {
 function renderTabelaResponsaveis(lista) {
   const tbody = document.getElementById('bodyResponsaveis');
   if (!tbody) return;
-  if (!lista.length) {
+  const ordenado = ordenarLista(lista, 'responsaveis');
+  if (!ordenado.length) {
     tbody.innerHTML = _emptyState(
       'id-badge', 'Nenhum responsável cadastrado',
       'Cadastre os fields responsáveis pelas obras.',
@@ -1644,7 +1824,7 @@ function renderTabelaResponsaveis(lista) {
     );
     return;
   }
-  tbody.innerHTML = lista.map(r => {
+  tbody.innerHTML = ordenado.map(r => {
     const nomeSafe = r.nomeResponsavel.replace(/'/g, "\\'");
     return `
       <tr>
@@ -1657,6 +1837,7 @@ function renderTabelaResponsaveis(lista) {
         ])}</td>
       </tr>`;
   }).join('');
+  atualizarIndicadoresOrdenacao('responsaveis');
 }
 
 function filtrarResponsaveis(q) {

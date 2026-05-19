@@ -329,6 +329,9 @@ body {
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table thead tr { background: #F8F9FB; border-bottom: 1px solid var(--gray-200); }
 .data-table th { padding: 13px 16px; text-align: left; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.data-table th.sortable { cursor: pointer; }
+.data-table th.sortable:hover { color: var(--dark); }
+.data-table .sort-arrow { margin-left: 6px; font-size: .78rem; color: var(--gray-400); }
 .data-table tbody tr { border-bottom: 1px solid var(--gray-100); transition: background var(--transition); }
 .data-table tbody tr:nth-child(even) { background: #FAFBFC; }
 .data-table tbody tr:last-child { border-bottom: none; }
@@ -390,16 +393,18 @@ body {
 .produto-obra-row select:focus { border-color: var(--gray-400); }
 .prod-id-input      { flex: 0 0 80px; }
 .prod-nome-input    { flex: 1; }
-.prod-estoque-input { flex: 0 0 140px; font-weight: 600; }
+.prod-estoque-input { flex: 0 0 180px; font-weight: 600; }
 .prod-qtd-input     { flex: 0 0 90px; }
 
-.prod-search-wrap   { position: relative; flex: 1; }
+.prod-search-wrap   { position: relative; flex: 1; min-width: 220px; }
 .prod-search        { width: 100%; }
 .prod-dropdown      { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--gray-200); border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 999; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
-.prod-dropdown-item { padding: 9px 12px; cursor: pointer; font-size: .84rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
+.prod-dropdown-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; cursor: pointer; font-size: .84rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
 .prod-dropdown-item:last-child { border-bottom: none; }
 .prod-dropdown-item:hover { background: var(--gray-50); }
-.prod-dropdown-item .prod-id { color: var(--gray-400); font-size: .75rem; margin-right: 6px; }
+.prod-dropdown-item .prod-id { color: var(--gray-400); font-size: .75rem; margin-right: 0; white-space: nowrap; }
+.prod-dropdown-item .prod-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prod-dropdown-item .prod-stock { flex-shrink: 0; font-size: .75rem; white-space: nowrap; }
 .form-group input[readonly] { background: var(--gray-50); color: var(--gray-500); cursor: default; }
 .obra-edit-context { font-size: .88rem; color: var(--gray-700); background: var(--gray-50); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; border-left: 3px solid var(--gray-300); }
 
@@ -559,6 +564,13 @@ body {
   margin-bottom: 24px;
   box-shadow: var(--shadow-sm);
 }
+.stat-item {
+  transition: background var(--transition), transform .15s ease;
+}
+.stat-item.clickable { cursor: pointer; }
+.stat-item.clickable:hover { background: #F5F7FB; transform: translateY(-1px); }
+.stat-item.active { background: #EEF4FF; border-color: transparent; }
+
 .stat-item {
   flex: 1;
   padding: 16px 22px;

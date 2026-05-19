@@ -164,19 +164,19 @@
 
         <!-- Stats bar -->
         <div class="page-stats" id="statsEstoque">
-          <div class="stat-item">
+          <div class="stat-item clickable active" data-filter-group="produtos" data-filter-value="" onclick="filtrarProdutosStatus('')" title="Mostrar todos os produtos">
             <span class="stat-num" id="stat-prod-total">—</span>
             <span class="stat-label">Total de Produtos</span>
           </div>
-          <div class="stat-item s-success">
+          <div class="stat-item s-success clickable" data-filter-group="produtos" data-filter-value="ok" onclick="filtrarProdutosStatus('ok')" title="Mostrar produtos em estoque normal">
             <span class="stat-num" id="stat-prod-ok">—</span>
             <span class="stat-label">Estoque Normal</span>
           </div>
-          <div class="stat-item s-warning">
+          <div class="stat-item s-warning clickable" data-filter-group="produtos" data-filter-value="alerta" onclick="filtrarProdutosStatus('alerta')" title="Mostrar produtos em alerta">
             <span class="stat-num" id="stat-prod-alert">—</span>
             <span class="stat-label">Em Alerta</span>
           </div>
-          <div class="stat-item s-danger">
+          <div class="stat-item s-danger clickable" data-filter-group="produtos" data-filter-value="zero" onclick="filtrarProdutosStatus('zero')" title="Mostrar produtos sem estoque">
             <span class="stat-num" id="stat-prod-zero">—</span>
             <span class="stat-label">Sem Estoque</span>
           </div>
@@ -201,10 +201,10 @@
           <table class="data-table" id="tabelaProdutos">
             <thead>
               <tr>
-                <th class="col-id">#</th>
-                <th>Produto</th>
-                <th>Estoque</th>
-                <th>Status</th>
+                <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('produtos','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('produtos','nome')">Produto <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="estoque" onclick="ordenarTabela('produtos','estoque')">Estoque <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="status" onclick="ordenarTabela('produtos','status')">Status <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
@@ -227,23 +227,23 @@
 
         <!-- Stats bar -->
         <div class="page-stats" id="statsObras">
-          <div class="stat-item">
+          <div class="stat-item clickable" onclick="filtrarStatusObra('')" title="Mostrar todas as obras">
             <span class="stat-num" id="stat-obra-total">—</span>
             <span class="stat-label">Total de Obras</span>
           </div>
-          <div class="stat-item s-info">
+          <div class="stat-item s-info clickable" onclick="filtrarStatusObra('À iniciar')" title="Filtrar obras À iniciar">
             <span class="stat-num" id="stat-obra-ainiciar">—</span>
             <span class="stat-label">À Iniciar</span>
           </div>
-          <div class="stat-item s-success">
+          <div class="stat-item s-success clickable" onclick="filtrarStatusObra('Em andamento')" title="Filtrar obras Em andamento">
             <span class="stat-num" id="stat-obra-andamento">—</span>
             <span class="stat-label">Em Andamento</span>
           </div>
-          <div class="stat-item s-warning">
+          <div class="stat-item s-warning clickable" onclick="filtrarStatusObra('Pausada')" title="Filtrar obras Pausadas">
             <span class="stat-num" id="stat-obra-pausada">—</span>
             <span class="stat-label">Pausadas</span>
           </div>
-          <div class="stat-item">
+          <div class="stat-item clickable" onclick="filtrarStatusObra('Concluida')" title="Filtrar obras Concluídas">
             <span class="stat-num" id="stat-obra-concluida">—</span>
             <span class="stat-label">Concluídas</span>
           </div>
@@ -298,11 +298,11 @@
           <table class="data-table" id="tabelaObras">
             <thead>
               <tr>
-                <th class="col-id">#</th>
-                <th>Cliente</th>
-                <th>Obra</th>
-                <th style="width:96px">Início</th>
-                <th style="width:130px">Status</th>
+                <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('obras','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="cliente" onclick="ordenarTabela('obras','cliente')">Cliente <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="obra" onclick="ordenarTabela('obras','obra')">Obra <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="inicio" onclick="ordenarTabela('obras','inicio')" style="width:96px">Início <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="status" onclick="ordenarTabela('obras','status')" style="width:130px">Status <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
@@ -325,15 +325,15 @@
 
         <!-- Stats bar -->
         <div class="page-stats" id="statsClientes">
-          <div class="stat-item">
+          <div class="stat-item clickable active" data-filter-group="clientes" data-filter-value="" onclick="filtrarClientesStatus('')" title="Mostrar todos os clientes">
             <span class="stat-num" id="stat-cli-total">—</span>
             <span class="stat-label">Total de Clientes</span>
           </div>
-          <div class="stat-item s-success">
+          <div class="stat-item s-success clickable" data-filter-group="clientes" data-filter-value="comObraAtiva" onclick="filtrarClientesStatus('comObraAtiva')" title="Mostrar clientes com obra em andamento">
             <span class="stat-num" id="stat-cli-ativos">—</span>
             <span class="stat-label">Com Obra Ativa</span>
           </div>
-          <div class="stat-item s-info">
+          <div class="stat-item s-info clickable" data-filter-group="clientes" data-filter-value="comEmail" onclick="filtrarClientesStatus('comEmail')" title="Mostrar clientes com e-mail cadastrado">
             <span class="stat-num" id="stat-cli-email">—</span>
             <span class="stat-label">Com E-mail</span>
           </div>
@@ -357,11 +357,11 @@
           <table class="data-table" id="tabelaClientes">
             <thead>
               <tr>
-                <th class="col-id">#</th>
-                <th>Cliente</th>
-                <th>Documento</th>
-                <th>Localização</th>
-                <th>Contato</th>
+                <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('clientes','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('clientes','nome')">Cliente <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="documento" onclick="ordenarTabela('clientes','documento')">Documento <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="localizacao" onclick="ordenarTabela('clientes','localizacao')">Localização <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="contato" onclick="ordenarTabela('clientes','contato')">Contato <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
@@ -424,9 +424,9 @@
             <table class="data-table" id="tabelaAdmins">
               <thead>
                 <tr>
-                  <th class="col-id">#</th>
-                  <th>Administrador</th>
-                  <th>Acesso</th>
+                  <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('admins','id')">ID <span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('admins','nome')">Administrador <span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort-key="acesso" onclick="ordenarTabela('admins','acesso')">Acesso <span class="sort-arrow"></span></th>
                   <th class="col-actions"></th>
                 </tr>
               </thead>
@@ -455,8 +455,8 @@
             <table class="data-table" id="tabelaResponsaveis">
               <thead>
                 <tr>
-                  <th class="col-id">#</th>
-                  <th>Responsável / Field</th>
+                  <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('responsaveis','id')">ID <span class="sort-arrow"></span></th>
+                  <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('responsaveis','nome')">Responsável / Field <span class="sort-arrow"></span></th>
                   <th class="col-actions"></th>
                 </tr>
               </thead>

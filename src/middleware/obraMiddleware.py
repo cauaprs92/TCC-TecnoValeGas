@@ -6,7 +6,7 @@ from src.error_response import ErrorResponse
 
 class ObraMiddleware:
 
-    STATUS_VALIDOS = ["Em andamento", "Concluida", "Cancelada", "Pausada"]
+    STATUS_VALIDOS = ["À iniciar", "Em andamento", "Concluida", "Cancelada", "Pausada"]
     FORMATO_DATA = "%Y-%m-%d"
 
     def _validar_data(self, valor, campo):
