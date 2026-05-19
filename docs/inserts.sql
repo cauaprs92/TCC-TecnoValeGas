@@ -1,4 +1,5 @@
-** Inserts para popular as tabelas com dados de exemplo **
+-- Inserts para popular as tabelas com dados de exemplo
+USE tcc;
 
 
 INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima) VALUES
