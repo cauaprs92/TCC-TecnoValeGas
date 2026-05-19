@@ -2,18 +2,18 @@
 
 
 INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima) VALUES
-(1,  'Tubo Aço Galvanizado 1"',        18, 'Tubo rígido galvanizado para rede de gás', 20, 100),
-(2,  'Registro de Esfera 3/4"',         7, 'Registro de esfera para gás com vedação reforçada', 10, 200),
-(3,  'Medidor de Gás Industrial G16',   3, 'Medidor para instalação industrial de gás natural', 5, 50),
-(4,  'Válvula Redutora de Pressão',     12, 'Válvula reguladora de pressão para rede de gás', 8, 60),
-(5,  'Mangueira Flexível 3/4"',         25, 'Mangueira flexível para conexão de gás', 10, 100),
-(6,  'Cinta de Fixação Metálica',       42, 'Cinta metálica para fixação de tubulações', 15, 150),
-(7,  'Tubo PPR 32mm',                   34, 'Tubo de polipropileno para água e gás', 20, 120),
-(8,  'Filtro de Linha para Gás',         5, 'Filtro de linha de proteção para rede de gás', 5, 40),
-(9,  'Conector Curvo 90° 1/2"',         11, 'Conector em curva para tubulação de gás', 10, 100),
-(10, 'Adaptador Rosca 1/2" x 3/4"',     18, 'Adaptador de rosca para composições mistas', 12, 80),
-(11, 'Lanterna de Inspeção Antichama',   6, 'Lanterna para inspeção com proteção antichama', 4, 40),
-(12, 'Detector de Vazão Portátil',       2, 'Detector portátil para vazamentos de gás', 2, 20);
+(1,  'Tubo Aço Galvanizado 1"',        200, 'Tubo rígido galvanizado para rede de gás', 50, 1000),
+(2,  'Registro de Esfera 3/4"',         120, 'Registro de esfera para gás com vedação reforçada', 50, 2000),
+(3,  'Medidor de Gás Industrial G16',   300, 'Medidor para instalação industrial de gás natural', 50, 5000),
+(4,  'Válvula Redutora de Pressão',     80, 'Válvula reguladora de pressão para rede de gás', 50, 1000),
+(5,  'Mangueira Flexível 3/4"',         25, 'Mangueira flexível para conexão de gás', 50, 1000),
+(6,  'Cinta de Fixação Metálica',       42, 'Cinta metálica para fixação de tubulações', 50, 1000),
+(7,  'Tubo PPR 32mm',                   34, 'Tubo de polipropileno para água e gás', 50, 1000),
+(8,  'Filtro de Linha para Gás',         500, 'Filtro de linha de proteção para rede de gás', 50, 1000),
+(9,  'Conector Curvo 90° 1/2"',         110, 'Conector em curva para tubulação de gás', 50, 1000),
+(10, 'Adaptador Rosca 1/2" x 3/4"',     180, 'Adaptador de rosca para composições mistas', 50, 1000),
+(11, 'Lanterna de Inspeção Antichama',   60, 'Lanterna para inspeção com proteção antichama', 50, 1000),
+(12, 'Detector de Vazão Portátil',       20, 'Detector portátil para vazamentos de gás', 50, 1000);
 
 INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailCliente, telefone2, cep, rua, numero, complemento, bairro, cidade, estado) VALUES
 (1, 'Caua Silva',             '123.456.789-00', 'Caua',         'caua.silva@sjcgas.com.br',       '(12) 98811-2233', '12245-000', 'Rua São Sebastião',      '112', 'Apto 101',          'Jardim Aquarius',         'São José dos Campos', 'SP'),
