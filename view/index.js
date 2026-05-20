@@ -1394,9 +1394,7 @@ document.addEventListener('click', e => {
 
 function abrirModal(id)  { document.getElementById(id).classList.remove('hidden'); }
 function fecharModal(id) { document.getElementById(id).classList.add('hidden'); }
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => { if (e.target === overlay) fecharModal(overlay.id); });
-});
+
 
 function filtrarProdutos(q) {
   filtros.produtos   = q.toLowerCase();

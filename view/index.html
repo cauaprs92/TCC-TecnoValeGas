@@ -254,28 +254,44 @@
 
         <!-- Filtros -->
         <div class="card obras-filtros-card">
-          <div class="obras-filtros">
-            <div class="filtro-group">
-              <label class="filtro-label">Tipo de Obra</label>
-              <input type="text" class="filtro-input" id="obraFiltroTipo"
-                placeholder="Ex: Instalação..." oninput="filtrarObras()" />
-            </div>
-            <div class="filtro-group">
-              <label class="filtro-label">Período</label>
-              <div class="filtro-periodo">
-                <input type="text" id="obraFiltroDe" placeholder="dd/mm/aaaa" />
-                <span class="filtro-sep">até</span>
-                <input type="text" id="obraFiltroAte" placeholder="dd/mm/aaaa" />
-              </div>
-            </div>
-            
-            <div class="filtro-group filtro-actions">
-              <button class="btn btn-primary" onclick="filtrarObras()">
-                <i class="fa-solid fa-magnifying-glass"></i> Localizar
-              </button>
-            </div>
-          </div>
-        </div>
+  <div class="obras-filtros">
+
+    <!-- Tipo de obra -->
+    <div class="filtro-group filtro-tipo-obra">
+      <label class="filtro-label">Tipo de Obra</label>
+
+      <input
+        type="text"
+        class="filtro-input"
+        id="obraFiltroTipo"
+        placeholder="Ex: Instalação..."
+        oninput="filtrarObras()"
+      />
+    </div>
+
+    <!-- Período -->
+    <div class="filtro-group">
+      <label class="filtro-label">Período</label>
+
+      <div class="filtro-periodo">
+        <input type="text" id="obraFiltroDe" placeholder="dd/mm/aaaa" />
+
+        <span class="filtro-sep">até</span>
+
+        <input type="text" id="obraFiltroAte" placeholder="dd/mm/aaaa" />
+      </div>
+    </div>
+
+    <!-- Botão -->
+    <div class="filtro-group filtro-actions">
+      <button class="btn btn-primary" onclick="filtrarObras()">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        Localizar
+      </button>
+    </div>
+
+  </div>
+</div>
 
         <div class="toolbar" style="margin-top:0">
           <div class="toolbar-spacer"></div>

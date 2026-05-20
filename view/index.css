@@ -750,3 +750,18 @@ body {
 /* ── QTY BADGE SIZE ── */
 .qty-badge { font-size: .8rem; padding: 3px 9px; }
 
+/* Expandir campo Tipo de Obra */
+.filtro-tipo-obra {
+  min-width: 420px;
+  flex: 1;
+}
+
+/* Campo Tipo de Obra expandido */
+.filtro-tipo-obra {
+  flex: 1;
+  min-width: 0;
+}
+
+.filtro-tipo-obra .filtro-input {
+  width: 100%;
+}
