@@ -34,6 +34,9 @@
       <a href="#" class="nav-item" data-page="admins">
         <i class="fa-solid fa-user-shield"></i><span>Administradores</span>
       </a>
+      <a href="#" class="nav-item" data-page="responsaveis">
+        <i class="fa-solid fa-id-badge"></i><span>Responsáveis</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -84,7 +87,7 @@
       <section class="page active" id="page-dashboard">
         <div class="page-header">
           <h1>Dashboard</h1>
-          <span class="page-subtitle">Visão geral do sistema</span>
+          <span class="page-subtitle"></span>
           <button class="btn btn-secondary" style="margin-left:auto" onclick="gerarRelatorio()">
             <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
           </button>
@@ -377,9 +380,10 @@
 
       <!-- ===== ADMINISTRADORES ===== -->
       <section class="page" id="page-admins">
+
         <div class="page-header">
           <h1>Administradores</h1>
-          <span class="page-subtitle">Gerencie os usuários e responsáveis do sistema</span>
+          <span class="page-subtitle">Gerencie os usuários administradores do sistema</span>
         </div>
 
         <!-- Stats bar -->
@@ -388,564 +392,585 @@
             <span class="stat-num" id="stat-admin-total">—</span>
             <span class="stat-label">Administradores</span>
           </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              placeholder="Buscar administrador..."
+              id="searchAdmin"
+              oninput="filtrarAdmins(this.value)"
+            />
+          </div>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-secondary" onclick="exportarAdmins()">
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
+          </button>
+          <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
+            <i class="fa-solid fa-plus"></i> Novo Administrador
+          </button>
+        </div>
+
+        <div class="card">
+          <table class="data-table" id="tabelaAdmins">
+            <thead>
+              <tr>
+                <th class="col-id sortable" data-sort-key="id"
+                  onclick="ordenarTabela('admins','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="nome"
+                  onclick="ordenarTabela('admins','nome')">Administrador <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="acesso"
+                  onclick="ordenarTabela('admins','acesso')">Acesso <span class="sort-arrow"></span></th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="bodyAdmins">
+              <tr>
+                <td colspan="4" class="loading-cell">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+      <!-- fim page-admins -->
+
+      <!-- ===== RESPONSÁVEIS ===== -->
+      <section class="page" id="page-responsaveis">
+
+        <div class="page-header">
+          <h1>Responsáveis</h1>
+          <span class="page-subtitle">Gerencie os responsáveis / fields do sistema</span>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsResponsaveis">
           <div class="stat-item">
             <span class="stat-num" id="stat-resp-total">—</span>
             <span class="stat-label">Responsáveis (Fields)</span>
           </div>
         </div>
 
-        <!-- Sub-tabs -->
-        <div class="subtabs">
-          <button class="subtab active" data-subtab="admins-list" onclick="mudarSubtab('admins', this)">
-            <i class="fa-solid fa-user-shield"></i> Administradores
-          </button>
-          <button class="subtab" data-subtab="responsaveis-list" onclick="mudarSubtab('admins', this)">
-            <i class="fa-solid fa-id-badge"></i> Responsáveis
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              placeholder="Buscar responsável..."
+              id="searchResp"
+              oninput="filtrarResponsaveis(this.value)"
+            />
+          </div>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()">
+            <i class="fa-solid fa-plus"></i> Novo Responsável
           </button>
         </div>
 
-        <!-- Painel: Administradores -->
-        <div class="subtab-panel active" id="admins-list">
-          <div class="toolbar">
-            <div class="search-inline">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" placeholder="Buscar administrador..." id="searchAdmin"
-                oninput="filtrarAdmins(this.value)" />
-            </div>
-            <div class="toolbar-spacer"></div>
-            <button class="btn btn-secondary" onclick="exportarAdmins()">
-              <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
-            </button>
-            <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
-              <i class="fa-solid fa-plus"></i> Novo Administrador
-            </button>
-          </div>
-          <div class="card">
-            <table class="data-table" id="tabelaAdmins">
-              <thead>
-                <tr>
-                  <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('admins','id')">ID <span class="sort-arrow"></span></th>
-                  <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('admins','nome')">Administrador <span class="sort-arrow"></span></th>
-                  <th class="sortable" data-sort-key="acesso" onclick="ordenarTabela('admins','acesso')">Acesso <span class="sort-arrow"></span></th>
-                  <th class="col-actions"></th>
-                </tr>
-              </thead>
-              <tbody id="bodyAdmins">
-                <tr><td colspan="4" class="loading-cell">
+        <div class="card">
+          <table class="data-table" id="tabelaResponsaveis">
+            <thead>
+              <tr>
+                <th class="col-id sortable" data-sort-key="id"
+                  onclick="ordenarTabela('responsaveis','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="nome"
+                  onclick="ordenarTabela('responsaveis','nome')">Responsável / Field <span class="sort-arrow"></span></th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="bodyResponsaveis">
+              <tr>
+                <td colspan="3" class="loading-cell">
                   <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
-                </td></tr>
-              </tbody>
-            </table>
-          </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <!-- Painel: Responsáveis -->
-        <div class="subtab-panel" id="responsaveis-list">
-          <div class="toolbar">
-            <div class="search-inline">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" placeholder="Buscar responsável..." id="searchResp"
-                oninput="filtrarResponsaveis(this.value)" />
-            </div>
-            <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()">
-              <i class="fa-solid fa-plus"></i> Novo Responsável
-            </button>
-          </div>
-          <div class="card">
-            <table class="data-table" id="tabelaResponsaveis">
-              <thead>
-                <tr>
-                  <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('responsaveis','id')">ID <span class="sort-arrow"></span></th>
-                  <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('responsaveis','nome')">Responsável / Field <span class="sort-arrow"></span></th>
-                  <th class="col-actions"></th>
-                </tr>
-              </thead>
-              <tbody id="bodyResponsaveis">
-                <tr><td colspan="3" class="loading-cell">
-                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
-                </td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </section>
+      <!-- fim page-responsaveis -->
 
-    </div><!-- end page-content -->
+      <!-- ===== MODAL: PRODUTO ===== -->
+      <div class="modal-overlay hidden" id="modalProduto">
+        <div class="modal">
+          <div class="modal-header">
+            <h2 id="modalProdutoTitle"><i class="fa-solid fa-boxes-stacked"></i> Novo Produto</h2>
+            <button class="modal-close" onclick="fecharModal('modalProduto')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="prodIdEdicao" />
+
+            <div class="form-group">
+              <label>Nome do Produto</label>
+              <input type="text" id="prodNome" placeholder="Ex: Cimento CP-II" />
+            </div>
+
+            <div class="form-row" style="grid-template-columns:1fr 1fr">
+              <div class="form-group">
+                <label>Qtd. em Estoque</label>
+                <input type="number" id="prodQtd" placeholder="100" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Qtd. Mínima</label>
+                <input type="number" id="prodQtdMin" placeholder="10" min="0" />
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <label>Qtd. Máxima</label>
+                <input type="number" id="prodQtdMax" placeholder="500" min="0" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Descrição</label>
+              <textarea id="prodDesc" rows="4"
+                placeholder="Ex: Saco 50kg, uso em fundações e estruturas..."></textarea>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarProduto()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: OBRA ===== -->
+      <div class="modal-overlay hidden" id="modalObra">
+        <div class="modal modal-large">
+          <div class="modal-header">
+            <h2 id="modalObraTitle"><i class="fa-solid fa-hard-hat"></i> Nova Obra</h2>
+            <button class="modal-close" onclick="fecharModal('modalObra')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="obraIdEdicao" />
+
+            <!-- ── Identificação ── -->
+            <div class="form-row" style="grid-template-columns:1fr 1fr">
+              <div class="form-group">
+                <label>Unidade</label>
+                <select id="obraUnidade">
+                  <option value="">- Selecione -</option>
+                  <option value="Mauá">Mauá</option>
+                  <option value="SJC">SJC</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns:1fr 1fr">
+              <div class="form-group">
+                <label>Tipo de Obra</label>
+                <select id="obraTipo">
+                  <option value="">- Selecione -</option>
+                  <option value="Instalação">Instalação</option>
+                  <option value="Manutenção">Manutenção</option>
+                  <option value="Reforma">Reforma</option>
+                  <option value="Vistoria">Vistoria</option>
+                  <option value="Troca de Equipamento">Troca de Equipamento</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="obraStatus">
+                  <option value="À iniciar">À iniciar</option>
+                  <option value="Em andamento">Em andamento</option>
+                  <option value="Pausada">Pausada</option>
+                  <option value="Concluida">Concluída</option>
+                  <option value="Cancelada">Cancelada</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns:2fr 1fr 1fr">
+              <div class="form-group">
+                <label>Field</label>
+                <select id="obraResp">
+                  <option value="">Selecione o field...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Data Início</label>
+                <input type="text" id="obraDataInicio" placeholder="dd/mm/aaaa" />
+              </div>
+              <div class="form-group">
+                <label>Data Fim <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                <input type="text" id="obraDataFim" placeholder="dd/mm/aaaa" />
+              </div>
+            </div>
+
+            <!-- ── Cliente ── -->
+            <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
+
+            <div class="form-group">
+              <label>Código (Cliente)</label>
+              <input type="number" id="obraCodCliente" placeholder="001" min="1"
+                oninput="buscarClienteObra(this)" />
+            </div>
+
+            <div class="form-group">
+              <label>CNPJ / CPF</label>
+              <input type="text" id="obraClienteCNPJ" placeholder="00.000.000/0000-00"
+                oninput="mascaraCpfCnpj(this)" maxlength="18" />
+            </div>
+
+            <div class="form-group">
+              <label>Cliente (Nome)</label>
+              <input type="text" id="obraClienteNome" placeholder="Nome do cliente" />
+            </div>
+
+            <div class="form-row" style="grid-template-columns:3fr 1fr">
+              <div class="form-group">
+                <label>Endereço</label>
+                <input type="text" id="obraClienteRua" placeholder="Rua / Av." />
+              </div>
+              <div class="form-group">
+                <label>Número</label>
+                <input type="text" id="obraClienteNumero" placeholder="123" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Complemento</label>
+                <input type="text" id="obraClienteComplemento" placeholder="Apto, Sala..." />
+              </div>
+              <div class="form-group">
+                <label>Bairro</label>
+                <input type="text" id="obraClienteBairro" placeholder="Bairro" />
+              </div>
+            </div>
+
+            <div class="form-row" style="grid-template-columns:1fr 2fr 1fr">
+              <div class="form-group">
+                <label>CEP</label>
+                <input type="text" id="obraClienteCEP" placeholder="00000-000" />
+              </div>
+              <div class="form-group">
+                <label>Cidade</label>
+                <input type="text" id="obraClienteCidade" placeholder="São Paulo" />
+              </div>
+              <div class="form-group">
+                <label>Estado</label>
+                <input type="text" id="obraClienteEstado" placeholder="SP" maxlength="2" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Contato (Nome)</label>
+              <input type="text" id="obraContato" placeholder="Nome do contato" />
+            </div>
+
+            <div class="form-group">
+              <label>E-mail</label>
+              <input type="email" id="obraEmail" placeholder="contato@empresa.com" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Telefone / Celular 1</label>
+                <input type="text" id="obraCelular1" placeholder="(11) 99999-9999"
+                  oninput="mascaraTelefone(this)" maxlength="15" />
+              </div>
+              <div class="form-group">
+                <label>Telefone / Celular 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                <input type="text" id="obraCelular2" placeholder="(11) 99999-9999"
+                  oninput="mascaraTelefone(this)" maxlength="15" />
+              </div>
+            </div>
+
+            <!-- ── Descrição / Obs / Orientação ── -->
+            <div class="form-section-title"><i class="fa-solid fa-align-left"></i> Dados da Obra</div>
+
+            <div class="form-group">
+              <label>Descrição</label>
+              <textarea id="obraDesc" rows="3"
+                placeholder="Descreva o serviço a ser realizado..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Orientação <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+              <textarea id="obraOrientacao" rows="2"
+                placeholder="Ex: Uso de EPI obrigatório..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Observações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+              <textarea id="obraObs" rows="2"
+                placeholder="Ex: Acesso somente pela entrada lateral..."></textarea>
+            </div>
+
+            <!-- Produtos — visível apenas no modo criação -->
+            <div id="obraSecaoProdutos">
+              <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
+              <div id="produtosObraList"></div>
+              <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
+                <i class="fa-solid fa-plus"></i> Adicionar Produto
+              </button>
+            </div>
+
+            <!-- Produtos somente leitura + adição — visível apenas no modo edição -->
+            <div id="obraSecaoProdutosVer" class="hidden">
+              <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
+              <div id="obraProdutosVerList"></div>
+              <div class="form-section-title" style="margin-top:14px">
+                <i class="fa-solid fa-plus"></i> Adicionar Produtos
+              </div>
+              <div id="produtosObraEdList"></div>
+              <button class="btn btn-ghost" onclick="adicionarProdutoObraEd()">
+                <i class="fa-solid fa-plus"></i> Adicionar Produto
+              </button>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalObra')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarObra()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: CLIENTE ===== -->
+      <div class="modal-overlay hidden" id="modalCliente">
+        <div class="modal modal-large">
+          <div class="modal-header">
+            <h2 id="modalClienteTitle"><i class="fa-solid fa-user-plus"></i> Novo Cliente</h2>
+            <button class="modal-close" onclick="fecharModal('modalCliente')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="cliIdEdicao" />
+
+            <div class="form-group">
+              <label>Nome</label>
+              <input type="text" id="cliNome" placeholder="Ex: João Silva" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>CPF / CNPJ</label>
+                <input type="text" id="cliCpfCnpj" placeholder="000.000.000-00"
+                  oninput="mascaraCpfCnpj(this)" maxlength="18" />
+              </div>
+              <div class="form-group">
+                <label>E-mail <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                <input type="email" id="cliEmail" placeholder="contato@empresa.com" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Telefone 1</label>
+                <input type="text" id="cliContato" placeholder="(00) 00000-0000"
+                  oninput="mascaraTelefone(this)" maxlength="15" />
+              </div>
+              <div class="form-group">
+                <label>Telefone 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                <input type="text" id="cliTelefone2" placeholder="(00) 00000-0000"
+                  oninput="mascaraTelefone(this)" maxlength="15" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>CEP</label>
+              <input type="text" id="cliCep" placeholder="00000-000"
+                oninput="mascaraCep(this)" maxlength="9" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex:3">
+                <label>Rua / Logradouro</label>
+                <input type="text" id="cliRua" placeholder="Rua das Flores" />
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>Número</label>
+                <input type="text" id="cliNumero" placeholder="42" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Complemento <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                <input type="text" id="cliComplemento" placeholder="Apto 201" />
+              </div>
+              <div class="form-group">
+                <label>Bairro</label>
+                <input type="text" id="cliBairro" placeholder="Centro" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex:3">
+                <label>Cidade</label>
+                <input type="text" id="cliCidade" placeholder="São Paulo" />
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>Estado</label>
+                <input type="text" id="cliEstado" placeholder="SP" maxlength="2" style="text-transform:uppercase" />
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalCliente')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarCliente()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: VER PRODUTOS DA OBRA ===== -->
+      <div class="modal-overlay hidden" id="modalVerObra">
+        <div class="modal modal-large">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-eye"></i> Produtos da Obra</h2>
+            <button class="modal-close" onclick="fecharModal('modalVerObra')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <!-- Conteúdo injetado por verProdutosObra(idObra) -->
+          <div class="modal-body" id="modalVerObraBody"></div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalVerObra')">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: ADMINISTRADOR ===== -->
+      <div class="modal-overlay hidden" id="modalAdmin">
+        <div class="modal">
+          <div class="modal-header">
+            <h2 id="modalAdminTitle"><i class="fa-solid fa-user-shield"></i> Novo Administrador</h2>
+            <button class="modal-close" onclick="fecharModal('modalAdmin')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="adminIdEdicao" />
+
+            <div class="form-group">
+              <label>Nome</label>
+              <input type="text" id="adminNome" placeholder="Ex: João" />
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="adminEmail" placeholder="joao@empresa.com" />
+            </div>
+
+            <div class="form-group" id="adminSenhaGroup">
+              <label>Senha</label>
+              <div class="input-pwd-wrap">
+                <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
+                <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminSenha', this)">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group hidden" id="adminSenhaAtualGroup">
+              <label>Senha Atual <span style="font-weight:400;opacity:.6">(obrigatória para alterar dados)</span></label>
+              <div class="input-pwd-wrap">
+                <input type="password" id="adminSenhaAtual" placeholder="Confirme sua senha atual" />
+                <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminSenhaAtual', this)">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group hidden" id="adminNovaSenhaGroup">
+              <label>Nova Senha <span style="font-weight:400;opacity:.6">(deixe em branco para manter)</span></label>
+              <div class="input-pwd-wrap">
+                <input type="password" id="adminNovaSenha" placeholder="Mínimo 6 caracteres" />
+                <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminNovaSenha', this)">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalAdmin')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarAdmin()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: CONFIRMAR EXCLUSÃO ===== -->
+      <div class="modal-overlay hidden" id="modalConfirmar">
+        <div class="modal modal-small">
+          <div class="modal-header danger-header">
+            <h2><i class="fa-solid fa-trash"></i> Confirmar Exclusão</h2>
+            <button class="modal-close" onclick="fecharModal('modalConfirmar')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body center">
+            <p id="confirmarMsg">Tem certeza que deseja excluir este item?</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalConfirmar')">Cancelar</button>
+            <button class="btn btn-danger" id="btnConfirmarExcluir">
+              <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: RESPONSÁVEL ===== -->
+      <div class="modal-overlay hidden" id="modalResponsavel">
+        <div class="modal modal-small">
+          <div class="modal-header">
+            <h2 id="modalResponsavelTitle"><i class="fa-solid fa-id-badge"></i> Novo Responsável</h2>
+            <button class="modal-close" onclick="fecharModal('modalResponsavel')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="respIdEdicao" />
+            <div class="form-group">
+              <label>Nome</label>
+              <input type="text" id="respNome" placeholder="Ex: Carlos Silva" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalResponsavel')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarResponsavel()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: EDITAR PRODUTO DA OBRA ===== -->
+      <div class="modal-overlay hidden" id="modalEditarProdObra">
+        <div class="modal modal-small">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen"></i> Editar Quantidade</h2>
+            <button class="modal-close" onclick="fecharModal('modalEditarProdObra')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="editProdObraIdObra" />
+            <input type="hidden" id="editProdObraIdProduto" />
+            <p id="editProdObraNome" style="font-weight:600;margin-bottom:14px;color:var(--dark)"></p>
+            <div class="form-group">
+              <label>Nova Quantidade</label>
+              <input type="number" id="editProdObraQtd" min="1" placeholder="Ex: 5" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalEditarProdObra')">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarEditarProdObra()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- end page-content -->
   </main>
-
-  <!-- ===== MODAL: PRODUTO ===== -->
-  <div class="modal-overlay hidden" id="modalProduto">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modalProdutoTitle"><i class="fa-solid fa-boxes-stacked"></i> Novo Produto</h2>
-        <button class="modal-close" onclick="fecharModal('modalProduto')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="prodIdEdicao" />
-
-        <div class="form-group">
-          <label>Nome do Produto</label>
-          <input type="text" id="prodNome" placeholder="Ex: Cimento CP-II" />
-        </div>
-
-        <div class="form-row" style="grid-template-columns:1fr 1fr">
-          <div class="form-group">
-            <label>Qtd. em Estoque</label>
-            <input type="number" id="prodQtd" placeholder="100" min="0" />
-          </div>
-          <div class="form-group">
-            <label>Qtd. Mínima</label>
-            <input type="number" id="prodQtdMin" placeholder="10" min="0" />
-          </div>
-          <div class="form-group" style="grid-column:1/-1">
-            <label>Qtd. Máxima</label>
-            <input type="number" id="prodQtdMax" placeholder="500" min="0" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Descrição</label>
-          <textarea id="prodDesc" rows="4"
-            placeholder="Ex: Saco 50kg, uso em fundações e estruturas..."></textarea>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarProduto()">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: OBRA ===== -->
-  <div class="modal-overlay hidden" id="modalObra">
-    <div class="modal modal-large">
-      <div class="modal-header">
-        <h2 id="modalObraTitle"><i class="fa-solid fa-hard-hat"></i> Nova Obra</h2>
-        <button class="modal-close" onclick="fecharModal('modalObra')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="obraIdEdicao" />
-
-        <!-- ── Identificação ── -->
-        <div class="form-row" style="grid-template-columns:1fr 1fr">
-          <div class="form-group">
-            <label>Unidade</label>
-            <select id="obraUnidade">
-              <option value="">- Selecione -</option>
-              <option value="Mauá">Mauá</option>
-              <option value="SJC">SJC</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row" style="grid-template-columns:1fr 1fr">
-          <div class="form-group">
-            <label>Tipo de Obra</label>
-            <select id="obraTipo">
-              <option value="">- Selecione -</option>
-              <option value="Instalação">Instalação</option>
-              <option value="Manutenção">Manutenção</option>
-              <option value="Reforma">Reforma</option>
-              <option value="Vistoria">Vistoria</option>
-              <option value="Troca de Equipamento">Troca de Equipamento</option>
-              <option value="Outros">Outros</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Status</label>
-            <select id="obraStatus">
-              <option value="À iniciar">À iniciar</option>
-              <option value="Em andamento">Em andamento</option>
-              <option value="Pausada">Pausada</option>
-              <option value="Concluida">Concluída</option>
-              <option value="Cancelada">Cancelada</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row" style="grid-template-columns:2fr 1fr 1fr">
-          <div class="form-group">
-            <label>Field</label>
-            <select id="obraResp">
-              <option value="">Selecione o field...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Data Início</label>
-            <input type="text" id="obraDataInicio" placeholder="dd/mm/aaaa" />
-          </div>
-          <div class="form-group">
-            <label>Data Fim <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <input type="text" id="obraDataFim" placeholder="dd/mm/aaaa" />
-          </div>
-        </div>
-
-        <!-- ── Cliente ── -->
-        <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
-
-        <div class="form-group">
-          <label>Código (Cliente)</label>
-          <input type="number" id="obraCodCliente" placeholder="001" min="1"
-            oninput="buscarClienteObra(this)" />
-        </div>
-
-        <div class="form-group">
-          <label>CNPJ / CPF</label>
-          <input type="text" id="obraClienteCNPJ" placeholder="00.000.000/0000-00"
-            oninput="mascaraCpfCnpj(this)" maxlength="18" />
-        </div>
-
-        <div class="form-group">
-          <label>Cliente (Nome)</label>
-          <input type="text" id="obraClienteNome" placeholder="Nome do cliente" />
-        </div>
-
-        <div class="form-row" style="grid-template-columns:3fr 1fr">
-          <div class="form-group">
-            <label>Endereço</label>
-            <input type="text" id="obraClienteRua" placeholder="Rua / Av." />
-          </div>
-          <div class="form-group">
-            <label>Número</label>
-            <input type="text" id="obraClienteNumero" placeholder="123" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Complemento</label>
-            <input type="text" id="obraClienteComplemento" placeholder="Apto, Sala..." />
-          </div>
-          <div class="form-group">
-            <label>Bairro</label>
-            <input type="text" id="obraClienteBairro" placeholder="Bairro" />
-          </div>
-        </div>
-
-        <div class="form-row" style="grid-template-columns:1fr 2fr 1fr">
-          <div class="form-group">
-            <label>CEP</label>
-            <input type="text" id="obraClienteCEP" placeholder="00000-000" />
-          </div>
-          <div class="form-group">
-            <label>Cidade</label>
-            <input type="text" id="obraClienteCidade" placeholder="São Paulo" />
-          </div>
-          <div class="form-group">
-            <label>Estado</label>
-            <input type="text" id="obraClienteEstado" placeholder="SP" maxlength="2" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Contato (Nome)</label>
-          <input type="text" id="obraContato" placeholder="Nome do contato" />
-        </div>
-
-        <div class="form-group">
-          <label>E-mail</label>
-          <input type="email" id="obraEmail" placeholder="contato@empresa.com" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Telefone / Celular 1</label>
-            <input type="text" id="obraCelular1" placeholder="(11) 99999-9999"
-              oninput="mascaraTelefone(this)" maxlength="15" />
-          </div>
-          <div class="form-group">
-            <label>Telefone / Celular 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <input type="text" id="obraCelular2" placeholder="(11) 99999-9999"
-              oninput="mascaraTelefone(this)" maxlength="15" />
-          </div>
-        </div>
-
-        <!-- ── Descrição / Obs / Orientação ── -->
-        <div class="form-section-title"><i class="fa-solid fa-align-left"></i> Dados da Obra</div>
-
-        <div class="form-group">
-          <label>Descrição</label>
-          <textarea id="obraDesc" rows="3"
-            placeholder="Descreva o serviço a ser realizado..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Orientação <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-          <textarea id="obraOrientacao" rows="2"
-            placeholder="Ex: Uso de EPI obrigatório..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Observações <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-          <textarea id="obraObs" rows="2"
-            placeholder="Ex: Acesso somente pela entrada lateral..."></textarea>
-        </div>
-
-        <!-- Produtos — visível apenas no modo criação -->
-        <div id="obraSecaoProdutos">
-          <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
-          <div id="produtosObraList"></div>
-          <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
-            <i class="fa-solid fa-plus"></i> Adicionar Produto
-          </button>
-        </div>
-
-        <!-- Produtos somente leitura + adição — visível apenas no modo edição -->
-        <div id="obraSecaoProdutosVer" class="hidden">
-          <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
-          <div id="obraProdutosVerList"></div>
-          <div class="form-section-title" style="margin-top:14px">
-            <i class="fa-solid fa-plus"></i> Adicionar Produtos
-          </div>
-          <div id="produtosObraEdList"></div>
-          <button class="btn btn-ghost" onclick="adicionarProdutoObraEd()">
-            <i class="fa-solid fa-plus"></i> Adicionar Produto
-          </button>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalObra')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarObra()">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: CLIENTE ===== -->
-  <div class="modal-overlay hidden" id="modalCliente">
-    <div class="modal modal-large">
-      <div class="modal-header">
-        <h2 id="modalClienteTitle"><i class="fa-solid fa-user-plus"></i> Novo Cliente</h2>
-        <button class="modal-close" onclick="fecharModal('modalCliente')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="cliIdEdicao" />
-
-        <div class="form-group">
-          <label>Nome</label>
-          <input type="text" id="cliNome" placeholder="Ex: João Silva" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>CPF / CNPJ</label>
-            <input type="text" id="cliCpfCnpj" placeholder="000.000.000-00"
-              oninput="mascaraCpfCnpj(this)" maxlength="18" />
-          </div>
-          <div class="form-group">
-            <label>E-mail <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <input type="email" id="cliEmail" placeholder="contato@empresa.com" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Telefone 1</label>
-            <input type="text" id="cliContato" placeholder="(00) 00000-0000"
-              oninput="mascaraTelefone(this)" maxlength="15" />
-          </div>
-          <div class="form-group">
-            <label>Telefone 2 <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <input type="text" id="cliTelefone2" placeholder="(00) 00000-0000"
-              oninput="mascaraTelefone(this)" maxlength="15" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>CEP</label>
-          <input type="text" id="cliCep" placeholder="00000-000"
-            oninput="mascaraCep(this)" maxlength="9" />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group" style="flex:3">
-            <label>Rua / Logradouro</label>
-            <input type="text" id="cliRua" placeholder="Rua das Flores" />
-          </div>
-          <div class="form-group" style="flex:1">
-            <label>Número</label>
-            <input type="text" id="cliNumero" placeholder="42" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Complemento <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-            <input type="text" id="cliComplemento" placeholder="Apto 201" />
-          </div>
-          <div class="form-group">
-            <label>Bairro</label>
-            <input type="text" id="cliBairro" placeholder="Centro" />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group" style="flex:3">
-            <label>Cidade</label>
-            <input type="text" id="cliCidade" placeholder="São Paulo" />
-          </div>
-          <div class="form-group" style="flex:1">
-            <label>Estado</label>
-            <input type="text" id="cliEstado" placeholder="SP" maxlength="2" style="text-transform:uppercase" />
-          </div>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalCliente')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarCliente()">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: VER PRODUTOS DA OBRA ===== -->
-  <div class="modal-overlay hidden" id="modalVerObra">
-    <div class="modal modal-large">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-eye"></i> Produtos da Obra</h2>
-        <button class="modal-close" onclick="fecharModal('modalVerObra')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <!-- Conteúdo injetado por verProdutosObra(idObra) -->
-      <div class="modal-body" id="modalVerObraBody"></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalVerObra')">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: ADMINISTRADOR ===== -->
-  <div class="modal-overlay hidden" id="modalAdmin">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modalAdminTitle"><i class="fa-solid fa-user-shield"></i> Novo Administrador</h2>
-        <button class="modal-close" onclick="fecharModal('modalAdmin')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="adminIdEdicao" />
-
-        <div class="form-group">
-          <label>Nome</label>
-          <input type="text" id="adminNome" placeholder="Ex: João" />
-        </div>
-
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="adminEmail" placeholder="joao@empresa.com" />
-        </div>
-
-        <div class="form-group" id="adminSenhaGroup">
-          <label>Senha</label>
-          <div class="input-pwd-wrap">
-            <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
-            <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminSenha', this)">
-              <i class="fa-regular fa-eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group hidden" id="adminSenhaAtualGroup">
-          <label>Senha Atual <span style="font-weight:400;opacity:.6">(obrigatória para alterar dados)</span></label>
-          <div class="input-pwd-wrap">
-            <input type="password" id="adminSenhaAtual" placeholder="Confirme sua senha atual" />
-            <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminSenhaAtual', this)">
-              <i class="fa-regular fa-eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group hidden" id="adminNovaSenhaGroup">
-          <label>Nova Senha <span style="font-weight:400;opacity:.6">(deixe em branco para manter)</span></label>
-          <div class="input-pwd-wrap">
-            <input type="password" id="adminNovaSenha" placeholder="Mínimo 6 caracteres" />
-            <button class="btn-pwd-toggle" type="button" onclick="toggleAdminSenha('adminNovaSenha', this)">
-              <i class="fa-regular fa-eye"></i>
-            </button>
-          </div>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalAdmin')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarAdmin()">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: CONFIRMAR EXCLUSÃO ===== -->
-  <div class="modal-overlay hidden" id="modalConfirmar">
-    <div class="modal modal-small">
-      <div class="modal-header danger-header">
-        <h2><i class="fa-solid fa-trash"></i> Confirmar Exclusão</h2>
-        <button class="modal-close" onclick="fecharModal('modalConfirmar')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body center">
-        <p id="confirmarMsg">Tem certeza que deseja excluir este item?</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalConfirmar')">Cancelar</button>
-        <button class="btn btn-danger" id="btnConfirmarExcluir">
-          <i class="fa-solid fa-trash"></i> Excluir
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: RESPONSÁVEL ===== -->
-  <div class="modal-overlay hidden" id="modalResponsavel">
-    <div class="modal modal-small">
-      <div class="modal-header">
-        <h2 id="modalResponsavelTitle"><i class="fa-solid fa-id-badge"></i> Novo Responsável</h2>
-        <button class="modal-close" onclick="fecharModal('modalResponsavel')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="respIdEdicao" />
-        <div class="form-group">
-          <label>Nome</label>
-          <input type="text" id="respNome" placeholder="Ex: Carlos Silva" />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalResponsavel')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarResponsavel()">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== MODAL: EDITAR PRODUTO DA OBRA ===== -->
-  <div class="modal-overlay hidden" id="modalEditarProdObra">
-    <div class="modal modal-small">
-      <div class="modal-header">
-        <h2><i class="fa-solid fa-pen"></i> Editar Quantidade</h2>
-        <button class="modal-close" onclick="fecharModal('modalEditarProdObra')"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="editProdObraIdObra" />
-        <input type="hidden" id="editProdObraIdProduto" />
-        <p id="editProdObraNome" style="font-weight:600;margin-bottom:14px;color:var(--dark)"></p>
-        <div class="form-group">
-          <label>Nova Quantidade</label>
-          <input type="number" id="editProdObraQtd" min="1" placeholder="Ex: 5" />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="fecharModal('modalEditarProdObra')">Cancelar</button>
-        <button class="btn btn-primary" onclick="confirmarEditarProdObra()">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar
-        </button>
-      </div>
-    </div>
-  </div>
 
   <div class="toast-container" id="toastContainer"></div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>

@@ -306,11 +306,14 @@ body {
 /* ── TOOLBAR ── */
 .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .search-inline {
-  display: flex; align-items: center; gap: 8px;
-  background: #fff; border: 1px solid var(--gray-200);
-  border-radius: 7px; padding: 8px 12px;
-  flex: 1; max-width: 320px;
-  transition: border var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 7px;
+  padding: 8px 12px;
+  width: 100%;
 }
 .search-inline:focus-within { border-color: var(--gray-300); }
 .search-inline i { color: var(--gray-500); font-size: .85rem; }
