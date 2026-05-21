@@ -557,18 +557,19 @@
             <!-- ── Identificação ── -->
             <div class="form-row" style="grid-template-columns:1fr 1fr">
               <div class="form-group">
-                <label>Unidade</label>
+                <label>Unidade <span class="campo-obrigatorio">*</span></label>
                 <select id="obraUnidade">
                   <option value="">- Selecione -</option>
                   <option value="Mauá">Mauá</option>
                   <option value="SJC">SJC</option>
                 </select>
+                <span class="field-error" id="err-obraUnidade"></span>
               </div>
             </div>
 
             <div class="form-row" style="grid-template-columns:1fr 1fr">
               <div class="form-group">
-                <label>Tipo de Obra</label>
+                <label>Tipo de Obra <span class="campo-obrigatorio">*</span></label>
                 <select id="obraTipo">
                   <option value="">- Selecione -</option>
                   <option value="Instalação">Instalação</option>
@@ -578,9 +579,10 @@
                   <option value="Troca de Equipamento">Troca de Equipamento</option>
                   <option value="Outros">Outros</option>
                 </select>
+                <span class="field-error" id="err-obraTipo"></span>
               </div>
               <div class="form-group">
-                <label>Status</label>
+                <label>Status <span class="campo-obrigatorio">*</span></label>
                 <select id="obraStatus">
                   <option value="À iniciar">À iniciar</option>
                   <option value="Em andamento">Em andamento</option>
@@ -621,35 +623,41 @@
             </div>
 
             <div class="form-group">
-              <label>CNPJ / CPF</label>
+              <label>CNPJ / CPF <span class="campo-obrigatorio">*</span></label>
               <input type="text" id="obraClienteCNPJ" placeholder="00.000.000/0000-00"
                 oninput="mascaraCpfCnpj(this)" maxlength="18" />
+              <span class="field-error" id="err-obraClienteCNPJ"></span>
             </div>
 
             <div class="form-group">
-              <label>Cliente (Nome)</label>
+              <label>Cliente (Nome) <span class="campo-obrigatorio">*</span></label>
               <input type="text" id="obraClienteNome" placeholder="Nome do cliente" />
+              <span class="field-error" id="err-obraClienteNome"></span>
             </div>
 
             <div class="form-row" style="grid-template-columns:3fr 1fr">
               <div class="form-group">
-                <label>Endereço</label>
+                <label>Endereço <span class="campo-obrigatorio">*</span></label>
                 <input type="text" id="obraClienteRua" placeholder="Rua / Av." />
+                <span class="field-error" id="err-obraClienteRua"></span>
               </div>
               <div class="form-group">
-                <label>Número</label>
+                <label>Número <span class="campo-obrigatorio">*</span></label>
                 <input type="text" id="obraClienteNumero" placeholder="123" />
+                <span class="field-error" id="err-obraClienteNumero"></span>
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label>Complemento</label>
+                <label>Complemento <span class="campo-obrigatorio">*</span></label>
                 <input type="text" id="obraClienteComplemento" placeholder="Apto, Sala..." />
+                <span class="field-error" id="err-obraClienteComplemento"></span>
               </div>
               <div class="form-group">
-                <label>Bairro</label>
+                <label>Bairro <span class="campo-obrigatorio">*</span></label>
                 <input type="text" id="obraClienteBairro" placeholder="Bairro" />
+                <span class="field-error" id="err-obraClienteBairro"></span>
               </div>
             </div>
 

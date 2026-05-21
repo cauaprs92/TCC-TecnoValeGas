@@ -88,6 +88,30 @@ document.addEventListener('DOMContentLoaded', () => {
       _obraSetError('obraDesc', 'A descrição da obra é obrigatória.');
     else _obraClearError('obraDesc');
   });
+  document.getElementById('obraUnidade').addEventListener('change', () => {
+    if (!document.getElementById('obraUnidade').value)
+      _obraSetError('obraUnidade', 'Selecione a unidade.');
+    else _obraClearError('obraUnidade');
+  });
+  document.getElementById('obraTipo').addEventListener('change', () => {
+    if (!document.getElementById('obraTipo').value)
+      _obraSetError('obraTipo', 'Selecione o tipo de obra.');
+    else _obraClearError('obraTipo');
+  });
+  const _clienteBlurCfg = {
+    obraClienteCNPJ:         'CNPJ / CPF é obrigatório.',
+    obraClienteNome:         'Nome do cliente é obrigatório.',
+    obraClienteRua:          'Endereço é obrigatório.',
+    obraClienteNumero:       'Número é obrigatório.',
+    obraClienteComplemento:  'Complemento é obrigatório.',
+    obraClienteBairro:       'Bairro é obrigatório.',
+  };
+  Object.entries(_clienteBlurCfg).forEach(([id, msg]) => {
+    document.getElementById(id).addEventListener('blur', () => {
+      if (!document.getElementById(id).value.trim()) _obraSetError(id, msg);
+      else _obraClearError(id);
+    });
+  });
 
   const fpFiltroOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true, onChange: filtrarObras };
   flatpickr('#obraFiltroDe',  fpFiltroOpts);
@@ -455,7 +479,10 @@ function _obraClearError(fieldId) {
 
 function _obraLimparErros() {
   ['obraResp', 'obraCodCliente', 'obraDataInicio', 'obraDataFim',
-   'obraDesc', 'obraStatus', 'produtosUsados'].forEach(_obraClearError);
+   'obraDesc', 'obraStatus', 'obraUnidade', 'obraTipo',
+   'obraClienteCNPJ', 'obraClienteNome', 'obraClienteRua',
+   'obraClienteNumero', 'obraClienteComplemento', 'obraClienteBairro',
+   'produtosUsados'].forEach(_obraClearError);
 }
 
 function _obraExibirErroApi(e) {
@@ -616,12 +643,27 @@ async function salvarObra() {
 
   _obraLimparErros();
 
+  const cnpj        = document.getElementById('obraClienteCNPJ').value.trim();
+  const nomeCliente = document.getElementById('obraClienteNome').value.trim();
+  const rua         = document.getElementById('obraClienteRua').value.trim();
+  const numero      = document.getElementById('obraClienteNumero').value.trim();
+  const complemento = document.getElementById('obraClienteComplemento').value.trim();
+  const bairro      = document.getElementById('obraClienteBairro').value.trim();
+
   let temErro = false;
-  if (!resp)       { _obraSetError('obraResp',       'Selecione o field responsável.');      temErro = true; }
-  if (!cod)        { _obraSetError('obraCodCliente',  'ID do cliente é obrigatório.');        temErro = true; }
+  if (!unidade)    { _obraSetError('obraUnidade',    'Selecione a unidade.');               temErro = true; }
+  if (!tipoObra)   { _obraSetError('obraTipo',       'Selecione o tipo de obra.');          temErro = true; }
+  if (!resp)       { _obraSetError('obraResp',       'Selecione o field responsável.');     temErro = true; }
+  if (!cod)        { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.');       temErro = true; }
   else if (!cacheClientes.find(x => x.idCliente === parseInt(cod)))
-                   { _obraSetError('obraCodCliente',  'Cliente não encontrado. Verifique o ID.'); temErro = true; }
-  if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');      temErro = true; }
+                   { _obraSetError('obraCodCliente', 'Cliente não encontrado. Verifique o ID.'); temErro = true; }
+  if (!cnpj)       { _obraSetError('obraClienteCNPJ',        'CNPJ / CPF é obrigatório.');       temErro = true; }
+  if (!nomeCliente){ _obraSetError('obraClienteNome',        'Nome do cliente é obrigatório.');   temErro = true; }
+  if (!rua)        { _obraSetError('obraClienteRua',         'Endereço é obrigatório.');          temErro = true; }
+  if (!numero)     { _obraSetError('obraClienteNumero',      'Número é obrigatório.');            temErro = true; }
+  if (!complemento){ _obraSetError('obraClienteComplemento', 'Complemento é obrigatório.');       temErro = true; }
+  if (!bairro)     { _obraSetError('obraClienteBairro',      'Bairro é obrigatório.');            temErro = true; }
+  if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');     temErro = true; }
   if (!desc)       { _obraSetError('obraDesc',        'A descrição da obra é obrigatória.'); temErro = true; }
   if (temErro) return;
 
