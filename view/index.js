@@ -72,12 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('obraResp').value) _obraClearError('obraResp');
     else _obraSetError('obraResp', 'Selecione o field responsável.');
   });
-  document.getElementById('obraCodCliente').addEventListener('blur', () => {
-    const val = document.getElementById('obraCodCliente').value.trim();
-    if (!val) { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.'); return; }
-    const existe = cacheClientes.find(x => x.idCliente === parseInt(val));
-    if (!existe) _obraSetError('obraCodCliente', 'Cliente não encontrado. Verifique o ID.');
-    else _obraClearError('obraCodCliente');
+  document.getElementById('obraCodCliente').addEventListener('blur', _buscarClienteObra);
+  document.getElementById('obraCodCliente').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); _buscarClienteObra(); }
   });
   document.getElementById('obraDataInicio').addEventListener('blur', () => {
     if (!document.getElementById('obraDataInicio').value.trim())
@@ -575,6 +572,59 @@ function abrirModalEditarObra(idObra) {
   abrirModal('modalObra');
 }
 
+// Limpa todos os campos da seção Cliente e seus erros inline
+function _limparCamposCliente() {
+  [
+    'obraClienteCNPJ', 'obraClienteNome', 'obraClienteRua', 'obraClienteNumero',
+    'obraClienteComplemento', 'obraClienteBairro', 'obraClienteCEP',
+    'obraClienteCidade', 'obraClienteEstado',
+    'obraContato', 'obraEmail', 'obraCelular1', 'obraCelular2',
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['obraClienteCNPJ', 'obraClienteNome', 'obraClienteRua',
+   'obraClienteNumero', 'obraClienteComplemento', 'obraClienteBairro'].forEach(_obraClearError);
+}
+
+// Preenche os campos da seção Cliente a partir de um objeto cliente (sem guard)
+function _preencherCamposCliente(c) {
+  const fill = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  fill('obraClienteNome',        c.nomeCliente);
+  fill('obraClienteCNPJ',        c.CNPJCPF);
+  fill('obraClienteRua',         c.rua);
+  fill('obraClienteNumero',      c.numero);
+  fill('obraClienteComplemento', c.complemento);
+  fill('obraClienteBairro',      c.bairro);
+  fill('obraClienteCEP',         c.cep);
+  fill('obraClienteCidade',      c.cidade);
+  fill('obraClienteEstado',      c.estado);
+  fill('obraEmail',              c.emailCliente);
+  fill('obraCelular1',           c.contatoCliente);
+  fill('obraCelular2',           c.telefone2);
+}
+
+// oninput no campo Código (Cliente): limpa imediatamente quando apagado
+function _obraOnCodClienteInput(input) {
+  if (!input.value.trim()) {
+    _limparCamposCliente();
+    _obraClearError('obraCodCliente');
+  }
+}
+
+// Disparado no blur / Enter: busca via API e preenche ou exibe erro
+async function _buscarClienteObra() {
+  const id = parseInt(document.getElementById('obraCodCliente').value);
+  _limparCamposCliente();
+  _obraClearError('obraCodCliente');
+  if (!id || id <= 0) return;
+  try {
+    const res = await apiFetch(`/cliente/${id}`);
+    _preencherCamposCliente(res.cliente);
+  } catch {
+    _obraSetError('obraCodCliente', 'Cliente não encontrado.');
+  }
+}
+
+// Usado apenas na abertura do modal de edição: preenche do cache sem sobrescrever
+// campos de contato já vindos da obra (email, celulares)
 function buscarClienteObra(input) {
   const id = parseInt(input.value);
   if (!id || id <= 0) return;
