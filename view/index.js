@@ -503,7 +503,8 @@ function abrirModalEditarObra(idObra) {
   if (!o) { showToast('Obra não encontrada.', 'error'); return; }
   _limparCamposObra();
   document.getElementById('obraIdEdicao').value          = o.idObra;
-  document.getElementById('obraIdDisplay').value         = o.idObra;
+  const _displayEl = document.getElementById('obraIdDisplay');
+  if (_displayEl) _displayEl.value = o.idObra;
   document.getElementById('obraStatus').value            = o.statusObra || 'Em andamento';
   document.getElementById('obraResp').value              = o.respObra || '';
   fpInicio.setDate(o.dataInicio || '', false);
