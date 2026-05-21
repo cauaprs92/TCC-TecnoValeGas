@@ -695,14 +695,15 @@ body {
 .obra-item:hover { background: var(--gray-50); }
 .obra-status { display: none; }
 
-/* ── FILTER CARD ── */
-.obras-filtros-card {
-  background: var(--gray-50) !important;
-  border: 1.5px solid var(--gray-200) !important;
-  box-shadow: none !important;
+/* ── OBRAS TOOLBAR ── */
+.obras-filtro-tipo  { flex: 1; min-width: 160px; }
+.obras-filtro-periodo { flex-shrink: 0; }
+.obras-toolbar .toolbar-spacer { display: none; }
+@media (max-width: 1024px) {
+  .obras-toolbar { flex-wrap: wrap; }
+  .obras-filtro-tipo { flex: 1 1 100%; }
+  .obras-filtro-periodo { flex: 1 1 auto; }
 }
-.obras-filtros { gap: 14px; align-items: flex-end; }
-.filtro-group { min-width: 140px; }
 
 /* ── TOOLBAR ── */
 .toolbar-spacer { flex: 1; }
@@ -750,12 +751,6 @@ body {
 /* ── QTY BADGE SIZE ── */
 .qty-badge { font-size: .8rem; padding: 3px 9px; }
 
-/* Expandir campo Tipo de Obra */
-.filtro-tipo-obra {
-  min-width: 420px;
-  flex: 1;
-}
-
 /* ── Validação de campos ── */
 .campo-obrigatorio { color: #DC2626; margin-left: 2px; font-weight: 700; }
 .field-error { font-size: .74rem; color: #DC2626; display: none; margin-top: 1px; }
@@ -767,12 +762,3 @@ body {
   box-shadow: 0 0 0 3px rgba(220,38,38,.1);
 }
 
-/* Campo Tipo de Obra expandido */
-.filtro-tipo-obra {
-  flex: 1;
-  min-width: 0;
-}
-
-.filtro-tipo-obra .filtro-input {
-  width: 100%;
-}

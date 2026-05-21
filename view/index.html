@@ -252,45 +252,16 @@
           </div>
         </div>
 
-        <!-- Filtros -->
-        <div class="card obras-filtros-card">
-  <div class="obras-filtros">
-
-    <!-- Tipo de obra -->
-    <div class="filtro-group filtro-tipo-obra">
-      <label class="filtro-label">Tipo de Obra</label>
-
-      <input
-        type="text"
-        class="filtro-input"
-        id="obraFiltroTipo"
-        placeholder="Ex: Instalação..."
-        oninput="filtrarObras()"
-      />
-    </div>
-
-    <!-- Período -->
-    <div class="filtro-group">
-      <label class="filtro-label">Período</label>
-
-      <div class="filtro-periodo">
-        <input type="text" id="obraFiltroDe" placeholder="dd/mm/aaaa" />
-
-        <span class="filtro-sep">até</span>
-
-        <input type="text" id="obraFiltroAte" placeholder="dd/mm/aaaa" />
-      </div>
-    </div>
-
-    <!-- Botão -->
-    <div class="filtro-group filtro-actions">
-      
-    </div>
-
-  </div>
-</div>
-
-        <div class="toolbar" style="margin-top:0">
+        <div class="toolbar obras-toolbar">
+          <div class="search-inline obras-filtro-tipo">
+            <i class="fa-solid fa-hard-hat"></i>
+            <input type="text" id="obraFiltroTipo" placeholder="Tipo de obra..." oninput="filtrarObras()" />
+          </div>
+          <div class="filtro-periodo obras-filtro-periodo">
+            <input type="text" id="obraFiltroDe" placeholder="dd/mm/aaaa" />
+            <span class="filtro-sep">até</span>
+            <input type="text" id="obraFiltroAte" placeholder="dd/mm/aaaa" />
+          </div>
           <div class="toolbar-spacer"></div>
           <button class="btn btn-secondary" onclick="exportarObras()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
