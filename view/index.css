@@ -756,6 +756,17 @@ body {
   flex: 1;
 }
 
+/* ── Validação de campos ── */
+.campo-obrigatorio { color: #DC2626; margin-left: 2px; font-weight: 700; }
+.field-error { font-size: .74rem; color: #DC2626; display: none; margin-top: 1px; }
+.field-error.visible { display: block; }
+.form-group input.input-error,
+.form-group select.input-error,
+.form-group textarea.input-error {
+  border-color: #DC2626 !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+}
+
 /* Campo Tipo de Obra expandido */
 .filtro-tipo-obra {
   flex: 1;

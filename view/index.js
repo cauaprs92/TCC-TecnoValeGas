@@ -42,7 +42,9 @@ async function apiFetch(endpoint, method = 'GET', body = null) {
   }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ msg: 'Erro desconhecido' }));
-    throw new Error(err.msg || err.message || `HTTP ${res.status}`);
+    const apiError = new Error(err.msg || err.message || `HTTP ${res.status}`);
+    apiError.apiField = err.error || null;
+    throw apiError;
   }
   return res.json();
 }
@@ -59,11 +61,35 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarAdministrador();
   carregarTodos();
 
-  const fpOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true };
-  fpInicio = flatpickr('#obraDataInicio', fpOpts);
-  fpFim    = flatpickr('#obraDataFim',    fpOpts);
+  fpInicio = flatpickr('#obraDataInicio', {
+    dateFormat: 'd/m/Y', locale: 'pt', allowInput: true,
+    onChange: () => _obraClearError('obraDataInicio'),
+  });
+  fpFim = flatpickr('#obraDataFim', { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true });
 
-  const fpFiltroOpts = { ...fpOpts, onChange: filtrarObras };
+  // Blur validation — obra form
+  document.getElementById('obraResp').addEventListener('change', () => {
+    if (document.getElementById('obraResp').value) _obraClearError('obraResp');
+    else _obraSetError('obraResp', 'Selecione o field responsável.');
+  });
+  document.getElementById('obraCodCliente').addEventListener('blur', () => {
+    const val = document.getElementById('obraCodCliente').value.trim();
+    if (!val) { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.'); return; }
+    const existe = cacheClientes.find(x => x.idCliente === parseInt(val));
+    if (!existe) _obraSetError('obraCodCliente', 'Cliente não encontrado. Verifique o ID.');
+    else _obraClearError('obraCodCliente');
+  });
+  document.getElementById('obraDataInicio').addEventListener('blur', () => {
+    if (!document.getElementById('obraDataInicio').value.trim())
+      _obraSetError('obraDataInicio', 'Data de início é obrigatória.');
+  });
+  document.getElementById('obraDesc').addEventListener('blur', () => {
+    if (!document.getElementById('obraDesc').value.trim())
+      _obraSetError('obraDesc', 'A descrição da obra é obrigatória.');
+    else _obraClearError('obraDesc');
+  });
+
+  const fpFiltroOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true, onChange: filtrarObras };
   flatpickr('#obraFiltroDe',  fpFiltroOpts);
   flatpickr('#obraFiltroAte', fpFiltroOpts);
 });
@@ -401,6 +427,46 @@ function fecharDropdownProduto(input) {
   drop.classList.add('hidden');
 }
 
+// Mapa: campo retornado pelo backend → id do elemento no HTML
+const _OBRA_CAMPO_MAP = {
+  codCliente:     'obraCodCliente',
+  descObra:       'obraDesc',
+  dataInicio:     'obraDataInicio',
+  dataFim:        'obraDataFim',
+  statusObra:     'obraStatus',
+  respObra:       'obraResp',
+  produtosUsados: 'produtosUsados',
+  produtosNovos:  'produtosUsados',
+};
+
+function _obraSetError(fieldId, msg) {
+  const errEl = document.getElementById(`err-${fieldId}`);
+  const input = document.getElementById(fieldId);
+  if (errEl) { errEl.textContent = msg; errEl.classList.add('visible'); }
+  if (input) input.classList.add('input-error');
+}
+
+function _obraClearError(fieldId) {
+  const errEl = document.getElementById(`err-${fieldId}`);
+  const input = document.getElementById(fieldId);
+  if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
+  if (input) input.classList.remove('input-error');
+}
+
+function _obraLimparErros() {
+  ['obraResp', 'obraCodCliente', 'obraDataInicio', 'obraDataFim',
+   'obraDesc', 'obraStatus', 'produtosUsados'].forEach(_obraClearError);
+}
+
+function _obraExibirErroApi(e) {
+  if (e.apiField?.campo) {
+    const frontId = _OBRA_CAMPO_MAP[e.apiField.campo] || e.apiField.campo;
+    _obraSetError(frontId, e.apiField.message || e.message);
+  } else {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
 function _limparCamposObra() {
   const ids = [
     'obraIdEdicao','obraIdDisplay','obraCodCliente','obraTipo',
@@ -413,6 +479,7 @@ function _limparCamposObra() {
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   if (fpInicio) fpInicio.clear();
   if (fpFim)    fpFim.clear();
+  _obraLimparErros();
   document.getElementById('obraStatus').value   = 'Em andamento';
   document.getElementById('obraResp').value     = '';
   document.getElementById('obraUnidade').value  = '';
@@ -546,13 +613,16 @@ async function salvarObra() {
   const cel1       = document.getElementById('obraCelular1').value.trim() || null;
   const cel2       = document.getElementById('obraCelular2').value.trim() || null;
 
-  if (!resp)       { showToast('Selecione o field.', 'error'); return; }
-  if (!cod)        { showToast('ID do cliente é obrigatório.', 'error'); return; }
-  if (!dataInicio) { showToast('Data de início é obrigatória.', 'error'); return; }
-  if (!desc)       { showToast('Descrição da obra é obrigatória.', 'error'); return; }
+  _obraLimparErros();
 
-  const clienteOk = cacheClientes.find(x => x.idCliente === parseInt(cod));
-  if (!clienteOk) { showToast('Cliente não encontrado. Verifique o ID.', 'error'); return; }
+  let temErro = false;
+  if (!resp)       { _obraSetError('obraResp',       'Selecione o field responsável.');      temErro = true; }
+  if (!cod)        { _obraSetError('obraCodCliente',  'ID do cliente é obrigatório.');        temErro = true; }
+  else if (!cacheClientes.find(x => x.idCliente === parseInt(cod)))
+                   { _obraSetError('obraCodCliente',  'Cliente não encontrado. Verifique o ID.'); temErro = true; }
+  if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');      temErro = true; }
+  if (!desc)       { _obraSetError('obraDesc',        'A descrição da obra é obrigatória.'); temErro = true; }
+  if (temErro) return;
 
   const obra = {
     descObra: desc, respObra: resp, codCliente: parseInt(cod),
@@ -577,7 +647,7 @@ async function salvarObra() {
       await Promise.all([carregarObras(), carregarProdutos()]);
       showToast('Obra atualizada!', 'success');
     } catch (e) {
-      showToast(`Erro: ${e.message}`, 'error');
+      _obraExibirErroApi(e);
     }
     return;
   }
@@ -590,7 +660,7 @@ async function salvarObra() {
     if (pid && pqt) produtosUsados.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
   });
   if (!produtosUsados.length) {
-    showToast('Informe ao menos um produto para a obra.', 'error'); return;
+    _obraSetError('produtosUsados', 'Informe ao menos um produto para a obra.'); return;
   }
 
   try {
@@ -599,7 +669,7 @@ async function salvarObra() {
     await Promise.all([carregarObras(), carregarProdutos()]);
     showToast(`Obra "${desc}" cadastrada!`, 'success');
   } catch (e) {
-    showToast(`Erro: ${e.message}`, 'error');
+    _obraExibirErroApi(e);
   }
 }
 

@@ -593,14 +593,16 @@
 
             <div class="form-row" style="grid-template-columns:2fr 1fr 1fr">
               <div class="form-group">
-                <label>Field</label>
+                <label>Field <span class="campo-obrigatorio">*</span></label>
                 <select id="obraResp">
                   <option value="">Selecione o field...</option>
                 </select>
+                <span class="field-error" id="err-obraResp"></span>
               </div>
               <div class="form-group">
-                <label>Data Início</label>
+                <label>Data Início <span class="campo-obrigatorio">*</span></label>
                 <input type="text" id="obraDataInicio" placeholder="dd/mm/aaaa" />
+                <span class="field-error" id="err-obraDataInicio"></span>
               </div>
               <div class="form-group">
                 <label>Data Fim <span style="font-weight:400;opacity:.6">(opcional)</span></label>
@@ -612,9 +614,10 @@
             <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
 
             <div class="form-group">
-              <label>Código (Cliente)</label>
+              <label>Código (Cliente) <span class="campo-obrigatorio">*</span></label>
               <input type="number" id="obraCodCliente" placeholder="001" min="1"
                 oninput="buscarClienteObra(this)" />
+              <span class="field-error" id="err-obraCodCliente"></span>
             </div>
 
             <div class="form-group">
@@ -692,9 +695,10 @@
             <div class="form-section-title"><i class="fa-solid fa-align-left"></i> Dados da Obra</div>
 
             <div class="form-group">
-              <label>Descrição</label>
+              <label>Descrição <span class="campo-obrigatorio">*</span></label>
               <textarea id="obraDesc" rows="3"
                 placeholder="Descreva o serviço a ser realizado..."></textarea>
+              <span class="field-error" id="err-obraDesc"></span>
             </div>
 
             <div class="form-group">
@@ -713,6 +717,7 @@
             <div id="obraSecaoProdutos">
               <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
               <div id="produtosObraList"></div>
+              <span class="field-error" id="err-produtosUsados"></span>
               <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
                 <i class="fa-solid fa-plus"></i> Adicionar Produto
               </button>

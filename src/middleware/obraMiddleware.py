@@ -13,14 +13,14 @@ class ObraMiddleware:
         if not isinstance(valor, str) or not valor.strip():
             raise ErrorResponse(
                 400, "Erro na validação de dados",
-                {"message": f"O campo '{campo}' é obrigatório!"}
+                {"campo": campo, "message": f"O campo '{campo}' é obrigatório!"}
             )
         try:
             datetime.strptime(valor.strip(), self.FORMATO_DATA)
         except ValueError:
             raise ErrorResponse(
                 400, "Erro na validação de dados",
-                {"message": f"O campo '{campo}' é inválido. Use o formato {self.FORMATO_DATA}!"}
+                {"campo": campo, "message": f"O campo '{campo}' é inválido. Use o formato {self.FORMATO_DATA}!"}
             )
 
     def validate_body(self, f):
@@ -45,14 +45,14 @@ class ObraMiddleware:
             except (ValueError, TypeError):
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'codCliente' deve ser um número inteiro positivo!"}
+                    {"campo": "codCliente", "message": "O ID do cliente deve ser um número inteiro positivo!"}
                 )
 
             desc = obra.get('descObra')
             if not isinstance(desc, str) or not desc.strip():
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'descObra' é obrigatório!"}
+                    {"campo": "descObra", "message": "A descrição da obra é obrigatória!"}
                 )
 
             self._validar_data(obra.get('dataInicio'), 'dataInicio')
@@ -66,33 +66,33 @@ class ObraMiddleware:
                 opcoes = ", ".join(self.STATUS_VALIDOS)
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": f"O campo 'statusObra' é inválido. Use: {opcoes}!"}
+                    {"campo": "statusObra", "message": f"Status inválido. Use: {opcoes}!"}
                 )
 
             resp = obra.get('respObra')
             if not isinstance(resp, str) or not resp.strip():
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'respObra' é obrigatório!"}
+                    {"campo": "respObra", "message": "Selecione o field responsável pela obra!"}
                 )
 
             produtos = body.get('produtosUsados')
             if not isinstance(produtos, list) or len(produtos) == 0:
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'produtosUsados' deve conter pelo menos um produto!"}
+                    {"campo": "produtosUsados", "message": "Informe ao menos um produto para a obra!"}
                 )
 
             for i, item in enumerate(produtos):
                 if not isinstance(item, dict):
                     raise ErrorResponse(
                         400, "Erro na validação de dados",
-                        {"message": f"Item {i} da lista 'produtosUsados' é inválido!"}
+                        {"campo": "produtosUsados", "message": f"Item {i} da lista de produtos é inválido!"}
                     )
                 if 'idProduto' not in item or 'quantidade' not in item:
                     raise ErrorResponse(
                         400, "Erro na validação de dados",
-                        {"message": f"Item {i} deve conter 'idProduto' e 'quantidade'!"}
+                        {"campo": "produtosUsados", "message": f"Item {i} deve conter 'idProduto' e 'quantidade'!"}
                     )
                 try:
                     id_p = int(item['idProduto'])
@@ -100,17 +100,17 @@ class ObraMiddleware:
                 except (ValueError, TypeError):
                     raise ErrorResponse(
                         400, "Erro na validação de dados",
-                        {"message": f"Item {i}: 'idProduto' e 'quantidade' devem ser inteiros!"}
+                        {"campo": "produtosUsados", "message": f"Item {i}: 'idProduto' e 'quantidade' devem ser inteiros!"}
                     )
                 if id_p <= 0:
                     raise ErrorResponse(
                         400, "Erro na validação de dados",
-                        {"message": f"Item {i}: 'idProduto' deve ser positivo!"}
+                        {"campo": "produtosUsados", "message": f"Item {i}: 'idProduto' deve ser positivo!"}
                     )
                 if qtd <= 0:
                     raise ErrorResponse(
                         400, "Erro na validação de dados",
-                        {"message": f"Item {i}: 'quantidade' deve ser maior que zero!"}
+                        {"campo": "produtosUsados", "message": f"Item {i}: a quantidade deve ser maior que zero!"}
                     )
 
             return f(*args, **kwargs)
@@ -138,14 +138,14 @@ class ObraMiddleware:
             except (ValueError, TypeError):
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'codCliente' deve ser um número inteiro positivo!"}
+                    {"campo": "codCliente", "message": "O ID do cliente deve ser um número inteiro positivo!"}
                 )
 
             desc = obra.get('descObra')
             if not isinstance(desc, str) or not desc.strip():
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'descObra' é obrigatório!"}
+                    {"campo": "descObra", "message": "A descrição da obra é obrigatória!"}
                 )
 
             self._validar_data(obra.get('dataInicio'), 'dataInicio')
@@ -159,14 +159,14 @@ class ObraMiddleware:
                 opcoes = ", ".join(self.STATUS_VALIDOS)
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": f"O campo 'statusObra' é inválido. Use: {opcoes}!"}
+                    {"campo": "statusObra", "message": f"Status inválido. Use: {opcoes}!"}
                 )
 
             resp = obra.get('respObra')
             if not isinstance(resp, str) or not resp.strip():
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"message": "O campo 'respObra' é obrigatório!"}
+                    {"campo": "respObra", "message": "Selecione o field responsável pela obra!"}
                 )
 
             # produtosNovos — opcional, mas se vier deve ser válido
@@ -175,7 +175,7 @@ class ObraMiddleware:
                 if not isinstance(produtos_novos, list):
                     raise ErrorResponse(
                         400, "Erro na validação de dados",
-                        {"message": "O campo 'produtosNovos' deve ser uma lista!"}
+                        {"campo": "produtosNovos", "message": "O campo 'produtosNovos' deve ser uma lista!"}
                     )
                 for i, item in enumerate(produtos_novos):
                     try:
@@ -184,12 +184,12 @@ class ObraMiddleware:
                     except (ValueError, TypeError, KeyError):
                         raise ErrorResponse(
                             400, "Erro na validação de dados",
-                            {"message": f"produtosNovos[{i}]: 'idProduto' e 'quantidade' devem ser inteiros!"}
+                            {"campo": "produtosNovos", "message": f"produtosNovos[{i}]: 'idProduto' e 'quantidade' devem ser inteiros!"}
                         )
                     if id_p <= 0 or qtd <= 0:
                         raise ErrorResponse(
                             400, "Erro na validação de dados",
-                            {"message": f"produtosNovos[{i}]: valores devem ser positivos!"}
+                            {"campo": "produtosNovos", "message": f"produtosNovos[{i}]: valores devem ser positivos!"}
                         )
 
             return f(*args, **kwargs)
