@@ -673,10 +673,10 @@ body {
 .alert-item {
   display: flex; align-items: center; gap: 14px;
   padding: 13px 22px; border-bottom: 1px solid var(--gray-100);
-  transition: background .15s ease;
+  transition: background .15s ease; cursor: pointer;
 }
 .alert-item:last-child { border-bottom: none; }
-.alert-item:hover { background: var(--gray-50); }
+.alert-item:hover { background: #F0F4FF; }
 .alert-dot { display: none; }
 .alert-icon {
   width: 34px; height: 34px; border-radius: 8px;
@@ -690,10 +690,10 @@ body {
 .obra-item {
   display: flex; align-items: center; gap: 12px;
   padding: 13px 22px; border-bottom: 1px solid var(--gray-100);
-  transition: background .15s ease;
+  transition: background .15s ease; cursor: pointer;
 }
 .obra-item:last-child { border-bottom: none; }
-.obra-item:hover { background: var(--gray-50); }
+.obra-item:hover { background: #F0F4FF; }
 .obra-status { display: none; }
 
 /* ── OBRAS TOOLBAR ── */

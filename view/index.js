@@ -1277,7 +1277,7 @@ function renderAlertas(produtos) {
       ? 'Produto completamente esgotado'
       : `Atual: ${p.qtdProduto} un. · Mínimo: ${p.qtdMinima} un.`;
     return `
-      <div class="alert-item ${critico ? 'critical' : 'warning'}">
+      <div class="alert-item ${critico ? 'critical' : 'warning'}" onclick="irParaProduto(${p.idProduto})" title="Abrir no Estoque">
         <div class="alert-icon">
           <i class="fa-solid ${critico ? 'fa-box-open' : 'fa-triangle-exclamation'}"></i>
         </div>
@@ -1305,7 +1305,7 @@ function renderObrasRecentes(obras) {
     const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
     const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '');
     return `
-      <div class="obra-item">
+      <div class="obra-item" onclick="irParaObra(${o.idObra})" title="Abrir em Obras">
         <div class="status-dot ${statusCls[o.statusObra] || 'concluida'}"></div>
         <div style="flex:1;min-width:0">
           <div class="obra-item-nome">${o.descObra || '—'}</div>
@@ -1922,6 +1922,23 @@ function navegarPara(page) {
   if (pageEl)  pageEl.classList.add('active');
   const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores' };
   document.getElementById('breadcrumb').textContent = labels[page] || page;
+}
+
+
+function irParaProduto(idProduto) {
+  navegarPara('estoque');
+  if (_cacheReady.produtos) { abrirModalEditarProduto(idProduto); return; }
+  const t = setInterval(() => {
+    if (_cacheReady.produtos) { clearInterval(t); abrirModalEditarProduto(idProduto); }
+  }, 80);
+}
+
+function irParaObra(idObra) {
+  navegarPara('obras');
+  if (_cacheReady.obras) { abrirModalEditarObra(idObra); return; }
+  const t = setInterval(() => {
+    if (_cacheReady.obras) { clearInterval(t); abrirModalEditarObra(idObra); }
+  }, 80);
 }
 
 
