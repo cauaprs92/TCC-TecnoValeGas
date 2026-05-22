@@ -156,3 +156,8 @@ class ObraController:
         if nova_qtd < 1:
             return False, "Quantidade deve ser maior que zero."
         return self.daoProdObras.atualizar_quantidade_produto_obra(idObra, idProduto, nova_qtd)
+
+    def remover_produto_obra(self, idObra: int, idProduto: int) -> tuple:
+        if not self.dao.buscar_por_id(idObra):
+            return False, "Obra não encontrada."
+        return self.daoProdObras.remover_produto_obra(idObra, idProduto)

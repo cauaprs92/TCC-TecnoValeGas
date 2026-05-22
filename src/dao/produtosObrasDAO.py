@@ -226,6 +226,46 @@ class ProdutosObrasDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
+    def remover_produto_obra(self, id_obra: int, id_produto: int) -> tuple:
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False, "Sem conexão com o banco."
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(
+                "SELECT qtdProdutosObra FROM produtosObras WHERE idObra = %s AND idProduto = %s",
+                (id_obra, id_produto)
+            )
+            row = cursor.fetchone()
+            if not row:
+                return False, "Produto não vinculado a esta obra."
+
+            qtd = row[0]
+
+            cursor.execute(
+                "SELECT COUNT(*) FROM produtosObras WHERE idObra = %s",
+                (id_obra,)
+            )
+            if cursor.fetchone()[0] <= 1:
+                return False, "A obra precisa ter ao menos um produto."
+
+            cursor.execute(
+                "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                (qtd, id_produto)
+            )
+            cursor.execute(
+                "DELETE FROM produtosObras WHERE idObra = %s AND idProduto = %s",
+                (id_obra, id_produto)
+            )
+            conexao.commit()
+            return True, "Produto removido da obra com sucesso!"
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao remover produto da obra: {e}")
+            return False, str(e)
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def buscar_produtos_da_obra(self, id_obra: int) -> list:
         sql = """
             SELECT p.idProduto, p.nomeProduto, po.qtdProdutosObra

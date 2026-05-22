@@ -132,6 +132,18 @@ def atualizar_produto_obra(idObra: int, idProduto: int):
     return jsonify({"status": True, "msg": mensagem}), 200
 
 
+# ─── DELETE /obra/<idObra>/produto/<idProduto> ───────────────────────────────
+# Remove um produto da obra e repõe o estoque correspondente
+@obra_bp.route("/<int:idObra>/produto/<int:idProduto>", methods=["DELETE"])
+@jwt.validate_token
+@middleware.validate_id_param
+def remover_produto_obra(idObra: int, idProduto: int):
+    sucesso, mensagem = controller.remover_produto_obra(idObra, idProduto)
+    if not sucesso:
+        raise ErrorResponse(400, mensagem, {"message": mensagem})
+    return jsonify({"status": True, "msg": mensagem}), 200
+
+
 # ─── PATCH /obra/<idObra>/status ─────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>/status", methods=["PATCH"])
 @jwt.validate_token
