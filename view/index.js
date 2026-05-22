@@ -150,7 +150,7 @@ async function carregarTodos() {
     carregarAdmins(),
     carregarResponsaveis(),
   ]);
-  renderGraficoObras();
+  renderGraficoProdutos();
 }
 
 function carregarAdministrador() {
@@ -1399,108 +1399,190 @@ function renderObrasRecentes(obras) {
   }).join('');
 }
 
-let _obraChart = null;
+// ── Gráfico: Produtos mais utilizados ─────────────────────────────────────────
 
-async function renderGraficoObras() {
-  const canvas = document.getElementById('obraChartCanvas');
-  if (!canvas) return;
+let _produtosChart    = null;
+let _todosDadosGrafico = null;
+let _dadosGraficoAtual = [];
+let _gradienteCache   = null;
 
-  let dados = [];
-  try {
-    const res = await apiFetch('/relatorio/grafico-produtos');
-    dados = res.dados || [];
-  } catch {
-    dados = [];
+function _getGradiente(chart) {
+  const { ctx, chartArea } = chart;
+  const h = Math.round(chartArea.bottom - chartArea.top);
+  if (!_gradienteCache || _gradienteCache._h !== h) {
+    const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+    g.addColorStop(0, '#3B5BDB');
+    g.addColorStop(1, '#BFDBFE');
+    g._h = h;
+    _gradienteCache = g;
+  }
+  return _gradienteCache;
+}
+
+function _filtrarPorPeriodo(dados, dias) {
+  if (!dias) return [...dados].sort((a, b) => b.totalConsumido - a.totalConsumido);
+
+  const limite = new Date();
+  limite.setDate(limite.getDate() - Number(dias));
+  limite.setHours(0, 0, 0, 0);
+
+  return dados.map(produto => {
+    const obrasFiltradas = produto.obras.filter(o => {
+      const c = cacheObras.find(co => co.idObra === o.idObra);
+      if (!c || !c.dataInicio) return true;
+      return new Date(c.dataInicio) >= limite;
+    });
+    const total = obrasFiltradas.reduce((s, o) => s + o.qtd, 0);
+    return { ...produto, obras: obrasFiltradas, totalConsumido: total };
+  }).filter(p => p.totalConsumido > 0)
+    .sort((a, b) => b.totalConsumido - a.totalConsumido);
+}
+
+function _tooltipProdutosExtern({ chart, tooltip }) {
+  let el = document.getElementById('chartTooltipCustom');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'chartTooltipCustom';
+    el.style.cssText = 'position:fixed;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.13);padding:14px 16px;pointer-events:none;min-width:220px;max-width:280px;border:1px solid #E5E9F0;z-index:9999;transition:opacity .12s ease';
+    document.body.appendChild(el);
   }
 
-  if (_obraChart) { _obraChart.destroy(); _obraChart = null; }
+  if (tooltip.opacity === 0) { el.style.opacity = '0'; return; }
 
-  if (!dados.length) {
-    canvas.closest('.chart-container').innerHTML =
-      '<div class="empty-row" style="height:100%;display:flex;align-items:center;justify-content:center">Nenhum produto utilizado em obras ainda.</div>';
+  const i = tooltip.dataPoints?.[0]?.dataIndex;
+  const d = _dadosGraficoAtual[i];
+  if (!d) return;
+
+  const principais = d.obras.slice(0, 4);
+  const outrosQtd  = d.obras.slice(4).reduce((s, o) => s + o.qtd, 0);
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:8px">
+      <span style="font-weight:700;font-size:.9rem;color:#1A1D2E">${d.nomeProduto}</span>
+      <span style="color:#3B5BDB;font-weight:700;font-size:.9rem;white-space:nowrap">${d.totalConsumido.toLocaleString('pt-BR')} unidades</span>
+    </div>
+    <div style="font-size:.76rem;color:#7B8196;margin-bottom:6px">Utilizado em:</div>
+    <ul style="list-style:disc;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:3px">
+      ${principais.map(o => `
+        <li style="display:flex;justify-content:space-between;font-size:.8rem">
+          <span style="color:#374151">${o.descObra || o.nomeCliente}</span>
+          <span style="color:#7B8196;margin-left:12px;white-space:nowrap">${o.qtd} un.</span>
+        </li>`).join('')}
+      ${outrosQtd ? `
+        <li style="display:flex;justify-content:space-between;font-size:.8rem">
+          <span style="color:#374151">Outros</span>
+          <span style="color:#7B8196;margin-left:12px;white-space:nowrap">${outrosQtd} un.</span>
+        </li>` : ''}
+    </ul>`;
+
+  const rect = chart.canvas.getBoundingClientRect();
+  let left = rect.left + tooltip.caretX + 16;
+  let top  = rect.top  + tooltip.caretY - 30;
+  if (left + 295 > window.innerWidth) left = rect.left + tooltip.caretX - 305;
+  if (top < 8) top = 8;
+  el.style.opacity = '1';
+  el.style.left = left + 'px';
+  el.style.top  = top  + 'px';
+}
+
+async function renderGraficoProdutos(dias = '') {
+  const container = document.querySelector('#produtosChartCanvas')?.closest('.chart-container')
+    || document.querySelector('.chart-container');
+  if (!container) return;
+
+  if (!_todosDadosGrafico) {
+    try {
+      const res = await apiFetch('/relatorio/grafico-produtos');
+      _todosDadosGrafico = res.dados || [];
+    } catch {
+      _todosDadosGrafico = [];
+    }
+  }
+
+  _dadosGraficoAtual = _filtrarPorPeriodo(_todosDadosGrafico, dias);
+
+  if (_produtosChart) { _produtosChart.destroy(); _produtosChart = null; _gradienteCache = null; }
+
+  if (!_dadosGraficoAtual.length) {
+    container.innerHTML = '<div class="empty-row" style="height:100%;display:flex;align-items:center;justify-content:center;padding:48px 0">Nenhum produto utilizado em obras no período selecionado.</div>';
     return;
   }
 
-  const truncar = (str, n) => str.length > n ? str.slice(0, n) + '…' : str;
-  const labels  = dados.map(d => `${d.idProduto} — ${truncar(d.nomeProduto, 18)}`);
-  const values  = dados.map(d => d.totalConsumido);
+  if (!document.getElementById('produtosChartCanvas')) {
+    container.innerHTML = '';
+    const c = document.createElement('canvas');
+    c.id = 'produtosChartCanvas';
+    container.appendChild(c);
+  }
+  const cvs = document.getElementById('produtosChartCanvas');
 
-  const getBarColor = total => {
-    if (total <= 400) return 'rgba(239,68,68,0.85)';      // vermelho
-    if (total <= 200) return 'rgba(249,115,22,0.85)';     // laranja
-    if (total <= 100) return 'rgba(37,99,235,0.85)';      // azul
-    return 'rgba(16,185,129,0.85)';                        // verde acima de 400
+  const dataLabelsPlugin = {
+    id: 'dataLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      ctx.save();
+      ctx.font = 'bold 11.5px system-ui,-apple-system,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = '#3B5BDB';
+      meta.data.forEach((bar, i) => {
+        const d = _dadosGraficoAtual[i];
+        if (d) ctx.fillText(d.totalConsumido.toLocaleString('pt-BR'), bar.x, bar.y - 4);
+      });
+      ctx.restore();
+    }
   };
 
-  const getBarBorderColor = total => {
-    if (total <= 400) return 'rgba(185,28,28,0.95)';
-    if (total <= 200) return 'rgba(194,65,12,0.95)';
-    if (total <= 100) return 'rgba(30,64,175,0.95)';
-    return 'rgba(5,150,105,0.95)';
-  };
-
-  const backgroundColors = values.map(getBarColor);
-  const borderColors = values.map(getBarBorderColor);
-
-  _obraChart = new Chart(canvas.getContext('2d'), {
+  _produtosChart = new Chart(cvs.getContext('2d'), {
     type: 'bar',
     data: {
-      labels,
+      labels: _dadosGraficoAtual.map(d => d.nomeProduto),
       datasets: [{
-        label: 'Qtd. consumida',
-        data: values,
-        backgroundColor: backgroundColors,
-        borderColor: borderColors,
-        borderWidth: 1,
+        data: _dadosGraficoAtual.map(d => d.totalConsumido),
+        backgroundColor: ctx => {
+          const { chart } = ctx;
+          return chart.chartArea ? _getGradiente(chart) : '#3B5BDB';
+        },
         borderRadius: 6,
         borderSkipped: false,
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: { duration: 450 },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          backgroundColor: '#fff',
-          titleColor: '#1A1D2E',
-          bodyColor: '#7B8196',
-          borderColor: '#E2E5EB',
-          borderWidth: 1,
-          padding: 12,
-          cornerRadius: 8,
-          callbacks: {
-            title: ctx => {
-              const d = dados[ctx[0].dataIndex];
-              return `${d.idProduto} — ${d.nomeProduto}`;
-            },
-            label: ctx => {
-              const d = dados[ctx.dataIndex];
-              const linhas = [`Total consumido: ${d.totalConsumido} un.`, ''];
-              d.obras.forEach(o => {
-                linhas.push(`Obra ${o.idObra} (${o.nomeCliente}): ${o.qtd} un.`);
-              });
-              return linhas;
-            },
-          },
-          displayColors: false,
-        }
+        tooltip: { enabled: false, external: _tooltipProdutosExtern },
       },
       scales: {
         y: {
           beginAtZero: true,
+          title: {
+            display: true, text: 'Quantidade utilizada',
+            color: '#7B8196', font: { size: 11 }, padding: { bottom: 6 }
+          },
           ticks: { precision: 0, color: '#7B8196', font: { size: 11 } },
-          grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+          grid: { color: 'rgba(0,0,0,0.05)' },
           border: { display: false }
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 11 }, color: '#7B8196' },
+          ticks: { color: '#7B8196', font: { size: 11 }, maxRotation: 30 },
           border: { display: false }
         }
       }
-    }
+    },
+    plugins: [dataLabelsPlugin]
   });
+}
+
+function onGraficoPeriodoChange() {
+  const dias = document.getElementById('graficoPeriodo').value;
+  renderGraficoProdutos(dias);
 }
 
 function renderNotificacoes(produtos) {

@@ -148,13 +148,33 @@
             </div>
           </div>
 
-          <!-- Gráfico Chart.js — preenchido por renderGraficoObras() -->
+          <!-- Gráfico Chart.js — preenchido por renderGraficoProdutos() -->
           <div class="card card-full">
-            <div class="card-header">
-              <h2><i class="fa-solid fa-chart-bar"></i> Produtos Utilizados por Obra</h2>
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
+                <div class="chart-icon-box"><i class="fa-solid fa-cube"></i></div>
+                <div>
+                  <div class="chart-card-title">Produtos mais utilizados</div>
+                  <div class="chart-card-sub">Quantidade total consumida por produto</div>
+                </div>
+              </div>
+              <div class="chart-period-wrap">
+                <i class="fa-regular fa-calendar fa-sm"></i>
+                <select id="graficoPeriodo" onchange="onGraficoPeriodoChange()">
+                  <option value="">— Selecione um período —</option>
+                  <option value="365">Últimos 12 meses</option>
+                  <option value="180">Últimos 6 meses</option>
+                  <option value="30">Últimos 30 dias</option>
+                </select>
+                <i class="fa-solid fa-chevron-down fa-xs" style="pointer-events:none"></i>
+              </div>
             </div>
-            <div class="chart-container">
-              <canvas id="obraChartCanvas"></canvas>
+            <div class="chart-container" style="padding:0 8px">
+              <canvas id="produtosChartCanvas"></canvas>
+            </div>
+            <div class="chart-footer-info">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Dados referentes à quantidade total de produtos utilizados no período selecionado.</span>
             </div>
           </div>
         </div>
