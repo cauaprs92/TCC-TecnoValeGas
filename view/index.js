@@ -10,6 +10,12 @@
 
 const API_BASE_URL = 'http://localhost:5000';
 
+// Escapa string para uso seguro em atributo onclick="func('...')"
+// Trata: & → &amp;  |  " → &quot;  |  ' → \'
+function _esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+}
+
 function getToken() {
   return sessionStorage.getItem('token');
 }
@@ -213,7 +219,7 @@ function renderTabelaProdutos(produtos) {
   } else {
     tbody.innerHTML = pagina.map(p => {
       const { cls, label } = statusEstoque(p);
-      const nomeSafe = p.nomeProduto.replace(/'/g, "\\'");
+      const nomeSafe = _esc(p.nomeProduto);
       const limites  = [
         p.qtdMinima ? `Mín: ${p.qtdMinima}` : null,
         p.qtdMaxima && p.qtdMaxima < 9999 ? `Máx: ${p.qtdMaxima}` : null,
@@ -371,7 +377,7 @@ function renderTabelaObras(obras) {
       const badge       = badgeStatus(o.statusObra);
       const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
       const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '—');
-      const descEsc = (o.descObra || '').replace(/'/g, "\\'");
+      const descEsc = _esc(o.descObra);
       const tags = [o.tipoObra, o.respObra].filter(Boolean);
       return `
         <tr>
@@ -813,9 +819,13 @@ async function verProdutosObra(idObra) {
               <td>${p.nomeProduto || '—'}</td>
               <td>${p.qtdProdutosObra}</td>
               <td class="actions">
-                <button class="btn-icon" title="Editar quantidade"
-                  onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${(p.nomeProduto||'').replace(/'/g,"\\'")}',${p.qtdProdutosObra})">
+                <button class="btn-icon edit" title="Editar quantidade"
+                  onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}',${p.qtdProdutosObra})">
                   <i class="fa-solid fa-pen"></i>
+                </button>
+                <button class="btn-icon danger" title="Remover produto"
+                  onclick="excluirProdutoObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}')">
+                  <i class="fa-solid fa-trash"></i>
                 </button>
               </td>
             </tr>`).join('')}
@@ -1091,7 +1101,7 @@ function renderTabelaClientes(clientes) {
     );
   } else {
     tbody.innerHTML = pagina.map(c => {
-      const nomeSafe  = c.nomeCliente.replace(/'/g, "\\'");
+      const nomeSafe  = _esc(c.nomeCliente);
       const loc1 = [c.rua, c.numero ? `nº ${c.numero}` : null].filter(Boolean).join(', ');
       const loc2 = [c.bairro, c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade].filter(Boolean).join(', ');
       const locHtml = [loc1, loc2].filter(Boolean).join('<br>') || '—';
@@ -1708,7 +1718,7 @@ function renderTabelaAdmins(admins) {
     return;
   }
   tbody.innerHTML = ordenado.map(a => {
-    const nomeSafe = a.nomeLogin.replace(/'/g, "\\'");
+    const nomeSafe = _esc(a.nomeLogin);
     return `
       <tr>
         <td><span class="cell-id">${a.idLogin}</span></td>
@@ -2020,7 +2030,7 @@ function renderTabelaResponsaveis(lista) {
     return;
   }
   tbody.innerHTML = ordenado.map(r => {
-    const nomeSafe = r.nomeResponsavel.replace(/'/g, "\\'");
+    const nomeSafe = _esc(r.nomeResponsavel);
     return `
       <tr>
         <td><span class="cell-id">${r.idResponsavel}</span></td>
@@ -2125,6 +2135,28 @@ async function confirmarEditarProdObra() {
     await Promise.all([carregarObras(), carregarProdutos()]);
     // Re-abre o modal de ver produtos com dados atualizados
     verProdutosObra(parseInt(idObra));
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+
+function excluirProdutoObra(idObra, idProduto, nomeProduto) {
+  fecharModal('modalVerObra');
+  document.getElementById('confirmarMsg').textContent =
+    `Tem certeza que deseja remover "${nomeProduto}" desta obra?`;
+  document.getElementById('btnConfirmarExcluir').onclick = () =>
+    confirmarExcluirProdObra(idObra, idProduto);
+  abrirModal('modalConfirmar');
+}
+
+async function confirmarExcluirProdObra(idObra, idProduto) {
+  fecharModal('modalConfirmar');
+  try {
+    await apiFetch(`/obra/${idObra}/produto/${idProduto}`, 'DELETE');
+    showToast('Produto removido da obra.', 'success');
+    await Promise.all([carregarObras(), carregarProdutos()]);
+    verProdutosObra(idObra);
   } catch (e) {
     showToast(`Erro: ${e.message}`, 'error');
   }
