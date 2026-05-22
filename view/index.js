@@ -1468,35 +1468,13 @@ function badgeStatus(status) {
   return map[status] || `<span class="badge badge-gray">${status}</span>`;
 }
 
-// ── Action dropdown helper ──
+// ── Action buttons helper ──
 function _actionMenu(items) {
-  const html = items.map(it => {
-    if (it.divider) return '<div class="action-dd-divider"></div>';
-    return `<button class="action-dd-item${it.danger ? ' danger' : ''}"
-      onclick="${it.onclick};closeActionMenus()">
-      <i class="fa-solid ${it.icon}"></i>${it.label}
-    </button>`;
+  const btns = items.filter(it => !it.divider).map(it => {
+    const cls = it.danger ? 'danger' : 'edit';
+    return `<button class="btn-icon ${cls}" onclick="${it.onclick}" title="${it.label}"><i class="fa-solid ${it.icon}"></i></button>`;
   }).join('');
-  return `<div class="action-wrap">
-    <button class="action-btn" onclick="toggleActionMenu(this);event.stopPropagation()">
-      <i class="fa-solid fa-ellipsis-vertical"></i>
-    </button>
-    <div class="action-dropdown">${html}</div>
-  </div>`;
-}
-function toggleActionMenu(btn) {
-  const drop = btn.nextElementSibling;
-  const open = drop.classList.contains('show');
-  closeActionMenus();
-  if (!open) {
-    const rect = btn.getBoundingClientRect();
-    drop.style.top   = (rect.bottom + 6) + 'px';
-    drop.style.right = (window.innerWidth - rect.right) + 'px';
-    drop.classList.add('show');
-  }
-}
-function closeActionMenus() {
-  document.querySelectorAll('.action-dropdown.show').forEach(d => d.classList.remove('show'));
+  return `<div class="actions">${btns}</div>`;
 }
 
 // ── Empty state helper ──
@@ -1580,9 +1558,8 @@ document.getElementById('btnNotif').addEventListener('click', e => {
   e.stopPropagation();
   document.getElementById('notifDropdown').classList.toggle('hidden');
 });
-document.addEventListener('click', e => {
+document.addEventListener('click', () => {
   document.getElementById('notifDropdown').classList.add('hidden');
-  if (!e.target.closest('.action-wrap')) closeActionMenus();
 });
 
 function abrirModal(id)  { document.getElementById(id).classList.remove('hidden'); }
