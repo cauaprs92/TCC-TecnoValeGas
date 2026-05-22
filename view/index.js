@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   carregarAdministrador();
   carregarTodos();
+  _setupValidacaoProduto();
 
   fpInicio = flatpickr('#obraDataInicio', {
     dateFormat: 'd/m/Y', locale: 'pt', allowInput: true,
@@ -252,11 +253,105 @@ function renderTabelaProdutos(produtos) {
   atualizarIndicadoresOrdenacao('produtos');
 }
 
+// ── Validação inline — Modal de Produto ───────────────────────────────────────
+
+function _erroProd(id, msg) {
+  const span = document.getElementById(`err-${id}`);
+  const input = document.getElementById(id);
+  if (span)  { span.textContent = msg; span.classList.toggle('visible', !!msg); }
+  if (input) input.classList.toggle('input-error', !!msg);
+}
+
+function _vProdNome(show = true) {
+  const v = document.getElementById('prodNome').value.trim();
+  let msg = '';
+  if (!v)                msg = 'O nome do produto é obrigatório.';
+  else if (v.length < 3) msg = 'O nome deve ter pelo menos 3 caracteres.';
+  if (msg && show) _erroProd('prodNome', msg);
+  else if (!msg)   _erroProd('prodNome', '');
+  return !msg;
+}
+
+function _vProdQtd(show = true) {
+  const v = document.getElementById('prodQtd').value.trim();
+  let msg = '';
+  if (v === '')                          msg = 'A quantidade em estoque é obrigatória.';
+  else if (!Number.isInteger(Number(v))) msg = 'A quantidade deve ser um número inteiro.';
+  else if (Number(v) < 0)               msg = 'A quantidade não pode ser negativa.';
+  else if (Number(v) > 9999)            msg = 'A quantidade não pode ultrapassar 9999 unidades.';
+  if (msg && show) _erroProd('prodQtd', msg);
+  else if (!msg)   _erroProd('prodQtd', '');
+  return !msg;
+}
+
+function _vProdQtdMin(show = true) {
+  const vMin = document.getElementById('prodQtdMin').value.trim();
+  const vMax = document.getElementById('prodQtdMax').value.trim();
+  let msg = '';
+  if (vMin === '')                                        msg = 'A quantidade mínima é obrigatória.';
+  else if (!Number.isInteger(Number(vMin)) || Number(vMin) < 0) msg = 'A quantidade mínima deve ser um número inteiro positivo.';
+  else if (vMax !== '' && Number(vMin) > Number(vMax))   msg = 'A quantidade mínima não pode ser maior que a máxima.';
+  if (msg && show) _erroProd('prodQtdMin', msg);
+  else if (!msg)   _erroProd('prodQtdMin', '');
+  return !msg;
+}
+
+function _vProdQtdMax(show = true) {
+  const vMax = document.getElementById('prodQtdMax').value.trim();
+  const vMin = document.getElementById('prodQtdMin').value.trim();
+  let msg = '';
+  if (vMax === '')                                         msg = 'A quantidade máxima é obrigatória.';
+  else if (!Number.isInteger(Number(vMax)) || Number(vMax) <= 0) msg = 'A quantidade máxima deve ser um número inteiro positivo.';
+  else if (vMin !== '' && Number(vMax) <= Number(vMin))    msg = 'A quantidade máxima deve ser maior que a mínima.';
+  if (msg && show) _erroProd('prodQtdMax', msg);
+  else if (!msg)   _erroProd('prodQtdMax', '');
+  return !msg;
+}
+
+function _vProdDesc(show = true) {
+  const v = document.getElementById('prodDesc').value.trim();
+  const msg = v ? '' : 'A descrição é obrigatória.';
+  if (msg && show) _erroProd('prodDesc', msg);
+  else if (!msg)   _erroProd('prodDesc', '');
+  return !msg;
+}
+
+function _validarFormProduto() {
+  return [_vProdNome(), _vProdQtd(), _vProdQtdMin(), _vProdQtdMax(), _vProdDesc()].every(Boolean);
+}
+
+function _atualizarBtnSalvarProduto() {
+  const btn = document.getElementById('btnSalvarProduto');
+  if (btn) btn.disabled = ![_vProdNome(false), _vProdQtd(false), _vProdQtdMin(false), _vProdQtdMax(false), _vProdDesc(false)].every(Boolean);
+}
+
+function _setupValidacaoProduto() {
+  const bind = (id, fn, extras = []) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur',  () => { fn(true);  extras.forEach(f => f(false)); _atualizarBtnSalvarProduto(); });
+    el.addEventListener('input', () => { fn(false); extras.forEach(f => f(false)); _atualizarBtnSalvarProduto(); });
+  };
+  bind('prodNome',   _vProdNome);
+  bind('prodQtd',    _vProdQtd);
+  bind('prodQtdMin', _vProdQtdMin, [_vProdQtdMax]);
+  bind('prodQtdMax', _vProdQtdMax, [_vProdQtdMin]);
+  bind('prodDesc',   _vProdDesc);
+}
+
+function _resetErrosProduto() {
+  ['prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc'].forEach(id => _erroProd(id, ''));
+}
+
+// ── Modal abrir / fechar ───────────────────────────────────────────────────────
+
 function abrirModalNovoProduto() {
   ['prodIdEdicao','prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc']
     .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-boxes-stacked"></i> Novo Produto';
+  _resetErrosProduto();
+  _atualizarBtnSalvarProduto();
   abrirModal('modalProduto');
 }
 
@@ -271,35 +366,23 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('prodDesc').value     = p.descProduto || '';
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Produto';
+  _resetErrosProduto();
+  _atualizarBtnSalvarProduto();
   abrirModal('modalProduto');
 }
 
 async function salvarProduto() {
+  if (!_validarFormProduto()) return;
+
   const idEdicao = document.getElementById('prodIdEdicao').value;
   const nome   = document.getElementById('prodNome').value.trim();
-  const qtd    = document.getElementById('prodQtd').value.trim();
-  const qtdMin = document.getElementById('prodQtdMin').value.trim();
-  const qtdMax = document.getElementById('prodQtdMax').value.trim();
+  const qtd    = parseInt(document.getElementById('prodQtd').value);
+  const qtdMin = parseInt(document.getElementById('prodQtdMin').value);
+  const qtdMax = parseInt(document.getElementById('prodQtdMax').value);
   const desc   = document.getElementById('prodDesc').value.trim();
 
-  if (!nome || qtd === '') { showToast('Nome e quantidade são obrigatórios.', 'error'); return; }
-  if (nome.length < 3)    { showToast('Nome deve ter ao menos 3 caracteres.', 'error'); return; }
-  if (parseInt(qtd) < 0) { showToast('Quantidade não pode ser negativa.', 'error'); return; }
-  if (qtdMax !== '' && qtd !== '' && parseInt(qtd) > parseInt(qtdMax)) {
-    showToast('Quantidade atual não pode superar a máxima.', 'error'); return;
-  }
-  if (qtdMin !== '' && qtdMax !== '' && parseInt(qtdMin) > parseInt(qtdMax)) {
-    showToast('Quantidade mínima não pode ser maior que a máxima.', 'error'); return;
-  }
-
   const payload = {
-    produto: {
-      nomeProduto: nome,
-      qtdProduto:  parseInt(qtd),
-      qtdMinima:   qtdMin !== '' ? parseInt(qtdMin) : 0,
-      qtdMaxima:   qtdMax !== '' ? parseInt(qtdMax) : 9999,
-      descProduto: desc,
-    }
+    produto: { nomeProduto: nome, qtdProduto: qtd, qtdMinima: qtdMin, qtdMaxima: qtdMax, descProduto: desc }
   };
 
   try {
