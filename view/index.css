@@ -811,4 +811,18 @@ body {
   border-color: #DC2626 !important;
   box-shadow: 0 0 0 3px rgba(220,38,38,.1);
 }
+.modal-error-banner {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  color: #DC2626;
+  font-size: .85rem;
+  font-weight: 500;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-error-banner.hidden { display: none; }
 

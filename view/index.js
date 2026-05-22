@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarAdministrador();
   carregarTodos();
   _setupValidacaoProduto();
+  _setupValidacaoModais();
 
   fpInicio = flatpickr('#obraDataInicio', {
     dateFormat: 'd/m/Y', locale: 'pt', allowInput: true,
@@ -320,17 +321,12 @@ function _validarFormProduto() {
   return [_vProdNome(), _vProdQtd(), _vProdQtdMin(), _vProdQtdMax(), _vProdDesc()].every(Boolean);
 }
 
-function _atualizarBtnSalvarProduto() {
-  const btn = document.getElementById('btnSalvarProduto');
-  if (btn) btn.disabled = ![_vProdNome(false), _vProdQtd(false), _vProdQtdMin(false), _vProdQtdMax(false), _vProdDesc(false)].every(Boolean);
-}
-
 function _setupValidacaoProduto() {
   const bind = (id, fn, extras = []) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.addEventListener('blur',  () => { fn(true);  extras.forEach(f => f(false)); _atualizarBtnSalvarProduto(); });
-    el.addEventListener('input', () => { fn(false); extras.forEach(f => f(false)); _atualizarBtnSalvarProduto(); });
+    el.addEventListener('blur',  () => { fn(true);  extras.forEach(f => f(false)); });
+    el.addEventListener('input', () => { fn(false); extras.forEach(f => f(false)); });
   };
   bind('prodNome',   _vProdNome);
   bind('prodQtd',    _vProdQtd);
@@ -351,7 +347,7 @@ function abrirModalNovoProduto() {
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-boxes-stacked"></i> Novo Produto';
   _resetErrosProduto();
-  _atualizarBtnSalvarProduto();
+  _ocultarBanner('banner-modalProduto');
   abrirModal('modalProduto');
 }
 
@@ -367,12 +363,17 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Produto';
   _resetErrosProduto();
-  _atualizarBtnSalvarProduto();
+  _ocultarBanner('banner-modalProduto');
   abrirModal('modalProduto');
 }
 
 async function salvarProduto() {
-  if (!_validarFormProduto()) return;
+  _ocultarBanner('banner-modalProduto');
+  if (!_validarFormProduto()) {
+    _mostrarBanner('banner-modalProduto');
+    _scrollPrimeiroErro('modalProduto');
+    return;
+  }
 
   const idEdicao = document.getElementById('prodIdEdicao').value;
   const nome   = document.getElementById('prodNome').value.trim();
@@ -804,6 +805,7 @@ async function salvarObra() {
   const cel2       = document.getElementById('obraCelular2').value.trim() || null;
 
   _obraLimparErros();
+  _ocultarBanner('banner-modalObra');
 
   const cnpj        = document.getElementById('obraClienteCNPJ').value.trim();
   const nomeCliente = document.getElementById('obraClienteNome').value.trim();
@@ -819,15 +821,21 @@ async function salvarObra() {
   if (!cod)        { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.');       temErro = true; }
   else if (!cacheClientes.find(x => x.idCliente === parseInt(cod)))
                    { _obraSetError('obraCodCliente', 'Cliente não encontrado. Verifique o ID.'); temErro = true; }
-  if (!cnpj)       { _obraSetError('obraClienteCNPJ',        'CNPJ / CPF é obrigatório.');       temErro = true; }
-  if (!nomeCliente){ _obraSetError('obraClienteNome',        'Nome do cliente é obrigatório.');   temErro = true; }
-  if (!rua)        { _obraSetError('obraClienteRua',         'Endereço é obrigatório.');          temErro = true; }
-  if (!numero)     { _obraSetError('obraClienteNumero',      'Número é obrigatório.');            temErro = true; }
-  if (!complemento){ _obraSetError('obraClienteComplemento', 'Complemento é obrigatório.');       temErro = true; }
-  if (!bairro)     { _obraSetError('obraClienteBairro',      'Bairro é obrigatório.');            temErro = true; }
+  if (!idEdicao) {
+    if (!cnpj)       { _obraSetError('obraClienteCNPJ',        'CNPJ / CPF é obrigatório.');       temErro = true; }
+    if (!nomeCliente){ _obraSetError('obraClienteNome',        'Nome do cliente é obrigatório.');   temErro = true; }
+    if (!rua)        { _obraSetError('obraClienteRua',         'Endereço é obrigatório.');          temErro = true; }
+    if (!numero)     { _obraSetError('obraClienteNumero',      'Número é obrigatório.');            temErro = true; }
+    if (!complemento){ _obraSetError('obraClienteComplemento', 'Complemento é obrigatório.');       temErro = true; }
+    if (!bairro)     { _obraSetError('obraClienteBairro',      'Bairro é obrigatório.');            temErro = true; }
+  }
   if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');     temErro = true; }
   if (!desc)       { _obraSetError('obraDesc',        'A descrição da obra é obrigatória.'); temErro = true; }
-  if (temErro) return;
+  if (temErro) {
+    _mostrarBanner('banner-modalObra');
+    _scrollPrimeiroErro('modalObra');
+    return;
+  }
 
   const obra = {
     descObra: desc, respObra: resp, codCliente: parseInt(cod),
@@ -865,7 +873,10 @@ async function salvarObra() {
     if (pid && pqt) produtosUsados.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
   });
   if (!produtosUsados.length) {
-    _obraSetError('produtosUsados', 'Informe ao menos um produto para a obra.'); return;
+    _obraSetError('produtosUsados', 'Informe ao menos um produto para a obra.');
+    _mostrarBanner('banner-modalObra');
+    _scrollPrimeiroErro('modalObra');
+    return;
   }
 
   try {
@@ -1247,33 +1258,84 @@ function abrirModalEditarCliente(idCliente) {
   abrirModal('modalCliente');
 }
 
-async function salvarCliente() {
-  const idEdicao     = document.getElementById('cliIdEdicao').value;
-  const nome         = document.getElementById('cliNome').value.trim();
-  const cpfcnpj      = document.getElementById('cliCpfCnpj').value.trim();
-  const contato      = document.getElementById('cliContato').value.trim();
-  const email        = document.getElementById('cliEmail').value.trim();
-  const telefone2    = document.getElementById('cliTelefone2').value.trim();
-  const cep          = document.getElementById('cliCep').value.trim();
-  const rua          = document.getElementById('cliRua').value.trim();
-  const numero       = document.getElementById('cliNumero').value.trim();
-  const complemento  = document.getElementById('cliComplemento').value.trim();
-  const bairro       = document.getElementById('cliBairro').value.trim();
-  const cidade       = document.getElementById('cliCidade').value.trim();
-  const estado       = document.getElementById('cliEstado').value.trim();
+// ── Helpers genéricos de validação inline ───────────────────────────────────
+function _erroCampo(id, msg) {
+  const errEl = document.getElementById(`err-${id}`);
+  const input = document.getElementById(id);
+  if (errEl) { errEl.textContent = msg; errEl.classList.add('visible'); }
+  if (input) input.classList.add('input-error');
+}
 
-  if (!nome)   { showToast('Nome é obrigatório.', 'error'); return; }
-  if (nome.length < 3) { showToast('Nome deve ter ao menos 3 caracteres.', 'error'); return; }
-  if (/\d/.test(nome)) { showToast('Nome não pode conter números.', 'error'); return; }
-  if (!cpfcnpj) { showToast('CPF/CNPJ é obrigatório.', 'error'); return; }
-  const digitos = cpfcnpj.replace(/\D/g,'');
-  if (digitos.length !== 11 && digitos.length !== 14) {
-    showToast('CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos.', 'error'); return;
+function _limparErroCampo(id) {
+  const errEl = document.getElementById(`err-${id}`);
+  const input = document.getElementById(id);
+  if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
+  if (input) input.classList.remove('input-error');
+}
+
+function _mostrarBanner(bannerId) {
+  document.getElementById(bannerId)?.classList.remove('hidden');
+}
+
+function _ocultarBanner(bannerId) {
+  document.getElementById(bannerId)?.classList.add('hidden');
+}
+
+function _scrollPrimeiroErro(modalId) {
+  const el = document.querySelector(`#${modalId} .field-error.visible`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── Setup: limpa erro de campo no input ─────────────────────────────────────
+function _setupValidacaoModais() {
+  ['cliNome','cliCpfCnpj','cliRua','cliNumero','cliCidade','cliEstado'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => _limparErroCampo(id));
+  });
+  ['adminNome','adminEmail','adminSenha','adminSenhaAtual'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => _limparErroCampo(id));
+  });
+  document.getElementById('respNome')?.addEventListener('input', () => _limparErroCampo('respNome'));
+}
+
+async function salvarCliente() {
+  const idEdicao    = document.getElementById('cliIdEdicao').value;
+  const nome        = document.getElementById('cliNome').value.trim();
+  const cpfcnpj     = document.getElementById('cliCpfCnpj').value.trim();
+  const contato     = document.getElementById('cliContato').value.trim();
+  const email       = document.getElementById('cliEmail').value.trim();
+  const telefone2   = document.getElementById('cliTelefone2').value.trim();
+  const cep         = document.getElementById('cliCep').value.trim();
+  const rua         = document.getElementById('cliRua').value.trim();
+  const numero      = document.getElementById('cliNumero').value.trim();
+  const complemento = document.getElementById('cliComplemento').value.trim();
+  const bairro      = document.getElementById('cliBairro').value.trim();
+  const cidade      = document.getElementById('cliCidade').value.trim();
+  const estado      = document.getElementById('cliEstado').value.trim();
+
+  ['cliNome','cliCpfCnpj','cliRua','cliNumero','cliCidade','cliEstado'].forEach(_limparErroCampo);
+  _ocultarBanner('banner-modalCliente');
+
+  let temErro = false;
+  if (!nome)             { _erroCampo('cliNome', 'Nome é obrigatório.');                      temErro = true; }
+  else if (nome.length < 3) { _erroCampo('cliNome', 'Nome deve ter ao menos 3 caracteres.'); temErro = true; }
+  else if (/\d/.test(nome)) { _erroCampo('cliNome', 'Nome não pode conter números.');         temErro = true; }
+  if (!cpfcnpj) { _erroCampo('cliCpfCnpj', 'CPF/CNPJ é obrigatório.'); temErro = true; }
+  else {
+    const d = cpfcnpj.replace(/\D/g, '');
+    if (d.length !== 11 && d.length !== 14) {
+      _erroCampo('cliCpfCnpj', 'CPF deve ter 11 dígitos ou CNPJ 14 dígitos.'); temErro = true;
+    }
   }
-  if (!rua)    { showToast('Rua é obrigatória.', 'error'); return; }
-  if (!numero) { showToast('Número é obrigatório.', 'error'); return; }
-  if (!cidade) { showToast('Cidade é obrigatória.', 'error'); return; }
-  if (!estado) { showToast('Estado é obrigatório.', 'error'); return; }
+  if (!rua)    { _erroCampo('cliRua',    'Rua é obrigatória.');    temErro = true; }
+  if (!numero) { _erroCampo('cliNumero', 'Número é obrigatório.'); temErro = true; }
+  if (!cidade) { _erroCampo('cliCidade', 'Cidade é obrigatória.'); temErro = true; }
+  if (!estado) { _erroCampo('cliEstado', 'Estado é obrigatório.'); temErro = true; }
+
+  if (temErro) {
+    _mostrarBanner('banner-modalCliente');
+    _scrollPrimeiroErro('modalCliente');
+    return;
+  }
 
   const payload = {
     cliente: { nomeCliente: nome, CNPJCPF: cpfcnpj, contatoCliente: contato,
@@ -1942,32 +2004,39 @@ async function salvarAdmin() {
   const senha     = document.getElementById('adminSenha').value;
   const novaSenha = document.getElementById('adminNovaSenha').value;
 
-  if (!nome)  { showToast('Nome é obrigatório.', 'error'); return; }
-  if (!email) { showToast('Email é obrigatório.', 'error'); return; }
+  ['adminNome','adminEmail','adminSenha','adminSenhaAtual'].forEach(_limparErroCampo);
+  _ocultarBanner('banner-modalAdmin');
 
   const loggedId = parseInt(sessionStorage.getItem('idAdmin') || '0');
 
-  try {
-    if (idEdicao) {
-      // Bloqueio de edição cruzada no frontend
-      if (loggedId && loggedId !== parseInt(idEdicao)) {
-        showToast('Você só pode editar seu próprio perfil.', 'error'); return;
-      }
-      const senhaAtual = document.getElementById('adminSenhaAtual').value;
-      if (!senhaAtual) { showToast('Informe sua senha atual para confirmar.', 'error'); return; }
-      const payload = { admin: { email, nomeLogin: nome, novaSenha: novaSenha || undefined, senhaAtual } };
+  let temErro = false;
+  if (!nome)  { _erroCampo('adminNome',  'Nome é obrigatório.');  temErro = true; }
+  if (!email) { _erroCampo('adminEmail', 'Email é obrigatório.'); temErro = true; }
+
+  if (idEdicao) {
+    if (loggedId && loggedId !== parseInt(idEdicao)) {
+      showToast('Você só pode editar seu próprio perfil.', 'error'); return;
+    }
+    const senhaAtual = document.getElementById('adminSenhaAtual').value;
+    if (!senhaAtual) { _erroCampo('adminSenhaAtual', 'Informe sua senha atual para confirmar.'); temErro = true; }
+    if (temErro) { _mostrarBanner('banner-modalAdmin'); _scrollPrimeiroErro('modalAdmin'); return; }
+    const payload = { admin: { email, nomeLogin: nome, novaSenha: novaSenha || undefined, senhaAtual } };
+    try {
       await apiFetch(`/admin/${idEdicao}`, 'PUT', payload);
       showToast('Administrador atualizado!', 'success');
-    } else {
-      if (!senha) { showToast('Senha é obrigatória.', 'error'); return; }
-      const payload = { admin: { email, nomeLogin: nome, senha } };
+      fecharModal('modalAdmin');
+      await carregarAdmins();
+    } catch (e) { showToast(`Erro: ${e.message}`, 'error'); }
+  } else {
+    if (!senha) { _erroCampo('adminSenha', 'Senha é obrigatória.'); temErro = true; }
+    if (temErro) { _mostrarBanner('banner-modalAdmin'); _scrollPrimeiroErro('modalAdmin'); return; }
+    const payload = { admin: { email, nomeLogin: nome, senha } };
+    try {
       await apiFetch('/admin', 'POST', payload);
       showToast(`Administrador "${nome}" criado!`, 'success');
-    }
-    fecharModal('modalAdmin');
-    await carregarAdmins();
-  } catch (e) {
-    showToast(`Erro: ${e.message}`, 'error');
+      fecharModal('modalAdmin');
+      await carregarAdmins();
+    } catch (e) { showToast(`Erro: ${e.message}`, 'error'); }
   }
 }
 
@@ -2258,7 +2327,16 @@ function abrirModalEditarResponsavel(id) {
 async function salvarResponsavel() {
   const idEdicao = document.getElementById('respIdEdicao').value;
   const nome     = document.getElementById('respNome').value.trim();
-  if (!nome) { showToast('Nome é obrigatório.', 'error'); return; }
+
+  _limparErroCampo('respNome');
+  _ocultarBanner('banner-modalResponsavel');
+
+  if (!nome) {
+    _erroCampo('respNome', 'Nome é obrigatório.');
+    _mostrarBanner('banner-modalResponsavel');
+    _scrollPrimeiroErro('modalResponsavel');
+    return;
+  }
 
   try {
     if (idEdicao) {
