@@ -58,6 +58,25 @@ let fpInicio, fpFim;
 
 document.addEventListener('DOMContentLoaded', () => {
   verificarAutenticacao();
+
+  const snapRaw = sessionStorage.getItem('domSnapshot');
+  if (snapRaw) {
+    sessionStorage.removeItem('domSnapshot');
+    try {
+      const snap = JSON.parse(snapRaw);
+      Object.entries(snap).forEach(([id, html]) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+      });
+    } catch (_) {}
+  }
+  const abaAtual = sessionStorage.getItem('abaAtual');
+  if (abaAtual) {
+    sessionStorage.removeItem('abaAtual');
+    navegarPara(abaAtual);
+  }
+  document.documentElement.classList.remove('restoring-tab');
+
   carregarAdministrador();
   carregarTodos();
 
@@ -113,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fpFiltroOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true, onChange: filtrarObras };
   flatpickr('#obraFiltroDe',  fpFiltroOpts);
   flatpickr('#obraFiltroAte', fpFiltroOpts);
+
 });
 
 async function carregarTodos() {
@@ -139,11 +159,13 @@ function carregarAdministrador() {
 // ══════════════════════════════════════════════════
 
 let cacheProdutos = [];
+const _cacheReady = { produtos: false, obras: false, clientes: false, admins: false, responsaveis: false };
 
 async function carregarProdutos() {
   try {
     const res = await apiFetch('/produto');
     cacheProdutos = res.produtos || [];
+    _cacheReady.produtos = true;
     renderTabelaProdutos(cacheProdutos);
     renderAlertas(cacheProdutos);
     renderNotificacoes(cacheProdutos);
@@ -301,6 +323,7 @@ async function carregarObras() {
   try {
     const res = await apiFetch('/obra');
     cacheObras = res.obras || [];
+    _cacheReady.obras = true;
     renderTabelaObras(cacheObras);
     renderObrasRecentes(cacheObras);
     atualizarKPI();
@@ -1015,6 +1038,7 @@ async function carregarClientes() {
   try {
     const res = await apiFetch('/cliente');
     cacheClientes = res.clientes || [];
+    _cacheReady.clientes = true;
     renderTabelaClientes(cacheClientes);
     atualizarKPI();
   } catch (e) {
@@ -1411,10 +1435,12 @@ function renderNotificacoes(produtos) {
 }
 
 function atualizarKPI() {
-  document.getElementById('kpi-produtos').textContent = cacheProdutos.length;
-  document.getElementById('kpi-obras').textContent    = cacheObras.filter(o => o.statusObra === 'Em andamento').length;
-  document.getElementById('kpi-clientes').textContent = cacheClientes.length;
-  document.getElementById('kpi-alertas').textContent  = cacheProdutos.filter(_produtoEmAlerta).length;
+  if (_cacheReady.produtos) {
+    document.getElementById('kpi-produtos').textContent = cacheProdutos.length;
+    document.getElementById('kpi-alertas').textContent  = cacheProdutos.filter(_produtoEmAlerta).length;
+  }
+  if (_cacheReady.obras)    document.getElementById('kpi-obras').textContent    = cacheObras.filter(o => o.statusObra === 'Em andamento').length;
+  if (_cacheReady.clientes) document.getElementById('kpi-clientes').textContent = cacheClientes.length;
   atualizarStats();
 }
 
@@ -1496,30 +1522,34 @@ function _setStatEl(id, val) {
   if (el) el.textContent = val;
 }
 function atualizarStats() {
-  // Estoque
-  const okCount    = cacheProdutos.filter(p => !_produtoEmAlerta(p)).length;
-  const alertCount = cacheProdutos.filter(p => _produtoEmAlerta(p) && p.qtdProduto > 0).length;
-  const zeroCount  = cacheProdutos.filter(p => p.qtdProduto <= 0).length;
-  _setStatEl('stat-prod-total', cacheProdutos.length);
-  _setStatEl('stat-prod-ok',    okCount);
-  _setStatEl('stat-prod-alert', alertCount);
-  _setStatEl('stat-prod-zero',  zeroCount);
-  // Obras
-  _setStatEl('stat-obra-total',     cacheObras.length);
-  _setStatEl('stat-obra-ainiciar',  cacheObras.filter(o => o.statusObra === 'À iniciar').length);
-  _setStatEl('stat-obra-andamento', cacheObras.filter(o => o.statusObra === 'Em andamento').length);
-  _setStatEl('stat-obra-pausada',   cacheObras.filter(o => o.statusObra === 'Pausada').length);
-  _setStatEl('stat-obra-concluida', cacheObras.filter(o => o.statusObra === 'Concluida').length);
-  // Clientes
-  const clientesComObra = new Set(
-    cacheObras.filter(o => o.statusObra === 'Em andamento').map(o => o.codCliente)
-  );
-  _setStatEl('stat-cli-total',  cacheClientes.length);
-  _setStatEl('stat-cli-ativos', clientesComObra.size);
-  _setStatEl('stat-cli-email',  cacheClientes.filter(c => c.emailCliente).length);
-  // Admins
-  _setStatEl('stat-admin-total', cacheAdmins.length);
-  _setStatEl('stat-resp-total',  cacheResponsaveis.length);
+  if (_cacheReady.produtos) {
+    const okCount    = cacheProdutos.filter(p => !_produtoEmAlerta(p)).length;
+    const alertCount = cacheProdutos.filter(p => _produtoEmAlerta(p) && p.qtdProduto > 0).length;
+    const zeroCount  = cacheProdutos.filter(p => p.qtdProduto <= 0).length;
+    _setStatEl('stat-prod-total', cacheProdutos.length);
+    _setStatEl('stat-prod-ok',    okCount);
+    _setStatEl('stat-prod-alert', alertCount);
+    _setStatEl('stat-prod-zero',  zeroCount);
+  }
+  if (_cacheReady.obras) {
+    _setStatEl('stat-obra-total',     cacheObras.length);
+    _setStatEl('stat-obra-ainiciar',  cacheObras.filter(o => o.statusObra === 'À iniciar').length);
+    _setStatEl('stat-obra-andamento', cacheObras.filter(o => o.statusObra === 'Em andamento').length);
+    _setStatEl('stat-obra-pausada',   cacheObras.filter(o => o.statusObra === 'Pausada').length);
+    _setStatEl('stat-obra-concluida', cacheObras.filter(o => o.statusObra === 'Concluida').length);
+  }
+  if (_cacheReady.clientes) {
+    _setStatEl('stat-cli-total', cacheClientes.length);
+    _setStatEl('stat-cli-email', cacheClientes.filter(c => c.emailCliente).length);
+    if (_cacheReady.obras) {
+      const clientesComObra = new Set(
+        cacheObras.filter(o => o.statusObra === 'Em andamento').map(o => o.codCliente)
+      );
+      _setStatEl('stat-cli-ativos', clientesComObra.size);
+    }
+  }
+  if (_cacheReady.admins)       _setStatEl('stat-admin-total', cacheAdmins.length);
+  if (_cacheReady.responsaveis) _setStatEl('stat-resp-total',  cacheResponsaveis.length);
 }
 
 
@@ -1680,6 +1710,7 @@ async function carregarAdmins() {
   try {
     const res = await apiFetch('/admin');
     cacheAdmins = res.admins || [];
+    _cacheReady.admins = true;
     renderTabelaAdmins(cacheAdmins);
     atualizarStats();
   } catch (e) {
@@ -1870,6 +1901,31 @@ function logout() {
 // NAVEGAÇÃO POR KPI
 // ══════════════════════════════════════════════════
 
+function recarregarAba() {
+  const pagina = document.querySelector('.page.active');
+  if (pagina) {
+    sessionStorage.setItem('abaAtual', pagina.id.replace('page-', ''));
+  }
+
+  const snap = {};
+  [
+    'kpi-produtos', 'kpi-obras', 'kpi-clientes', 'kpi-alertas',
+    'stat-prod-total', 'stat-prod-ok', 'stat-prod-alert', 'stat-prod-zero',
+    'stat-obra-total', 'stat-obra-ainiciar', 'stat-obra-andamento', 'stat-obra-pausada', 'stat-obra-concluida',
+    'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
+    'stat-admin-total', 'stat-resp-total',
+    'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyAdmins', 'bodyResponsaveis',
+    'alertList', 'obraRecentList',
+    'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes',
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) snap[id] = el.innerHTML;
+  });
+  sessionStorage.setItem('domSnapshot', JSON.stringify(snap));
+
+  window.location.reload();
+}
+
 function navegarPara(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1951,6 +2007,7 @@ async function carregarResponsaveis() {
   try {
     const res = await apiFetch('/responsavel');
     cacheResponsaveis = res.responsaveis || [];
+    _cacheReady.responsaveis = true;
     renderTabelaResponsaveis(cacheResponsaveis);
     popularSelectResponsaveis();
     atualizarStats();

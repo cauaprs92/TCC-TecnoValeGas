@@ -751,6 +751,27 @@ body {
 /* ── QTY BADGE SIZE ── */
 .qty-badge { font-size: .8rem; padding: 3px 9px; }
 
+/* ── RESTAURAÇÃO DE ABA (previne flash do Dashboard no reload) ── */
+.restoring-tab .page { display: none !important; }
+
+/* ── BOTÃO RECARREGAR (page-header) ── */
+.btn-reload {
+  margin-left: auto;
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gray-200);
+  background: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gray-500); font-size: .9rem;
+  flex-shrink: 0;
+  align-self: center;
+  transition: all var(--transition);
+}
+.btn-reload:hover { background: var(--gray-50); color: var(--gray-700); border-color: var(--gray-300); }
+.btn-reload.spinning i { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── Validação de campos ── */
 .campo-obrigatorio { color: #DC2626; margin-left: 2px; font-weight: 700; }
 .field-error { font-size: .74rem; color: #DC2626; display: none; margin-top: 1px; }

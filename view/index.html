@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <script>try { if (sessionStorage.getItem('abaAtual')) document.documentElement.classList.add('restoring-tab'); } catch(e) {}</script>
 </head>
 <body>
 
@@ -91,6 +92,7 @@
           <button class="btn btn-secondary" style="margin-left:auto" onclick="gerarRelatorio()">
             <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
           </button>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- KPIs — clicáveis, navegam para a seção correspondente -->
@@ -163,6 +165,7 @@
         <div class="page-header">
           <h1>Estoque / Produtos</h1>
           <span class="page-subtitle">Gerencie todos os produtos cadastrados</span>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- Stats bar -->
@@ -226,6 +229,7 @@
         <div class="page-header">
           <h1>Obras / Projetos</h1>
           <span class="page-subtitle">Controle de obras e materiais utilizados</span>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- Stats bar -->
@@ -298,6 +302,7 @@
         <div class="page-header">
           <h1>Clientes</h1>
           <span class="page-subtitle">Cadastro de clientes e contratantes</span>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- Stats bar -->
@@ -358,6 +363,7 @@
         <div class="page-header">
           <h1>Administradores</h1>
           <span class="page-subtitle">Gerencie os usuários administradores do sistema</span>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- Stats bar -->
@@ -419,6 +425,7 @@
         <div class="page-header">
           <h1>Responsáveis</h1>
           <span class="page-subtitle">Gerencie os responsáveis / fields do sistema</span>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- Stats bar -->
