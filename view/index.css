@@ -270,11 +270,12 @@ body {
 .obra-list { padding: 8px 0; }
 .obra-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; transition: background var(--transition); }
 .obra-item:hover { background: var(--gray-50); }
-.obra-status { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.obra-status.em-andamento { background: #16A34A; }
-.obra-status.pausada      { background: #D97706; }
-.obra-status.concluida    { background: var(--gray-300); }
-.obra-status.cancelada    { background: #DC2626; }
+.obra-status.em-andamento  { background: var(--gray-400); }
+.obra-status.pausada       { background: #916A00; }
+.obra-status.concluida     { background: #2D8A4E; }
+.obra-status.cancelada     { background: #C0392B; }
+.obra-status.a-iniciar     { background: #2F5EC4; }
+
 .obra-info { flex: 1; }
 .obra-info strong { display: block; font-size: .88rem; font-weight: 600; color: var(--dark); }
 .obra-info span   { font-size: .78rem; color: var(--gray-500); }
@@ -666,12 +667,11 @@ body {
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
 }
-.status-dot.em-andamento { background:#2D8A4E; box-shadow:0 0 0 3px rgba(45,138,78,.18); }
+.status-dot.em-andamento { background:var(--gray-400); }
 .status-dot.pausada      { background:#916A00; box-shadow:0 0 0 3px rgba(145,106,0,.18); }
-.status-dot.concluida    { background:var(--gray-400); }
+.status-dot.concluida    { background:#2D8A4E; box-shadow:0 0 0 3px rgba(45,138,78,.18); }
 .status-dot.cancelada    { background:#C0392B; box-shadow:0 0 0 3px rgba(192,57,43,.18); }
 .status-dot.a-iniciar    { background:#2F5EC4; box-shadow:0 0 0 3px rgba(47,94,196,.18); }
-
 /* ── ALERT LIST UPGRADE ── */
 .alert-item {
   display: flex; align-items: center; gap: 14px;
