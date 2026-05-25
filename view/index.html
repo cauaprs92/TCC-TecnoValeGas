@@ -36,7 +36,7 @@
         <i class="fa-solid fa-user-shield"></i><span>Administradores</span>
       </a>
       <a href="#" class="nav-item" data-page="responsaveis">
-        <i class="fa-solid fa-id-badge"></i><span>Responsáveis</span>
+        <i class="fa-solid fa-id-badge"></i><span>Field</span>
       </a>
     </nav>
 
@@ -443,8 +443,8 @@
       <section class="page" id="page-responsaveis">
 
         <div class="page-header">
-          <h1>Responsáveis</h1>
-          <span class="page-subtitle">Gerencie os responsáveis / fields do sistema</span>
+          <h1>Field</h1>
+          <span class="page-subtitle">Gerencie os fields do sistema</span>
           <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
@@ -452,7 +452,7 @@
         <div class="page-stats" id="statsResponsaveis">
           <div class="stat-item">
             <span class="stat-num" id="stat-resp-total">—</span>
-            <span class="stat-label">Responsáveis (Fields)</span>
+            <span class="stat-label">Fields</span>
           </div>
         </div>
 
@@ -461,14 +461,17 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input
               type="text"
-              placeholder="Buscar responsável..."
+              placeholder="Buscar field..."
               id="searchResp"
               oninput="filtrarResponsaveis(this.value)"
             />
           </div>
           <div class="toolbar-spacer"></div>
+          <button class="btn btn-secondary" onclick="exportarResponsaveis()">
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
+          </button>
           <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()">
-            <i class="fa-solid fa-plus"></i> Novo Responsável
+            <i class="fa-solid fa-plus"></i> Novo Field
           </button>
         </div>
 
@@ -479,7 +482,7 @@
                 <th class="col-id sortable" data-sort-key="id"
                   onclick="ordenarTabela('responsaveis','id')">ID <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="nome"
-                  onclick="ordenarTabela('responsaveis','nome')">Responsável / Field <span class="sort-arrow"></span></th>
+                  onclick="ordenarTabela('responsaveis','nome')">Field <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
@@ -966,7 +969,7 @@
       <div class="modal-overlay hidden" id="modalResponsavel">
         <div class="modal modal-small">
           <div class="modal-header">
-            <h2 id="modalResponsavelTitle"><i class="fa-solid fa-id-badge"></i> Novo Responsável</h2>
+            <h2 id="modalResponsavelTitle"><i class="fa-solid fa-id-badge"></i> Novo Field</h2>
             <button class="modal-close" onclick="fecharModal('modalResponsavel')"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="modal-body">

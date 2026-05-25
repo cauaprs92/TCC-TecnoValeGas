@@ -1781,7 +1781,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     document.getElementById(`page-${page}`).classList.add('active');
-    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores' };
+    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
   });
 });
@@ -2154,7 +2154,7 @@ function navegarPara(page) {
   const pageEl  = document.getElementById(`page-${page}`);
   if (navItem) navItem.classList.add('active');
   if (pageEl)  pageEl.classList.add('active');
-  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores' };
+  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field' };
   document.getElementById('breadcrumb').textContent = labels[page] || page;
 }
 
@@ -2234,6 +2234,14 @@ function exportarAdmins() {
   showToast('Exportação concluída!', 'success');
 }
 
+function exportarResponsaveis() {
+  if (!cacheResponsaveis.length) { showToast('Nenhum field para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Field'];
+  const linhas = cacheResponsaveis.map(r => [r.idResponsavel, r.nomeResponsavel]);
+  _downloadXLSX(`fields_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Exportação concluída!', 'success');
+}
+
 
 // ══════════════════════════════════════════════════
 // RESPONSÁVEIS — GET/POST/PUT/DELETE /responsavel
@@ -2274,9 +2282,9 @@ function renderTabelaResponsaveis(lista) {
   const ordenado = ordenarLista(lista, 'responsaveis');
   if (!ordenado.length) {
     tbody.innerHTML = _emptyState(
-      'id-badge', 'Nenhum responsável cadastrado',
+      'id-badge', 'Nenhum field cadastrado',
       'Cadastre os fields responsáveis pelas obras.',
-      'Novo Responsável', 'abrirModalNovoResponsavel()', 3
+      'Novo Field', 'abrirModalNovoResponsavel()', 3
     );
     return;
   }
@@ -2310,17 +2318,17 @@ function abrirModalNovoResponsavel() {
   document.getElementById('respIdEdicao').value = '';
   document.getElementById('respNome').value     = '';
   document.getElementById('modalResponsavelTitle').innerHTML =
-    '<i class="fa-solid fa-id-badge"></i> Novo Responsável';
+    '<i class="fa-solid fa-id-badge"></i> Novo Field';
   abrirModal('modalResponsavel');
 }
 
 function abrirModalEditarResponsavel(id) {
   const r = cacheResponsaveis.find(x => x.idResponsavel == id);
-  if (!r) { showToast('Responsável não encontrado.', 'error'); return; }
+  if (!r) { showToast('Field não encontrado.', 'error'); return; }
   document.getElementById('respIdEdicao').value = r.idResponsavel;
   document.getElementById('respNome').value     = r.nomeResponsavel;
   document.getElementById('modalResponsavelTitle').innerHTML =
-    '<i class="fa-solid fa-pen"></i> Editar Responsável';
+    '<i class="fa-solid fa-pen"></i> Editar Field';
   abrirModal('modalResponsavel');
 }
 
@@ -2341,10 +2349,10 @@ async function salvarResponsavel() {
   try {
     if (idEdicao) {
       await apiFetch(`/responsavel/${idEdicao}`, 'PUT', { nomeResponsavel: nome });
-      showToast('Responsável atualizado!', 'success');
+      showToast('Field atualizado!', 'success');
     } else {
       await apiFetch('/responsavel', 'POST', { nomeResponsavel: nome });
-      showToast(`Responsável "${nome}" criado!`, 'success');
+      showToast(`Field "${nome}" criado!`, 'success');
     }
     fecharModal('modalResponsavel');
     await carregarResponsaveis();
@@ -2363,7 +2371,7 @@ async function excluirResponsavel(id) {
   fecharModal('modalConfirmar');
   try {
     await apiFetch(`/responsavel/${id}`, 'DELETE');
-    showToast('Responsável excluído.', 'success');
+    showToast('Field excluído.', 'success');
     await carregarResponsaveis();
   } catch (e) {
     showToast(`Erro: ${e.message}`, 'error');
