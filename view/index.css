@@ -241,6 +241,15 @@ body {
 .page-header button {
   align-self: start;
 }
+.toolbar-title {
+  font-family: var(--font-cond);
+  color: var(--gray-500);
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
 .page-subtitle {
   display: block;
   color: var(--gray-500);
