@@ -2403,10 +2403,11 @@ async function excluirResponsavel(id) {
 // ══════════════════════════════════════════════════
 
 function abrirModalEditarProdObra(idObra, idProduto, nomeProduto, qtdAtual) {
-  document.getElementById('editProdObraIdObra').value    = idObra;
-  document.getElementById('editProdObraIdProduto').value = idProduto;
+  document.getElementById('editProdObraIdObra').value     = idObra;
+  document.getElementById('editProdObraIdProduto').value  = idProduto;
   document.getElementById('editProdObraNome').textContent = nomeProduto;
   document.getElementById('editProdObraQtd').value        = qtdAtual;
+  document.getElementById('err-editProdObraQtd').textContent = '';
   abrirModal('modalEditarProdObra');
 }
 
@@ -2414,22 +2415,27 @@ async function confirmarEditarProdObra() {
   const idObra    = document.getElementById('editProdObraIdObra').value;
   const idProduto = document.getElementById('editProdObraIdProduto').value;
   const qtd       = parseInt(document.getElementById('editProdObraQtd').value);
-  if (!qtd || qtd < 1) { showToast('Informe uma quantidade válida.', 'error'); return; }
+  const errQtd    = document.getElementById('err-editProdObraQtd');
+
+  errQtd.textContent = '';
+  if (!qtd || qtd < 1) { errQtd.textContent = 'Informe uma quantidade válida.'; return; }
+
   try {
     await apiFetch(`/obra/${idObra}/produto/${idProduto}`, 'PATCH', { quantidade: qtd });
     fecharModal('modalEditarProdObra');
     showToast('Quantidade atualizada!', 'success');
     await Promise.all([carregarObras(), carregarProdutos()]);
-    // Re-abre o modal de ver produtos com dados atualizados
     verProdutosObra(parseInt(idObra));
   } catch (e) {
-    showToast(`Erro: ${e.message}`, 'error');
+    errQtd.textContent = e.message || 'Erro ao atualizar quantidade.';
   }
 }
 
 
+let _totalProdutosParaExcluir = 0;
+
 function excluirProdutoObra(idObra, idProduto, nomeProduto) {
-  fecharModal('modalVerObra');
+  _totalProdutosParaExcluir = document.querySelectorAll('#modalVerObraBody tbody tr').length;
   document.getElementById('confirmarMsg').textContent =
     `Tem certeza que deseja remover "${nomeProduto}" desta obra?`;
   document.getElementById('btnConfirmarExcluir').onclick = () =>
@@ -2439,14 +2445,39 @@ function excluirProdutoObra(idObra, idProduto, nomeProduto) {
 
 async function confirmarExcluirProdObra(idObra, idProduto) {
   fecharModal('modalConfirmar');
+  _limparErroVerObra();
+
+  if (_totalProdutosParaExcluir <= 1) {
+    mostrarErroVerObra('Não é possível remover o único produto da obra. A obra deve ter pelo menos um produto.');
+    return;
+  }
+
   try {
     await apiFetch(`/obra/${idObra}/produto/${idProduto}`, 'DELETE');
     showToast('Produto removido da obra.', 'success');
     await Promise.all([carregarObras(), carregarProdutos()]);
     verProdutosObra(idObra);
   } catch (e) {
-    showToast(`Erro: ${e.message}`, 'error');
+    mostrarErroVerObra(e.message || 'Erro ao remover produto da obra.');
   }
+}
+
+function mostrarErroVerObra(msg) {
+  const body = document.getElementById('modalVerObraBody');
+  let banner = document.getElementById('erroVerObra');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'erroVerObra';
+    banner.className = 'modal-error-banner';
+    body.prepend(banner);
+  }
+  banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${msg}`;
+  banner.style.display = 'flex';
+}
+
+function _limparErroVerObra() {
+  const banner = document.getElementById('erroVerObra');
+  if (banner) banner.style.display = 'none';
 }
 
 
