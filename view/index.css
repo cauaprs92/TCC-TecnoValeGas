@@ -219,9 +219,43 @@ body {
 .page { display: none; animation: fadeIn .2s ease; }
 .page.active { display: block; }
 
-.page-header { margin-bottom: 28px; display: flex; align-items: baseline; gap: 12px; }
-.page-header h1 { font-family: var(--font-cond); font-size: 1.6rem; font-weight: 700; color: var(--dark); letter-spacing: -.2px; }
-.page-subtitle { color: var(--gray-500); font-size: .84rem; }
+.page-header {
+  margin-bottom: 28px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: start;
+}
+.page-header h1 {
+  font-family: var(--font-cond);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--dark);
+  letter-spacing: -.2px;
+  margin-bottom: 6px;
+}
+.page-header h1,
+.page-header .page-subtitle {
+  grid-column: 1;
+}
+.page-header button {
+  align-self: start;
+}
+.toolbar-title {
+  font-family: var(--font-cond);
+  color: var(--gray-500);
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.page-subtitle {
+  display: block;
+  color: var(--gray-500);
+  font-size: .84rem;
+  line-height: 1.45;
+}
 
 /* ── KPIs ── */
 .kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-bottom: 28px; }
@@ -270,11 +304,12 @@ body {
 .obra-list { padding: 8px 0; }
 .obra-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; transition: background var(--transition); }
 .obra-item:hover { background: var(--gray-50); }
-.obra-status { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.obra-status.em-andamento { background: #16A34A; }
-.obra-status.pausada      { background: #D97706; }
-.obra-status.concluida    { background: var(--gray-300); }
-.obra-status.cancelada    { background: #DC2626; }
+.obra-status.em-andamento  { background: var(--gray-400); }
+.obra-status.pausada       { background: #916A00; }
+.obra-status.concluida     { background: #2D8A4E; }
+.obra-status.cancelada     { background: #C0392B; }
+.obra-status.a-iniciar     { background: #2F5EC4; }
+
 .obra-info { flex: 1; }
 .obra-info strong { display: block; font-size: .88rem; font-weight: 600; color: var(--dark); }
 .obra-info span   { font-size: .78rem; color: var(--gray-500); }
@@ -336,7 +371,10 @@ body {
 .data-table th.sortable:hover { color: var(--dark); }
 .data-table .sort-arrow { margin-left: 6px; font-size: .78rem; color: var(--gray-400); }
 .data-table tbody tr { border-bottom: 1px solid var(--gray-100); transition: background var(--transition); }
-.data-table tbody tr:nth-child(even) { background: #FAFBFC; }
+.data-table tbody tr:nth-child(even),
+.data-table tbody tr:nth-child(odd) {
+  background: white;
+}
 .data-table tbody tr:last-child { border-bottom: none; }
 .data-table tbody tr:hover { background: var(--gray-50); }
 .data-table td { padding: 16px 16px; font-size: .855rem; color: var(--dark); }
@@ -678,12 +716,11 @@ body {
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
 }
-.status-dot.em-andamento { background:#2D8A4E; box-shadow:0 0 0 3px rgba(45,138,78,.18); }
+.status-dot.em-andamento { background:var(--gray-400); }
 .status-dot.pausada      { background:#916A00; box-shadow:0 0 0 3px rgba(145,106,0,.18); }
-.status-dot.concluida    { background:var(--gray-400); }
+.status-dot.concluida    { background:#2D8A4E; box-shadow:0 0 0 3px rgba(45,138,78,.18); }
 .status-dot.cancelada    { background:#C0392B; box-shadow:0 0 0 3px rgba(192,57,43,.18); }
 .status-dot.a-iniciar    { background:#2F5EC4; box-shadow:0 0 0 3px rgba(47,94,196,.18); }
-
 /* ── ALERT LIST UPGRADE ── */
 .alert-item {
   display: flex; align-items: center; gap: 14px;
