@@ -2266,7 +2266,7 @@ function popularSelectResponsaveis() {
   const sel = document.getElementById('obraResp');
   if (!sel) return;
   const valorAtual = sel.value;
-  sel.innerHTML = '<option value="">Selecione o responsável...</option>';
+  sel.innerHTML = '<option value="">Selecione o field...</option>';
   cacheResponsaveis.forEach(r => {
     const opt = document.createElement('option');
     opt.value = r.nomeResponsavel;
@@ -2283,7 +2283,7 @@ function renderTabelaResponsaveis(lista) {
   if (!ordenado.length) {
     tbody.innerHTML = _emptyState(
       'id-badge', 'Nenhum field cadastrado',
-      'Cadastre os fields responsáveis pelas obras.',
+      'Cadastre os fields do sistema.',
       'Novo Field', 'abrirModalNovoResponsavel()', 3
     );
     return;
