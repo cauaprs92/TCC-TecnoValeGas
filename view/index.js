@@ -2190,6 +2190,25 @@ function mudarSubtab(section, btn) {
 
 
 // ══════════════════════════════════════════════════
+// CAPS LOCK WARNING — CAMPOS DE SENHA
+// ══════════════════════════════════════════════════
+
+function capsLockWarn(inputId, warnId) {
+  const input = document.getElementById(inputId);
+  const warn  = document.getElementById(warnId);
+  if (!input || !warn) return;
+  input.addEventListener('keyup', e => {
+    warn.classList.toggle('visible', e.getModifierState('CapsLock'));
+  });
+  input.addEventListener('blur', () => warn.classList.remove('visible'));
+}
+
+capsLockWarn('adminSenha',      'capsWarnAdminSenha');
+capsLockWarn('adminSenhaAtual', 'capsWarnAdminSenhaAtual');
+capsLockWarn('adminNovaSenha',  'capsWarnAdminNovaSenha');
+
+
+// ══════════════════════════════════════════════════
 // TOGGLE SENHA — ADMIN MODAL
 // ══════════════════════════════════════════════════
 

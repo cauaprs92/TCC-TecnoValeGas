@@ -234,6 +234,20 @@
     }
     .error-msg.visible { display: flex; }
 
+    .caps-warn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748B;
+      background: #F8FAFC;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-top: 8px;
+    }
+    .caps-warn.visible { display: flex; }
+
     @media (max-width: 768px) {
       .panel-left { display: none; }
       body { background: #F1F5F9; justify-content: center; }
@@ -295,6 +309,7 @@
             <i class="fa-regular fa-eye" id="iconSenha"></i>
           </button>
         </div>
+        <span class="caps-warn" id="capsWarnSenha"><i class="fa-solid fa-lock"></i> Caps Lock está ativado</span>
       </div>
 
       <button class="btn-login" id="btnLogin" onclick="fazerLogin()">Entrar</button>
@@ -308,6 +323,15 @@
     if (sessionStorage.getItem('token')) window.location.href = '/dashboard';
 
     document.addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+
+    (function () {
+      const input = document.getElementById('senha');
+      const warn  = document.getElementById('capsWarnSenha');
+      input.addEventListener('keyup', e => {
+        warn.classList.toggle('visible', e.getModifierState('CapsLock'));
+      });
+      input.addEventListener('blur', () => warn.classList.remove('visible'));
+    })();
 
     function toggleSenha() {
       const input = document.getElementById('senha');

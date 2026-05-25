@@ -516,6 +516,21 @@ body {
 }
 .btn-pwd-toggle:hover { color: var(--gray-700); }
 
+/* ── CAPS LOCK WARNING ── */
+.caps-warn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748B;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 6px;
+}
+.caps-warn.visible { display: flex; }
+
 /* ── ANIMATIONS ── */
 @keyframes fadeIn   { from { opacity:0 } to { opacity:1 } }
 @keyframes fadeDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
