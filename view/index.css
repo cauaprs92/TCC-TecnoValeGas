@@ -225,13 +225,18 @@ body {
   align-items: center;
   gap: 12px;
 }
+.page-header-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 .page-header h1 {
   font-family: var(--font-cond);
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--dark);
   letter-spacing: -.2px;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 .page-header button {
   align-self: start;
