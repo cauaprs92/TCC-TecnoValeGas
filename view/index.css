@@ -401,7 +401,7 @@ body {
 .data-table th.sortable { cursor: pointer; }
 .data-table th.sortable:hover { color: var(--dark); }
 .data-table .sort-arrow { margin-left: 6px; font-size: .78rem; color: var(--gray-400); }
-.data-table tbody tr { border-bottom: 1px solid var(--gray-100); transition: background var(--transition); }
+.data-table tbody tr { border-bottom: 1px solid var(--gray-100); transition: background var(--transition); cursor: pointer; }
 .data-table tbody tr:nth-child(even),
 .data-table tbody tr:nth-child(odd) {
   background: white;

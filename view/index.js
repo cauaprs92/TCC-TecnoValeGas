@@ -228,7 +228,7 @@ function renderTabelaProdutos(produtos) {
         p.qtdMaxima && p.qtdMaxima < 9999 ? `Máx: ${p.qtdMaxima}` : null,
       ].filter(Boolean).join(' · ');
       return `
-        <tr>
+        <tr onclick="abrirModalEditarProduto(${p.idProduto})">
           <td><span class="cell-id">${p.idProduto}</span></td>
           <td>
             <div class="cell-stack">
@@ -466,7 +466,7 @@ function renderTabelaObras(obras) {
       const descEsc = _esc(o.descObra);
       const tags = [o.tipoObra, o.respObra].filter(Boolean);
       return `
-        <tr>
+        <tr onclick="abrirModalEditarObra(${o.idObra})">
           <td><span class="cell-id">${o.idObra}</span></td>
           <td>
             <div class="cell-stack">
@@ -1207,7 +1207,7 @@ function renderTabelaClientes(clientes) {
         c.emailCliente   ? `<span class="cell-secondary"><i class="fa-regular fa-envelope fa-xs" style="width:13px;opacity:.45"></i> ${c.emailCliente}</span>` : '',
       ].filter(Boolean).join('') || '<span class="cell-secondary">—</span>';
       return `
-        <tr>
+        <tr onclick="abrirModalEditarCliente(${c.idCliente})">
           <td><span class="cell-id">${c.idCliente}</span></td>
           <td><span class="cell-primary">${c.nomeCliente}</span></td>
           <td><span class="cell-secondary">${c.CNPJCPF}</span></td>
@@ -1852,7 +1852,7 @@ function _actionMenu(items) {
     const cls = it.danger ? 'danger' : 'edit';
     return `<button class="btn-icon ${cls}" onclick="${it.onclick}" title="${it.label}"><i class="fa-solid ${it.icon}"></i></button>`;
   }).join('');
-  return `<div class="actions">${btns}</div>`;
+  return `<div class="actions" onclick="event.stopPropagation()">${btns}</div>`;
 }
 
 // ── Empty state helper ──
@@ -2088,7 +2088,7 @@ function renderTabelaAdmins(admins) {
   tbody.innerHTML = ordenado.map(a => {
     const nomeSafe = _esc(a.nomeLogin);
     return `
-      <tr>
+      <tr onclick="abrirModalEditarAdmin(${a.idLogin})">
         <td><span class="cell-id">${a.idLogin}</span></td>
         <td>
           <div class="cell-stack">
@@ -2451,7 +2451,7 @@ function renderTabelaResponsaveis(lista) {
   tbody.innerHTML = ordenado.map(r => {
     const nomeSafe = _esc(r.nomeResponsavel);
     return `
-      <tr>
+      <tr onclick="abrirModalEditarResponsavel(${r.idResponsavel})">
         <td><span class="cell-id">${r.idResponsavel}</span></td>
         <td><span class="cell-primary">${r.nomeResponsavel}</span></td>
         <td>${_actionMenu([
