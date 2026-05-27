@@ -415,7 +415,7 @@ async function carregarObras() {
     cacheObras = res.obras || [];
     _cacheReady.obras = true;
     renderTabelaObras(cacheObras);
-    renderObrasRecentes(cacheObras);
+    renderObrasStatus(cacheObras);
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyObras').innerHTML =
@@ -1435,30 +1435,73 @@ function renderAlertas(produtos) {
   }).join('');
 }
 
-function renderObrasRecentes(obras) {
-  const el = document.getElementById('obraRecentList');
-  const recentes = [...obras].sort((a,b) => b.idObra - a.idObra).slice(0, 5);
-  if (!recentes.length) {
-    el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--gray-400);font-size:.84rem">Nenhuma obra cadastrada.</div>`;
-    return;
+let _obrasStatusChart = null;
+
+function renderObrasStatus(obras) {
+  const statusDefs = [
+    { key: 'Em andamento', label: 'Em andamento', color: '#22C55E' },
+    { key: 'Concluida',    label: 'Concluída',    color: '#9CA3AF' },
+    { key: 'Pausada',      label: 'Pausada',      color: '#EAB308' },
+    { key: 'Cancelada',    label: 'Cancelada',    color: '#EF4444' },
+    { key: 'À iniciar',    label: 'À iniciar',    color: '#3B82F6' },
+  ];
+
+  const total  = obras.length;
+  const counts = {};
+  statusDefs.forEach(s => { counts[s.key] = obras.filter(o => o.statusObra === s.key).length; });
+
+  const totalEl = document.getElementById('obrasDonutTotal');
+  if (totalEl) totalEl.innerHTML = `${total}<span>Total</span>`;
+
+  const legendEl = document.getElementById('obrasStatusLegend');
+  if (legendEl) {
+    if (!total) {
+      legendEl.innerHTML = `<div style="color:var(--gray-400);font-size:.84rem;padding:8px 0">Nenhuma obra cadastrada.</div>`;
+    } else {
+      legendEl.innerHTML = statusDefs.map(s => {
+        const qty = counts[s.key];
+        const pct = ((qty / total) * 100).toFixed(1);
+        return `
+          <div class="obras-legend-item">
+            <span class="obras-legend-dot" style="background:${s.color}"></span>
+            <span class="obras-legend-label">${s.label}</span>
+            <span class="obras-legend-qty">${qty}</span>
+            <span class="obras-legend-pct">${pct}%</span>
+          </div>`;
+      }).join('');
+    }
   }
-  const statusCls = {
-    'Em andamento':'em-andamento','Pausada':'pausada',
-    'Concluida':'concluida','Cancelada':'cancelada','À iniciar':'a-iniciar'
-  };
-  el.innerHTML = recentes.map(o => {
-    const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
-    const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '');
-    return `
-      <div class="obra-item" onclick="irParaObra(${o.idObra})" title="Abrir em Obras">
-        <div class="status-dot ${statusCls[o.statusObra] || 'concluida'}"></div>
-        <div style="flex:1;min-width:0">
-          <div class="obra-item-nome">${o.descObra || '—'}</div>
-          ${nomeCliente ? `<div class="obra-item-sub">${nomeCliente}</div>` : ''}
-        </div>
-        ${badgeStatus(o.statusObra)}
-      </div>`;
-  }).join('');
+
+  const canvas = document.getElementById('obrasStatusCanvas');
+  if (!canvas) return;
+
+  if (_obrasStatusChart) { _obrasStatusChart.destroy(); _obrasStatusChart = null; }
+
+  if (!total) return;
+
+  _obrasStatusChart = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: statusDefs.map(s => s.label),
+      datasets: [{
+        data: statusDefs.map(s => counts[s.key]),
+        backgroundColor: statusDefs.map(s => s.color),
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: false,
+      cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} obra${ctx.raw !== 1 ? 's' : ''}` },
+        },
+      },
+    },
+  });
 }
 
 // ── Gráfico: Produtos mais utilizados ─────────────────────────────────────────
@@ -2136,7 +2179,7 @@ function recarregarAba() {
     'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
     'stat-admin-total', 'stat-resp-total',
     'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyAdmins', 'bodyResponsaveis',
-    'alertList', 'obraRecentList',
+    'alertList', 'obrasStatusLegend',
     'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes',
   ].forEach(id => {
     const el = document.getElementById(id);

@@ -138,13 +138,22 @@
             </div>
           </div>
 
-          <!-- Obras recentes — preenchido por renderObrasRecentes() -->
+          <!-- Status das Obras — preenchido por renderObrasStatus() -->
           <div class="card">
             <div class="card-header">
-              <h2><i class="fa-solid fa-clock-rotate-left"></i> Obras Recentes</h2>
+              <div>
+                <h2><i class="fa-solid fa-chart-pie"></i> Status das Obras no Mês</h2>
+                <div class="card-header-sub">Distribuição de obras pelo status atual</div>
+              </div>
             </div>
-            <div class="obra-list" id="obraRecentList">
-              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+            <div class="obras-status-wrap">
+              <div class="obras-donut-area">
+                <canvas id="obrasStatusCanvas"></canvas>
+                <div class="obras-donut-total" id="obrasDonutTotal">—<span>Total</span></div>
+              </div>
+              <div class="obras-status-legend" id="obrasStatusLegend">
+                <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
+              </div>
             </div>
           </div>
 
