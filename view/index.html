@@ -187,15 +187,18 @@
                   <div class="chart-card-sub">Quantidade total consumida por produto</div>
                 </div>
               </div>
-              <div class="chart-period-wrap">
-                <i class="fa-regular fa-calendar fa-sm"></i>
-                <select id="graficoPeriodo" onchange="onGraficoPeriodoChange()">
-                  <option value="">— Selecione um período —</option>
-                  <option value="365">Últimos 12 meses</option>
-                  <option value="180">Últimos 6 meses</option>
-                  <option value="30">Últimos 30 dias</option>
-                </select>
-                <i class="fa-solid fa-chevron-down fa-xs" style="pointer-events:none"></i>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button class="btn btn-secondary" onclick="gerarRelatorio()">Ver relatório completo</button>
+                <div class="chart-period-wrap">
+                  <i class="fa-regular fa-calendar fa-sm"></i>
+                  <select id="graficoPeriodo" onchange="onGraficoPeriodoChange()">
+                    <option value="">— Selecione um período —</option>
+                    <option value="365">Últimos 12 meses</option>
+                    <option value="180">Últimos 6 meses</option>
+                    <option value="30">Últimos 30 dias</option>
+                  </select>
+                  <i class="fa-solid fa-chevron-down fa-xs" style="pointer-events:none"></i>
+                </div>
               </div>
             </div>
             <div class="chart-container" style="padding:0 8px">

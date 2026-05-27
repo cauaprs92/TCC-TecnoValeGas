@@ -1658,23 +1658,9 @@ function onConsumoPeriodoChange() {
 
 // ── Gráfico: Produtos mais utilizados ─────────────────────────────────────────
 
-let _produtosChart    = null;
+let _produtosChart     = null;
 let _todosDadosGrafico = null;
 let _dadosGraficoAtual = [];
-let _gradienteCache   = null;
-
-function _getGradiente(chart) {
-  const { ctx, chartArea } = chart;
-  const h = Math.round(chartArea.bottom - chartArea.top);
-  if (!_gradienteCache || _gradienteCache._h !== h) {
-    const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-    g.addColorStop(0, '#3B5BDB');
-    g.addColorStop(1, '#BFDBFE');
-    g._h = h;
-    _gradienteCache = g;
-  }
-  return _gradienteCache;
-}
 
 function _filtrarPorPeriodo(dados, dias) {
   if (!dias) return [...dados].sort((a, b) => b.totalConsumido - a.totalConsumido);
@@ -1695,53 +1681,6 @@ function _filtrarPorPeriodo(dados, dias) {
     .sort((a, b) => b.totalConsumido - a.totalConsumido);
 }
 
-function _tooltipProdutosExtern({ chart, tooltip }) {
-  let el = document.getElementById('chartTooltipCustom');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'chartTooltipCustom';
-    el.style.cssText = 'position:fixed;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.13);padding:14px 16px;pointer-events:none;min-width:220px;max-width:280px;border:1px solid #E5E9F0;z-index:9999;transition:opacity .12s ease';
-    document.body.appendChild(el);
-  }
-
-  if (tooltip.opacity === 0) { el.style.opacity = '0'; return; }
-
-  const i = tooltip.dataPoints?.[0]?.dataIndex;
-  const d = _dadosGraficoAtual[i];
-  if (!d) return;
-
-  const principais = d.obras.slice(0, 4);
-  const outrosQtd  = d.obras.slice(4).reduce((s, o) => s + o.qtd, 0);
-
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:8px">
-      <span style="font-weight:700;font-size:.9rem;color:#1A1D2E">${d.nomeProduto}</span>
-      <span style="color:#3B5BDB;font-weight:700;font-size:.9rem;white-space:nowrap">${d.totalConsumido.toLocaleString('pt-BR')} unidades</span>
-    </div>
-    <div style="font-size:.76rem;color:#7B8196;margin-bottom:6px">Utilizado em:</div>
-    <ul style="list-style:disc;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:3px">
-      ${principais.map(o => `
-        <li style="display:flex;justify-content:space-between;font-size:.8rem">
-          <span style="color:#374151">${o.descObra || o.nomeCliente}</span>
-          <span style="color:#7B8196;margin-left:12px;white-space:nowrap">${o.qtd} un.</span>
-        </li>`).join('')}
-      ${outrosQtd ? `
-        <li style="display:flex;justify-content:space-between;font-size:.8rem">
-          <span style="color:#374151">Outros</span>
-          <span style="color:#7B8196;margin-left:12px;white-space:nowrap">${outrosQtd} un.</span>
-        </li>` : ''}
-    </ul>`;
-
-  const rect = chart.canvas.getBoundingClientRect();
-  let left = rect.left + tooltip.caretX + 16;
-  let top  = rect.top  + tooltip.caretY - 30;
-  if (left + 295 > window.innerWidth) left = rect.left + tooltip.caretX - 305;
-  if (top < 8) top = 8;
-  el.style.opacity = '1';
-  el.style.left = left + 'px';
-  el.style.top  = top  + 'px';
-}
-
 async function renderGraficoProdutos(dias = '') {
   const container = document.querySelector('#produtosChartCanvas')?.closest('.chart-container')
     || document.querySelector('.chart-container');
@@ -1758,7 +1697,8 @@ async function renderGraficoProdutos(dias = '') {
 
   _dadosGraficoAtual = _filtrarPorPeriodo(_todosDadosGrafico, dias);
 
-  if (_produtosChart) { _produtosChart.destroy(); _produtosChart = null; _gradienteCache = null; }
+  if (_produtosChart) { _produtosChart.destroy(); _produtosChart = null; }
+  document.getElementById('chartTooltipCustom')?.remove();
 
   if (!_dadosGraficoAtual.length) {
     container.innerHTML = '<div class="empty-row" style="height:100%;display:flex;align-items:center;justify-content:center;padding:48px 0">Nenhum produto utilizado em obras no período selecionado.</div>';
@@ -1779,13 +1719,13 @@ async function renderGraficoProdutos(dias = '') {
       const { ctx } = chart;
       const meta = chart.getDatasetMeta(0);
       ctx.save();
-      ctx.font = 'bold 11.5px system-ui,-apple-system,sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#3B5BDB';
+      ctx.font = '600 11px Inter,system-ui,sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#5A6178';
       meta.data.forEach((bar, i) => {
         const d = _dadosGraficoAtual[i];
-        if (d) ctx.fillText(d.totalConsumido.toLocaleString('pt-BR'), bar.x, bar.y - 4);
+        if (d) ctx.fillText(`${d.totalConsumido.toLocaleString('pt-BR')} un.`, bar.x + 6, bar.y);
       });
       ctx.restore();
     }
@@ -1797,43 +1737,48 @@ async function renderGraficoProdutos(dias = '') {
       labels: _dadosGraficoAtual.map(d => d.nomeProduto),
       datasets: [{
         data: _dadosGraficoAtual.map(d => d.totalConsumido),
-        backgroundColor: ctx => {
-          const { chart } = ctx;
-          return chart.chartArea ? _getGradiente(chart) : '#3B5BDB';
-        },
-        borderRadius: 6,
+        backgroundColor: '#3B5BDB',
+        borderRadius: 4,
         borderSkipped: false,
-        barPercentage: 0.6,
+        barPercentage: 0.55,
         categoryPercentage: 0.8,
-      }]
+      }],
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 450 },
+      layout: { padding: { right: 72 } },
       plugins: {
         legend: { display: false },
-        tooltip: { enabled: false, external: _tooltipProdutosExtern },
+        tooltip: {
+          backgroundColor: '#fff',
+          titleColor: '#1A1D2E',
+          bodyColor: '#5A6178',
+          borderColor: '#E2E5EB',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: ctx => ` ${ctx.raw.toLocaleString('pt-BR')} unidades`,
+          },
+        },
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true, text: 'Quantidade utilizada',
-            color: '#7B8196', font: { size: 11 }, padding: { bottom: 6 }
-          },
-          ticks: { precision: 0, color: '#7B8196', font: { size: 11 } },
-          grid: { color: 'rgba(0,0,0,0.05)' },
-          border: { display: false }
-        },
         x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { precision: 0, color: '#7B8196', font: { size: 11 } },
+          border: { display: false },
+        },
+        y: {
           grid: { display: false },
-          ticks: { color: '#7B8196', font: { size: 11 }, maxRotation: 30 },
-          border: { display: false }
-        }
-      }
+          ticks: { color: '#7B8196', font: { size: 11 } },
+          border: { display: false },
+        },
+      },
     },
-    plugins: [dataLabelsPlugin]
+    plugins: [dataLabelsPlugin],
   });
 }
 
