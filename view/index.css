@@ -409,7 +409,7 @@ body {
 .data-table tbody tr:last-child { border-bottom: none; }
 .data-table tbody tr:hover { background: var(--gray-50); }
 .data-table td { padding: 16px 16px; font-size: .855rem; color: var(--dark); }
-.actions { display: flex; gap: 6px; }
+.actions { display: flex; gap: 6px; justify-content: flex-end; }
 .data-table td:last-child { text-align: right; }
 
 /* ── BUTTONS ── */
