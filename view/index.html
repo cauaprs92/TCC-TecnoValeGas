@@ -89,10 +89,12 @@
         <div class="page-header">
           <h1>Dashboard</h1>
           <span class="page-subtitle"></span>
-          <button class="btn btn-secondary" style="margin-left:auto" onclick="gerarRelatorio()">
-            <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
-          </button>
-          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
+          <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+            <button class="btn btn-secondary" onclick="gerarRelatorio()">
+              <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
+            </button>
+            <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
+          </div>
         </div>
 
         <!-- KPIs — clicáveis, navegam para a seção correspondente -->

@@ -215,16 +215,15 @@ body {
 .notif-item p { color: var(--gray-500); }
 
 /* ── PAGES ── */
-.page-content { padding: 32px 36px; flex: 1; }
+.page-content { padding: 8px 28px 24px; flex: 1; }
 .page { display: none; animation: fadeIn .2s ease; }
 .page.active { display: block; }
 
 .page-header {
-  margin-bottom: 28px;
-  display: grid;
-  grid-template-columns: 1fr auto auto;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
   gap: 12px;
-  align-items: start;
 }
 .page-header h1 {
   font-family: var(--font-cond);
@@ -233,10 +232,6 @@ body {
   color: var(--dark);
   letter-spacing: -.2px;
   margin-bottom: 6px;
-}
-.page-header h1,
-.page-header .page-subtitle {
-  grid-column: 1;
 }
 .page-header button {
   align-self: start;
@@ -258,7 +253,7 @@ body {
 }
 
 /* ── KPIs ── */
-.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; margin-bottom: 28px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 14px; }
 .kpi-card {
   background: #fff; border-radius: var(--radius);
   padding: 20px 22px; display: flex; align-items: center; gap: 18px;
@@ -276,28 +271,28 @@ body {
 .kpi-label { font-size: .78rem; color: var(--gray-500); margin-top: 3px; }
 
 /* ── DASHBOARD GRID ── */
-.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .card-full { grid-column: 1/-1; }
 
 .card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow: hidden; }
-.card-header { padding: 18px 22px; border-bottom: 1px solid var(--gray-100); }
+.card-header { padding: 12px 18px; border-bottom: 1px solid var(--gray-100); }
 .card-header h2 { font-size: .875rem; font-weight: 700; color: var(--gray-700); display: flex; align-items: center; gap: 8px; }
 .card-header h2 i { color: var(--gray-500); }
 .card-header-sub { font-size: .78rem; color: var(--gray-500); margin-top: 2px; }
 
 /* ── CONSUMO DE PRODUTOS ── */
 .consumo-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.consumo-total-wrap { padding: 14px 22px 8px; display: flex; flex-direction: column; gap: 4px; }
+.consumo-total-wrap { padding: 10px 18px 6px; display: flex; flex-direction: column; gap: 3px; }
 .consumo-total { font-family: var(--font-cond); font-size: 2rem; font-weight: 800; color: var(--dark); line-height: 1; }
 .consumo-total-label { font-size: .78rem; color: var(--gray-500); }
 .consumo-variacao { font-size: .78rem; font-weight: 600; }
 .consumo-variacao.positive { color: #16A34A; }
 .consumo-variacao.negative { color: #DC2626; }
-.consumo-chart-wrap { padding: 0 12px 16px; height: 140px; position: relative; }
+.consumo-chart-wrap { padding: 0 10px 10px; height: 118px; position: relative; }
 .consumo-chart-wrap canvas { width: 100% !important; height: 100% !important; }
 
 /* ── OBRAS STATUS DONUT ── */
-.obras-status-wrap { display: flex; align-items: center; padding: 20px 22px; gap: 28px; min-height: 210px; }
+.obras-status-wrap { display: flex; align-items: center; padding: 14px 18px; gap: 24px; min-height: 180px; }
 .obras-donut-area { position: relative; width: 160px; height: 160px; flex-shrink: 0; }
 .obras-donut-area canvas { width: 160px !important; height: 160px !important; }
 .obras-donut-total {

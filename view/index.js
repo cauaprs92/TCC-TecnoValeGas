@@ -1405,6 +1405,7 @@ function _produtoEmAlerta(p) {
 function renderAlertas(produtos) {
   const alertas = produtos.filter(_produtoEmAlerta);
   const el = document.getElementById('alertList');
+  if (!el) return;
   if (!alertas.length) {
     el.innerHTML = `
       <div class="alert-item">
