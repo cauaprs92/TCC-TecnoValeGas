@@ -909,3 +909,18 @@ body {
 }
 .modal-error-banner.hidden { display: none; }
 
+/* ── DASHBOARD RESPONSIVO ── */
+@media (max-width: 1024px) {
+  .kpi-grid       { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .dashboard-grid { grid-template-columns: 1fr; gap: 16px; }
+  .obras-status-wrap { min-height: unset; }
+  .consumo-chart-wrap { height: 120px; }
+}
+
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .obras-status-wrap { flex-direction: column; align-items: center; }
+  .obras-status-legend { width: 100%; }
+  .consumo-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .chart-container { height: 220px; }
+}
