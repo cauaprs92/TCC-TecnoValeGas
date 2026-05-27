@@ -894,6 +894,17 @@ body {
   border-color: #DC2626 !important;
   box-shadow: 0 0 0 3px rgba(220,38,38,.1);
 }
+.modal .form-group input:hover:not(:focus),
+.modal .form-group select:hover:not(:focus),
+.modal .form-group textarea:hover:not(:focus) {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+.modal .form-group input.input-error:hover,
+.modal .form-group select.input-error:hover,
+.modal .form-group textarea.input-error:hover {
+  border-color: #DC2626;
+}
 .modal-error-banner {
   background: #FEF2F2;
   border: 1px solid #FECACA;
