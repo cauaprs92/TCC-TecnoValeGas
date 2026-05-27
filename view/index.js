@@ -904,7 +904,7 @@ async function verProdutosObra(idObra) {
     }
     body.innerHTML = `
       <p style="color:var(--gray-500);font-size:.85rem;margin-bottom:14px;">
-        Produtos vinculados à obra <strong>#${idObra}</strong>:
+        Produtos vinculados à obra <strong>${idObra}</strong>:
       </p>
       <table class="data-table">
         <thead><tr><th>ID</th><th>Nome</th><th>Quantidade</th><th>Ações</th></tr></thead>
