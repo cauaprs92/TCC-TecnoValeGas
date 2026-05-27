@@ -285,6 +285,17 @@ body {
 .card-header h2 i { color: var(--gray-500); }
 .card-header-sub { font-size: .78rem; color: var(--gray-500); margin-top: 2px; }
 
+/* ── CONSUMO DE PRODUTOS ── */
+.consumo-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.consumo-total-wrap { padding: 14px 22px 8px; display: flex; flex-direction: column; gap: 4px; }
+.consumo-total { font-family: var(--font-cond); font-size: 2rem; font-weight: 800; color: var(--dark); line-height: 1; }
+.consumo-total-label { font-size: .78rem; color: var(--gray-500); }
+.consumo-variacao { font-size: .78rem; font-weight: 600; }
+.consumo-variacao.positive { color: #16A34A; }
+.consumo-variacao.negative { color: #DC2626; }
+.consumo-chart-wrap { padding: 0 12px 16px; height: 140px; position: relative; }
+.consumo-chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
 /* ── OBRAS STATUS DONUT ── */
 .obras-status-wrap { display: flex; align-items: center; padding: 20px 22px; gap: 28px; min-height: 210px; }
 .obras-donut-area { position: relative; width: 160px; height: 160px; flex-shrink: 0; }

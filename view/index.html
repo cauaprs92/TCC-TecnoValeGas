@@ -128,16 +128,6 @@
         </div>
 
         <div class="dashboard-grid">
-          <!-- Alertas — preenchido por renderAlertas() -->
-          <div class="card">
-            <div class="card-header">
-              <h2><i class="fa-solid fa-triangle-exclamation"></i> Alertas de Estoque</h2>
-            </div>
-            <div class="alert-list" id="alertList">
-              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
-            </div>
-          </div>
-
           <!-- Status das Obras — preenchido por renderObrasStatus() -->
           <div class="card">
             <div class="card-header">
@@ -154,6 +144,45 @@
               <div class="obras-status-legend" id="obrasStatusLegend">
                 <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
               </div>
+            </div>
+          </div>
+
+          <!-- Consumo de Produtos — preenchido por renderConsumo() -->
+          <div class="card">
+            <div class="card-header consumo-header">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="chart-icon-box"><i class="fa-solid fa-cube"></i></div>
+                <div class="chart-card-title">Consumo de Produtos</div>
+              </div>
+              <div class="chart-period-wrap">
+                <i class="fa-regular fa-calendar fa-sm"></i>
+                <select id="consumoPeriodo" onchange="onConsumoPeriodoChange()">
+                  <option value="mes">Este mês</option>
+                  <option value="3m">Últimos 3 meses</option>
+                  <option value="6m">Últimos 6 meses</option>
+                </select>
+                <i class="fa-solid fa-chevron-down fa-xs" style="pointer-events:none"></i>
+              </div>
+            </div>
+            <div class="consumo-total-wrap">
+              <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+                <span class="consumo-total" id="consumoTotal">—</span>
+                <span class="consumo-total-label">Total de unidades consumidas</span>
+              </div>
+              <span class="consumo-variacao" id="consumoVariacao"></span>
+            </div>
+            <div class="consumo-chart-wrap">
+              <canvas id="consumoChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Alertas — preenchido por renderAlertas() -->
+          <div class="card card-full">
+            <div class="card-header">
+              <h2><i class="fa-solid fa-triangle-exclamation"></i> Alertas de Estoque</h2>
+            </div>
+            <div class="alert-list" id="alertList">
+              <div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>
             </div>
           </div>
 

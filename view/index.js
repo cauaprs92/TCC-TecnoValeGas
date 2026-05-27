@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   carregarAdministrador();
   carregarTodos();
+  carregarConsumo();
   _setupValidacaoProduto();
   _setupValidacaoModais();
 
@@ -416,6 +417,7 @@ async function carregarObras() {
     _cacheReady.obras = true;
     renderTabelaObras(cacheObras);
     renderObrasStatus(cacheObras);
+    if (_cacheConsumo) renderConsumo(_cacheConsumo, document.getElementById('consumoPeriodo')?.value || 'mes');
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyObras').innerHTML =
@@ -1502,6 +1504,156 @@ function renderObrasStatus(obras) {
       },
     },
   });
+}
+
+// ── Consumo de Produtos ───────────────────────────────────────────────────────
+
+let _consumoChart    = null;
+let _cacheConsumo    = null;
+
+async function carregarConsumo() {
+  try {
+    const res = await apiFetch('/relatorio/grafico-produtos');
+    _cacheConsumo = res.dados || [];
+    renderConsumo(_cacheConsumo, document.getElementById('consumoPeriodo')?.value || 'mes');
+  } catch (_) {}
+}
+
+function _consumoPeriodoRange(periodo) {
+  const hoje = new Date();
+  hoje.setHours(23, 59, 59, 999);
+  let inicio;
+  if (periodo === 'mes') {
+    inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  } else if (periodo === '3m') {
+    inicio = new Date(hoje);
+    inicio.setMonth(inicio.getMonth() - 3);
+    inicio.setDate(1);
+  } else {
+    inicio = new Date(hoje);
+    inicio.setMonth(inicio.getMonth() - 6);
+    inicio.setDate(1);
+  }
+  return { inicio, fim: hoje };
+}
+
+function renderConsumo(dados, periodo) {
+  const obraMap = {};
+  cacheObras.forEach(o => { if (o.dataInicio) obraMap[o.idObra] = o.dataInicio; });
+
+  const { inicio, fim } = _consumoPeriodoRange(periodo);
+
+  // período anterior (mesma duração)
+  const duracaoMs = fim - inicio;
+  const prevFim   = new Date(inicio.getTime() - 1);
+  const prevInicio = new Date(prevFim.getTime() - duracaoMs);
+
+  const totaisPorDia = {};
+  let totalAtual = 0, totalAnterior = 0;
+
+  dados.forEach(produto => {
+    (produto.obras || []).forEach(({ idObra, qtd }) => {
+      const dataStr = obraMap[idObra];
+      if (!dataStr) return;
+      const d = new Date(dataStr);
+      if (d >= inicio && d <= fim) {
+        totaisPorDia[dataStr] = (totaisPorDia[dataStr] || 0) + qtd;
+        totalAtual += qtd;
+      } else if (d >= prevInicio && d <= prevFim) {
+        totalAnterior += qtd;
+      }
+    });
+  });
+
+  // Labels e valores para o eixo X
+  const labels = [], values = [];
+  const cur = new Date(inicio);
+  while (cur <= fim) {
+    const iso = cur.toISOString().slice(0, 10);
+    labels.push(iso);
+    values.push(totaisPorDia[iso] || 0);
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  // Total
+  const totalEl = document.getElementById('consumoTotal');
+  if (totalEl) totalEl.textContent = totalAtual.toLocaleString('pt-BR');
+
+  // Variação vs período anterior
+  const varEl = document.getElementById('consumoVariacao');
+  if (varEl) {
+    if (totalAnterior === 0) {
+      varEl.textContent = '';
+      varEl.className = 'consumo-variacao';
+    } else {
+      const pct = ((totalAtual - totalAnterior) / totalAnterior * 100).toFixed(1);
+      const positivo = parseFloat(pct) >= 0;
+      varEl.textContent = `${positivo ? '+' : ''}${pct}% vs período anterior`;
+      varEl.className   = `consumo-variacao ${positivo ? 'positive' : 'negative'}`;
+    }
+  }
+
+  // Gráfico
+  const canvas = document.getElementById('consumoChartCanvas');
+  if (!canvas) return;
+  if (_consumoChart) { _consumoChart.destroy(); _consumoChart = null; }
+
+  // Label display: "DD/MM" — para muitos dias, reduz ticks
+  const maxTicks = labels.length > 60 ? 6 : labels.length > 14 ? 8 : labels.length;
+
+  _consumoChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderColor: '#3B5BDB',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4,
+        fill: true,
+        backgroundColor: ctx => {
+          const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, ctx.chart.height);
+          gradient.addColorStop(0,   'rgba(59,91,219,0.18)');
+          gradient.addColorStop(1,   'rgba(59,91,219,0)');
+          return gradient;
+        },
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { title: ([ctx]) => {
+          const iso = labels[ctx.dataIndex];
+          return `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+        }},
+      }},
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxTicksLimit: maxTicks,
+            font: { size: 11 },
+            callback: (_, idx) => {
+              const iso = labels[idx];
+              return iso ? `${iso.slice(8)}/${iso.slice(5, 7)}` : '';
+            },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#F1F5F9' },
+          ticks: { maxTicksLimit: 4, font: { size: 11 } },
+        },
+      },
+    },
+  });
+}
+
+function onConsumoPeriodoChange() {
+  if (!_cacheConsumo) return;
+  renderConsumo(_cacheConsumo, document.getElementById('consumoPeriodo').value);
 }
 
 // ── Gráfico: Produtos mais utilizados ─────────────────────────────────────────
