@@ -458,7 +458,9 @@ body {
 .form-group textarea::placeholder { color: var(--gray-300); }
 .form-group textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 .form-section-title { font-size: .78rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .5px; margin: 8px 0 12px; display: flex; align-items: center; gap: 7px; }
-
+.input-pwd-wrap input {
+    width: calc(100% + 7px);
+}
 .produto-obra-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
 .produto-obra-row input,
 .produto-obra-row select { border: 1px solid var(--gray-200); border-radius: 7px; padding: 8px 10px; font-family: var(--font); font-size: .85rem; outline: none; transition: border var(--transition); background: #fff; }
