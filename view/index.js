@@ -634,7 +634,7 @@ function _limparCamposObra() {
     'obraClienteComplemento','obraClienteBairro','obraClienteCEP',
     'obraClienteCidade','obraClienteEstado',
     'obraContato','obraEmail','obraCelular1','obraCelular2',
-    'obraDesc','obraObs','obraOrientacao','obraDataInicio','obraDataFim'
+    'obraDesc','obraObs','obraOrientacao'
   ];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   if (fpInicio) fpInicio.clear();
@@ -667,9 +667,19 @@ function abrirModalEditarObra(idObra) {
   if (_displayEl) _displayEl.value = o.idObra;
   document.getElementById('obraStatus').value            = o.statusObra || 'Em andamento';
   document.getElementById('obraResp').value              = o.respObra || '';
-  fpInicio.setDate(o.dataInicio || '', false);
-  fpFim.setDate(o.dataFim || '', false);
-  if (o.dataInicio) fpFim.set('minDate', new Date(o.dataInicio));
+  const _dtInicio = o.dataInicio ? o.dataInicio.split('T')[0] : '';
+  const _dtFim    = o.dataFim    ? o.dataFim.split('T')[0]    : '';
+  fpInicio.clear(); fpFim.clear(); fpFim.set('minDate', null);
+  if (_dtInicio) {
+    const [iy, im, id] = _dtInicio.split('-').map(Number);
+    const dtInicio = new Date(iy, im - 1, id);
+    fpInicio.setDate(dtInicio, false);
+    fpFim.set('minDate', dtInicio);
+  }
+  if (_dtFim) {
+    const [fy, fm, fd] = _dtFim.split('-').map(Number);
+    fpFim.setDate(new Date(fy, fm - 1, fd), false);
+  }
   document.getElementById('obraCodCliente').value        = o.codCliente || '';
   document.getElementById('obraTipo').value              = o.tipoObra || '';
   document.getElementById('obraUnidade').value           = o.unidadeObra || '';
