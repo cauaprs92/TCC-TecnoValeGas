@@ -2316,6 +2316,14 @@ function irParaObra(idObra) {
   }, 80);
 }
 
+function irParaAlertasEstoque() {
+  navegarPara('estoque');
+  if (_cacheReady.produtos) { filtrarProdutosStatus('alerta'); return; }
+  const t = setInterval(() => {
+    if (_cacheReady.produtos) { clearInterval(t); filtrarProdutosStatus('alerta'); }
+  }, 80);
+}
+
 
 // ══════════════════════════════════════════════════
 // SUB-TABS (Admins / Responsáveis)
