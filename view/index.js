@@ -91,9 +91,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fpInicio = flatpickr('#obraDataInicio', {
     dateFormat: 'd/m/Y', locale: 'pt', allowInput: true,
-    onChange: () => _obraClearError('obraDataInicio'),
+    onChange: (selectedDates) => {
+      _obraClearError('obraDataInicio');
+      if (selectedDates[0]) {
+        fpFim.set('minDate', selectedDates[0]);
+        const dataFimAtual = fpFim.selectedDates[0];
+        if (dataFimAtual && dataFimAtual < selectedDates[0]) {
+          fpFim.clear();
+          _obraSetError('obraDataFim', 'Data fim foi removida por ser anterior à data de início.');
+        }
+      } else {
+        fpFim.set('minDate', null);
+      }
+    },
   });
-  fpFim = flatpickr('#obraDataFim', { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true });
+  fpFim = flatpickr('#obraDataFim', {
+    dateFormat: 'd/m/Y', locale: 'pt', allowInput: true, minDate: null,
+    onChange: () => _obraClearError('obraDataFim'),
+  });
 
   // Blur validation — obra form
   document.getElementById('obraResp').addEventListener('change', () => {
@@ -107,6 +122,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('obraDataInicio').addEventListener('blur', () => {
     if (!document.getElementById('obraDataInicio').value.trim())
       _obraSetError('obraDataInicio', 'Data de início é obrigatória.');
+  });
+  document.getElementById('obraDataFim').addEventListener('blur', () => {
+    const inicio = fpInicio.selectedDates[0];
+    const fim    = fpFim.selectedDates[0];
+    if (fim && inicio && fim < inicio)
+      _obraSetError('obraDataFim', 'A data fim não pode ser anterior à data de início.');
   });
   document.getElementById('obraDesc').addEventListener('blur', () => {
     if (!document.getElementById('obraDesc').value.trim())
@@ -617,7 +638,7 @@ function _limparCamposObra() {
   ];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   if (fpInicio) fpInicio.clear();
-  if (fpFim)    fpFim.clear();
+  if (fpFim)    { fpFim.clear(); fpFim.set('minDate', null); }
   _obraLimparErros();
   document.getElementById('obraStatus').value   = 'Em andamento';
   document.getElementById('obraResp').value     = '';
@@ -647,7 +668,8 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraStatus').value            = o.statusObra || 'Em andamento';
   document.getElementById('obraResp').value              = o.respObra || '';
   fpInicio.setDate(o.dataInicio || '', false);
-  fpFim.setDate(o.dataFim    || '', false);
+  fpFim.setDate(o.dataFim || '', false);
+  if (o.dataInicio) fpFim.set('minDate', new Date(o.dataInicio));
   document.getElementById('obraCodCliente').value        = o.codCliente || '';
   document.getElementById('obraTipo').value              = o.tipoObra || '';
   document.getElementById('obraUnidade').value           = o.unidadeObra || '';
