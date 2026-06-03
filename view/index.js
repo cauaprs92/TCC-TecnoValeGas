@@ -1990,6 +1990,7 @@ function filtrarStatusObra(status) {
   const select = document.getElementById('obraFiltroStatus');
   if (select) select.value = status || '';
   PAG_STATE.obras = 1;
+  _realcarCartoesFiltro('obras', status);
   renderTabelaObras(cacheObras);
 }
 
@@ -2321,6 +2322,14 @@ function irParaAlertasEstoque() {
   if (_cacheReady.produtos) { filtrarProdutosStatus('alerta'); return; }
   const t = setInterval(() => {
     if (_cacheReady.produtos) { clearInterval(t); filtrarProdutosStatus('alerta'); }
+  }, 80);
+}
+
+function irParaObrasAtivas() {
+  navegarPara('obras');
+  if (_cacheReady.obras) { filtrarStatusObra('Em andamento'); return; }
+  const t = setInterval(() => {
+    if (_cacheReady.obras) { clearInterval(t); filtrarStatusObra('Em andamento'); }
   }, 80);
 }
 

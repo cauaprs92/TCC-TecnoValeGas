@@ -108,7 +108,7 @@
               <span class="kpi-label">Produtos Cadastrados</span>
             </div>
           </div>
-          <div class="kpi-card kpi-nav" onclick="navegarPara('obras')" title="Ir para Obras">
+          <div class="kpi-card kpi-nav" onclick="irParaObrasAtivas()" title="Ir para Obras Ativas">
             <div class="kpi-icon dark"><i class="fa-solid fa-hard-hat"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-obras">—</span>
@@ -295,23 +295,23 @@
 
         <!-- Stats bar -->
         <div class="page-stats" id="statsObras">
-          <div class="stat-item clickable" onclick="filtrarStatusObra('')" title="Mostrar todas as obras">
+          <div class="stat-item clickable" data-filter-group="obras" data-filter-value="" onclick="filtrarStatusObra('')" title="Mostrar todas as obras">
             <span class="stat-num" id="stat-obra-total">—</span>
             <span class="stat-label">Total de Obras</span>
           </div>
-          <div class="stat-item s-info clickable" onclick="filtrarStatusObra('À iniciar')" title="Filtrar obras À iniciar">
+          <div class="stat-item s-info clickable" data-filter-group="obras" data-filter-value="À iniciar" onclick="filtrarStatusObra('À iniciar')" title="Filtrar obras À iniciar">
             <span class="stat-num" id="stat-obra-ainiciar">—</span>
             <span class="stat-label">À Iniciar</span>
           </div>
-          <div class="stat-item s-success clickable" onclick="filtrarStatusObra('Em andamento')" title="Filtrar obras Em andamento">
+          <div class="stat-item s-success clickable" data-filter-group="obras" data-filter-value="Em andamento" onclick="filtrarStatusObra('Em andamento')" title="Filtrar obras Em andamento">
             <span class="stat-num" id="stat-obra-andamento">—</span>
             <span class="stat-label">Em Andamento</span>
           </div>
-          <div class="stat-item s-warning clickable" onclick="filtrarStatusObra('Pausada')" title="Filtrar obras Pausadas">
+          <div class="stat-item s-warning clickable" data-filter-group="obras" data-filter-value="Pausada" onclick="filtrarStatusObra('Pausada')" title="Filtrar obras Pausadas">
             <span class="stat-num" id="stat-obra-pausada">—</span>
             <span class="stat-label">Pausadas</span>
           </div>
-          <div class="stat-item clickable" onclick="filtrarStatusObra('Concluida')" title="Filtrar obras Concluídas">
+          <div class="stat-item clickable" data-filter-group="obras" data-filter-value="Concluida" onclick="filtrarStatusObra('Concluida')" title="Filtrar obras Concluídas">
             <span class="stat-num" id="stat-obra-concluida">—</span>
             <span class="stat-label">Concluídas</span>
           </div>
