@@ -16,7 +16,7 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <img src="/images/Fogo.png" alt="TecnoVale Gás" class="sidebar-logo-img" />
+      <img src="/images/logo nova2.png" alt="TecnoVale Gás" class="sidebar-logo-img" />
     </div>
 
     <nav class="sidebar-nav">
@@ -38,6 +38,7 @@
       <a href="#" class="nav-item" data-page="responsaveis">
         <i class="fa-solid fa-id-badge"></i><span>Field</span>
       </a>
+
     </nav>
 
     <div class="sidebar-footer">
@@ -551,6 +552,7 @@
       </section>
       <!-- fim page-responsaveis -->
 
+
       <!-- ===== MODAL: PRODUTO ===== -->
       <div class="modal-overlay hidden" id="modalProduto">
         <div class="modal">
@@ -612,11 +614,30 @@
             <h2 id="modalObraTitle"><i class="fa-solid fa-hard-hat"></i> Nova Obra</h2>
             <button class="modal-close" onclick="fecharModal('modalObra')"><i class="fa-solid fa-xmark"></i></button>
           </div>
+          <div class="obra-tabs">
+
+          <button class="obra-tab active"
+                  onclick="trocarAbaObra(event,'abaProjeto')">
+              Projeto
+          </button>
+
+          <button class="obra-tab"
+                  onclick="trocarAbaObra(event,'abaDocumentos')">
+              Documentos e Formulários
+          </button>
+
+          <button class="obra-tab"
+                  onclick="trocarAbaObra(event,'abaHistorico')">
+              Histórico
+          </button>
+
+      </div>
           <div class="modal-body">
             <div class="modal-error-banner hidden" id="banner-modalObra">
               <i class="fa-solid fa-circle-exclamation"></i> Preencha todos os campos obrigatórios antes de salvar.
             </div>
             <input type="hidden" id="obraIdEdicao" />
+            
 
             <!-- ── Identificação ── -->
             <div class="form-row" style="grid-template-columns:1fr 1fr">

@@ -2689,3 +2689,5 @@ async function gerarRelatorio() {
     showToast(`Erro ao gerar relatório: ${e.message}`, 'error');
   }
 }
+
+
