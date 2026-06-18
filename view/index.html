@@ -38,6 +38,9 @@
       <a href="#" class="nav-item" data-page="responsaveis">
         <i class="fa-solid fa-id-badge"></i><span>Field</span>
       </a>
+      <a href="#" class="nav-item" data-page="historico">
+        <i class="fa-solid fa-clock-rotate-left"></i><span>Histórico</span>
+      </a>
 
     </nav>
 
@@ -551,6 +554,73 @@
 
       </section>
       <!-- fim page-responsaveis -->
+
+
+      <!-- ===== HISTÓRICO ===== -->
+      <section class="page" id="page-historico">
+
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Histórico</h1>
+            <span class="page-subtitle">Registro de todas as ações realizadas pelos administradores</span>
+          </div>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsHistorico">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-hist-total">—</span>
+            <span class="stat-label">Registros</span>
+          </div>
+        </div>
+
+        <div class="toolbar-title">Filtros</div>
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              placeholder="Buscar por administrador, ação, entidade ou descrição..."
+              id="searchHistorico"
+              oninput="filtrarHistorico(this.value)"
+            />
+          </div>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-secondary" onclick="exportarHistorico()">
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
+          </button>
+        </div>
+
+        <div class="card">
+          <table class="data-table" id="tabelaHistorico">
+            <thead>
+              <tr>
+                <th class="col-id sortable" data-sort-key="id"
+                  onclick="ordenarTabela('historico','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="dataHora"
+                  onclick="ordenarTabela('historico','dataHora')">Data / Hora <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="nomeAdmin"
+                  onclick="ordenarTabela('historico','nomeAdmin')">Administrador <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="acao"
+                  onclick="ordenarTabela('historico','acao')">Ação <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="entidade"
+                  onclick="ordenarTabela('historico','entidade')">Entidade <span class="sort-arrow"></span></th>
+                <th>Descrição</th>
+              </tr>
+            </thead>
+            <tbody id="bodyHistorico">
+              <tr>
+                <td colspan="6" class="loading-cell">
+                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+      <!-- fim page-historico -->
 
 
       <!-- ===== MODAL: PRODUTO ===== -->

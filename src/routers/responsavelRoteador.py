@@ -1,10 +1,12 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from src.controller.responsavelController import ResponsavelController
+from src.controller.historicoController   import HistoricoController
 from src.middleware.jwtMiddleware         import JwtMiddleware
 from src.error_response                   import ErrorResponse
 
 responsavel_bp = Blueprint("responsavel", __name__, url_prefix="/responsavel")
 controller     = ResponsavelController()
+historico_ctrl = HistoricoController()
 jwt            = JwtMiddleware()
 
 
@@ -29,6 +31,13 @@ def criar():
     ok, msg = controller.criar(nome)
     if not ok:
         raise ErrorResponse(400, msg, {"message": msg})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Cadastrou", "Field",
+        f"Cadastrou o field '{nome}'",
+    )
+
     return jsonify({"status": True, "msg": msg}), 201
 
 
@@ -41,6 +50,13 @@ def atualizar(idResponsavel: int):
     ok, msg = controller.atualizar(idResponsavel, nome)
     if not ok:
         raise ErrorResponse(400, msg, {"message": msg})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Editou", "Field",
+        f"Editou o field para '{nome}' (ID: {idResponsavel})",
+    )
+
     return jsonify({"status": True, "msg": msg}), 200
 
 
@@ -48,7 +64,18 @@ def atualizar(idResponsavel: int):
 @responsavel_bp.route("/<int:idResponsavel>", methods=["DELETE"])
 @jwt.validate_token
 def deletar(idResponsavel: int):
+    todos = controller.listar()
+    alvo  = next((r for r in todos if r.get("idResponsavel") == idResponsavel), None)
+    nome  = alvo["nomeResponsavel"] if alvo else str(idResponsavel)
+
     ok, msg = controller.deletar(idResponsavel)
     if not ok:
         raise ErrorResponse(400, msg, {"message": msg})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Deletou", "Field",
+        f"Deletou o field '{nome}' (ID: {idResponsavel})",
+    )
+
     return jsonify({"status": True, "msg": msg}), 200

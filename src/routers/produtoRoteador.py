@@ -1,13 +1,15 @@
-from flask import Blueprint, request, jsonify
-from src.controller.produtoController import ProdutoController
-from src.middleware.produtoMiddleware import ProdutoMiddleware
-from src.middleware.jwtMiddleware import JwtMiddleware
-from src.error_response import ErrorResponse
+from flask import Blueprint, request, jsonify, g
+from src.controller.produtoController    import ProdutoController
+from src.controller.historicoController  import HistoricoController
+from src.middleware.produtoMiddleware    import ProdutoMiddleware
+from src.middleware.jwtMiddleware        import JwtMiddleware
+from src.error_response                  import ErrorResponse
 
-produto_bp = Blueprint("produto", __name__, url_prefix="/produto")
-controller = ProdutoController()
-middleware = ProdutoMiddleware()
-jwt = JwtMiddleware()
+produto_bp     = Blueprint("produto", __name__, url_prefix="/produto")
+controller     = ProdutoController()
+historico_ctrl = HistoricoController()
+middleware     = ProdutoMiddleware()
+jwt            = JwtMiddleware()
 
 
 @produto_bp.errorhandler(ErrorResponse)
@@ -32,9 +34,10 @@ def _serializar(p) -> dict:
 @middleware.validate_body
 def cadastrar():
     produto = request.get_json()["produto"]
+    nome    = produto.get("nomeProduto")
 
     sucesso, mensagem, aviso = controller.cadastrar(
-        produto.get("nomeProduto"),
+        nome,
         produto.get("qtdProduto"),
         produto.get("descProduto", ""),
         int(produto.get("qtdMinima") or 0),
@@ -43,6 +46,12 @@ def cadastrar():
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Cadastrou", "Produto",
+        f"Cadastrou o produto '{nome}'",
+    )
 
     resposta = {"status": True, "msg": mensagem}
     if aviso:
@@ -78,10 +87,11 @@ def buscar_por_id(idProduto: int):
 @middleware.validate_body
 def editar(idProduto: int):
     produto = request.get_json()["produto"]
+    nome    = produto.get("nomeProduto")
 
     sucesso, mensagem, aviso = controller.editar(
         idProduto,
-        produto.get("nomeProduto"),
+        nome,
         produto.get("qtdProduto"),
         produto.get("descProduto", ""),
         int(produto.get("qtdMinima") or 0),
@@ -90,6 +100,12 @@ def editar(idProduto: int):
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Editou", "Produto",
+        f"Editou o produto '{nome}' (ID: {idProduto})",
+    )
 
     resposta = {"status": True, "msg": mensagem}
     if aviso:
@@ -102,10 +118,19 @@ def editar(idProduto: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def deletar(idProduto: int):
+    produto = controller.buscar_por_id(idProduto)
+    nome    = produto._nomeProduto if produto else str(idProduto)
+
     sucesso, mensagem, _ = controller.deletar(idProduto)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Deletou", "Produto",
+        f"Deletou o produto '{nome}' (ID: {idProduto})",
+    )
 
     return jsonify({"status": True, "msg": mensagem}), 200
 

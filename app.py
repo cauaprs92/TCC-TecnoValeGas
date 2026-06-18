@@ -13,7 +13,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from src.error_response import ErrorResponse
-from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp, responsavel_bp, relatorio_bp
+from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp, responsavel_bp, relatorio_bp, historico_bp
 
 STATIC_DIR  = os.path.join(BASE_DIR, "view")
 IMAGES_DIR  = os.path.join(BASE_DIR, "images")
@@ -31,6 +31,7 @@ app.register_blueprint(obra_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(responsavel_bp)
 app.register_blueprint(relatorio_bp)
+app.register_blueprint(historico_bp)
 
 
 # ─── Servir o frontend ────────────────────────────────────────────────────────

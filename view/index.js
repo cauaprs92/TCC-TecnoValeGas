@@ -172,6 +172,7 @@ async function carregarTodos() {
     carregarClientes(),
     carregarAdmins(),
     carregarResponsaveis(),
+    carregarHistorico(),
   ]);
   renderGraficoProdutos();
 }
@@ -189,7 +190,7 @@ function carregarAdministrador() {
 // ══════════════════════════════════════════════════
 
 let cacheProdutos = [];
-const _cacheReady = { produtos: false, obras: false, clientes: false, admins: false, responsaveis: false };
+const _cacheReady = { produtos: false, obras: false, clientes: false, admins: false, responsaveis: false, historico: false };
 
 async function carregarProdutos() {
   try {
@@ -1076,6 +1077,7 @@ const ORDER_STATE = {
   clientes: { key: 'id', dir: 'asc' },
   admins: { key: 'id', dir: 'asc' },
   responsaveis: { key: 'id', dir: 'asc' },
+  historico: { key: 'dataHora', dir: 'desc' },
 };
 
 function _compararValores(a, b, asc = true) {
@@ -1125,6 +1127,13 @@ function _getSortValue(item, table, key) {
     case 'responsaveis':
       if (key === 'id') return item.idResponsavel;
       return item.nomeResponsavel || '';
+    case 'historico':
+      if (key === 'id') return item.idHistorico;
+      if (key === 'dataHora') return item.dataHora || '';
+      if (key === 'nomeAdmin') return item.nomeAdmin || '';
+      if (key === 'acao') return item.acao || '';
+      if (key === 'entidade') return item.entidade || '';
+      return '';
     default:
       return '';
   }
@@ -1155,12 +1164,13 @@ function ordenarTabela(table, key) {
   if (table === 'clientes') renderTabelaClientes(cacheClientes);
   if (table === 'admins') renderTabelaAdmins(cacheAdmins);
   if (table === 'responsaveis') renderTabelaResponsaveis(cacheResponsaveis);
+  if (table === 'historico') renderTabelaHistorico(cacheHistorico);
 }
 
 function atualizarIndicadoresOrdenacao(table) {
   const tableId = {
     produtos: 'tabelaProdutos', obras: 'tabelaObras', clientes: 'tabelaClientes',
-    admins: 'tabelaAdmins', responsaveis: 'tabelaResponsaveis'
+    admins: 'tabelaAdmins', responsaveis: 'tabelaResponsaveis', historico: 'tabelaHistorico'
   }[table];
   const state = ORDER_STATE[table];
   if (!tableId || !state) return;
@@ -1954,7 +1964,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     document.getElementById(`page-${page}`).classList.add('active');
-    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field' };
+    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
   });
 });
@@ -2308,8 +2318,8 @@ function recarregarAba() {
     'stat-prod-total', 'stat-prod-ok', 'stat-prod-alert', 'stat-prod-zero',
     'stat-obra-total', 'stat-obra-ainiciar', 'stat-obra-andamento', 'stat-obra-pausada', 'stat-obra-concluida',
     'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
-    'stat-admin-total', 'stat-resp-total',
-    'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyAdmins', 'bodyResponsaveis',
+    'stat-admin-total', 'stat-resp-total', 'stat-hist-total',
+    'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyAdmins', 'bodyResponsaveis', 'bodyHistorico',
     'alertList', 'obrasStatusLegend',
     'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes',
   ].forEach(id => {
@@ -2328,7 +2338,7 @@ function navegarPara(page) {
   const pageEl  = document.getElementById(`page-${page}`);
   if (navItem) navItem.classList.add('active');
   if (pageEl)  pageEl.classList.add('active');
-  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field' };
+  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
   document.getElementById('breadcrumb').textContent = labels[page] || page;
 }
 
@@ -2668,6 +2678,83 @@ function mostrarErroVerObra(msg) {
 function _limparErroVerObra() {
   const banner = document.getElementById('erroVerObra');
   if (banner) banner.style.display = 'none';
+}
+
+
+// ══════════════════════════════════════════════════
+// HISTÓRICO — GET /historico
+// ══════════════════════════════════════════════════
+
+let cacheHistorico = [];
+
+async function carregarHistorico() {
+  try {
+    const res = await apiFetch('/historico');
+    cacheHistorico = res.historico || [];
+    _cacheReady.historico = true;
+    renderTabelaHistorico(cacheHistorico);
+    const statEl = document.getElementById('stat-hist-total');
+    if (statEl) statEl.textContent = cacheHistorico.length;
+  } catch (e) {
+    const tbody = document.getElementById('bodyHistorico');
+    if (tbody) tbody.innerHTML =
+      `<tr><td colspan="6" class="empty-row">Erro ao carregar histórico: ${e.message}</td></tr>`;
+    console.error('carregarHistorico:', e);
+  }
+}
+
+function _badgeAcao(acao) {
+  const map = { 'Cadastrou': 'green', 'Editou': 'blue', 'Deletou': 'red' };
+  const tipo = map[acao] || 'gray';
+  return `<span class="badge badge-${tipo}">${acao}</span>`;
+}
+
+function _badgeEntidade(entidade) {
+  return `<span class="badge badge-gray">${entidade}</span>`;
+}
+
+function renderTabelaHistorico(lista) {
+  const tbody = document.getElementById('bodyHistorico');
+  if (!tbody) return;
+  const ordenado = ordenarLista(lista, 'historico');
+  if (!ordenado.length) {
+    tbody.innerHTML = _emptyState(
+      'clock-rotate-left', 'Nenhum registro no histórico',
+      'As ações realizadas pelos administradores aparecerão aqui.',
+      null, null, 6
+    );
+    return;
+  }
+  tbody.innerHTML = ordenado.map(h => `
+    <tr>
+      <td><span class="cell-id">${h.idHistorico}</span></td>
+      <td><span class="cell-secondary">${h.dataHora || '—'}</span></td>
+      <td><span class="cell-primary">${h.nomeAdmin}</span></td>
+      <td>${_badgeAcao(h.acao)}</td>
+      <td>${_badgeEntidade(h.entidade)}</td>
+      <td>${h.descricao}</td>
+    </tr>`).join('');
+  atualizarIndicadoresOrdenacao('historico');
+}
+
+function filtrarHistorico(q) {
+  const lower = q.toLowerCase();
+  const tbody = document.getElementById('bodyHistorico');
+  if (!tbody) return;
+  Array.from(tbody.rows).forEach(row => {
+    const texto = row.textContent.toLowerCase();
+    row.style.display = texto.includes(lower) ? '' : 'none';
+  });
+}
+
+function exportarHistorico() {
+  if (!cacheHistorico.length) { showToast('Nenhum dado para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Data/Hora', 'Administrador', 'Ação', 'Entidade', 'Descrição'];
+  const linhas = cacheHistorico.map(h => [
+    h.idHistorico, h.dataHora, h.nomeAdmin, h.acao, h.entidade, h.descricao,
+  ]);
+  _downloadXLSX(`historico_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Histórico exportado com sucesso!', 'success');
 }
 
 

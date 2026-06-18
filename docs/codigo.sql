@@ -113,6 +113,29 @@
     nomeResponsavel VARCHAR(100) NOT NULL UNIQUE
     );
 
+    create table historico (
+    idHistorico INT PRIMARY KEY AUTO_INCREMENT,
+    idAdmin     INT          NOT NULL,
+    nomeAdmin   VARCHAR(45)  NOT NULL,
+    acao        VARCHAR(20)  NOT NULL,
+    entidade    VARCHAR(30)  NOT NULL,
+    descricao   TEXT         NOT NULL,
+    dataHora    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idAdmin) REFERENCES login(idLogin)
+    );
+
+    -- ── MIGRAÇÃO (rodar se as tabelas já existirem) ───────────────────────────
+    -- CREATE TABLE IF NOT EXISTS historico (
+    --   idHistorico INT PRIMARY KEY AUTO_INCREMENT,
+    --   idAdmin     INT          NOT NULL,
+    --   nomeAdmin   VARCHAR(45)  NOT NULL,
+    --   acao        VARCHAR(20)  NOT NULL,
+    --   entidade    VARCHAR(30)  NOT NULL,
+    --   descricao   TEXT         NOT NULL,
+    --   dataHora    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    --   FOREIGN KEY (idAdmin) REFERENCES login(idLogin)
+    -- );
+
     -- ── MIGRAÇÃO obras — novos campos (já incluídos no CREATE TABLE acima) ─────
     -- ALTER TABLE obras
     --   ADD COLUMN tipoObra     VARCHAR(100),

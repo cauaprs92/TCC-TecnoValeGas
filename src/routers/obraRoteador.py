@@ -1,13 +1,15 @@
-from flask import Blueprint, request, jsonify
-from src.controller.obraController import ObraController
-from src.middleware.obraMiddleware  import ObraMiddleware
-from src.middleware.jwtMiddleware   import JwtMiddleware
-from src.error_response             import ErrorResponse
+from flask import Blueprint, request, jsonify, g
+from src.controller.obraController      import ObraController
+from src.controller.historicoController import HistoricoController
+from src.middleware.obraMiddleware      import ObraMiddleware
+from src.middleware.jwtMiddleware       import JwtMiddleware
+from src.error_response                 import ErrorResponse
 
-obra_bp    = Blueprint("obra", __name__, url_prefix="/obra")
-controller = ObraController()
-middleware = ObraMiddleware()
-jwt        = JwtMiddleware()
+obra_bp        = Blueprint("obra", __name__, url_prefix="/obra")
+controller     = ObraController()
+historico_ctrl = HistoricoController()
+middleware     = ObraMiddleware()
+jwt            = JwtMiddleware()
 
 
 @obra_bp.errorhandler(ErrorResponse)
@@ -43,11 +45,18 @@ def cadastrar():
     body            = request.get_json()
     dados_obra      = body["obra"]
     produtos_usados = body["produtosUsados"]
+    desc            = dados_obra.get("descObra", "")
 
     sucesso, mensagem = controller.cadastrar(dados_obra, produtos_usados)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Cadastrou", "Obra",
+        f"Cadastrou a obra '{desc}'",
+    )
 
     return jsonify({"status": True, "msg": mensagem}), 201
 
@@ -104,26 +113,32 @@ def buscar_produtos_da_obra(idObra: int):
 @middleware.validate_id_param
 @middleware.validate_update_body
 def atualizar(idObra: int):
-    body          = request.get_json()
-    dados_obra    = body["obra"]
+    body           = request.get_json()
+    dados_obra     = body["obra"]
     produtos_novos = body.get("produtosNovos") or []
+    desc           = dados_obra.get("descObra", "")
 
     sucesso, mensagem = controller.atualizar(idObra, dados_obra, produtos_novos)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Editou", "Obra",
+        f"Editou a obra '{desc}' (ID: {idObra})",
+    )
+
     return jsonify({"status": True, "msg": mensagem}), 200
 
 
 # ─── PATCH /obra/<idObra>/produto/<idProduto> ────────────────────────────────
-# Atualiza a quantidade de um produto vinculado a uma obra
 @obra_bp.route("/<int:idObra>/produto/<int:idProduto>", methods=["PATCH"])
 @jwt.validate_token
 @middleware.validate_id_param
 def atualizar_produto_obra(idObra: int, idProduto: int):
-    body      = request.get_json() or {}
-    nova_qtd  = body.get("quantidade")
+    body     = request.get_json() or {}
+    nova_qtd = body.get("quantidade")
     if nova_qtd is None or int(nova_qtd) < 1:
         raise ErrorResponse(400, "Quantidade inválida.", {"message": "Informe uma quantidade >= 1."})
     sucesso, mensagem = controller.atualizar_produto_obra(idObra, idProduto, int(nova_qtd))
@@ -133,7 +148,6 @@ def atualizar_produto_obra(idObra: int, idProduto: int):
 
 
 # ─── DELETE /obra/<idObra>/produto/<idProduto> ───────────────────────────────
-# Remove um produto da obra e repõe o estoque correspondente
 @obra_bp.route("/<int:idObra>/produto/<int:idProduto>", methods=["DELETE"])
 @jwt.validate_token
 @middleware.validate_id_param
@@ -158,6 +172,12 @@ def atualizar_status(idObra: int):
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Editou", "Obra",
+        f"Alterou status da obra ID {idObra} para '{novo_status}'",
+    )
+
     return jsonify({"status": True, "msg": mensagem}), 200
 
 
@@ -166,9 +186,18 @@ def atualizar_status(idObra: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def deletar(idObra: int):
+    obra = controller.buscar_por_id(idObra)
+    desc = obra[2] if obra else str(idObra)
+
     sucesso, mensagem = controller.deletar(idObra)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Deletou", "Obra",
+        f"Deletou a obra '{desc}' (ID: {idObra})",
+    )
 
     return jsonify({"status": True, "msg": mensagem}), 200

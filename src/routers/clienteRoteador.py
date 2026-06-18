@@ -1,13 +1,15 @@
-from flask import Blueprint, request, jsonify
-from src.controller.clienteController import ClienteController
-from src.middleware.clienteMiddleware  import ClienteMiddleware
-from src.middleware.jwtMiddleware      import JwtMiddleware
-from src.error_response                import ErrorResponse
+from flask import Blueprint, request, jsonify, g
+from src.controller.clienteController   import ClienteController
+from src.controller.historicoController import HistoricoController
+from src.middleware.clienteMiddleware   import ClienteMiddleware
+from src.middleware.jwtMiddleware       import JwtMiddleware
+from src.error_response                 import ErrorResponse
 
-cliente_bp  = Blueprint("cliente", __name__, url_prefix="/cliente")
-controller  = ClienteController()
-middleware  = ClienteMiddleware()
-jwt         = JwtMiddleware()
+cliente_bp     = Blueprint("cliente", __name__, url_prefix="/cliente")
+controller     = ClienteController()
+historico_ctrl = HistoricoController()
+middleware     = ClienteMiddleware()
+jwt            = JwtMiddleware()
 
 
 @cliente_bp.errorhandler(ErrorResponse)
@@ -39,9 +41,10 @@ def _serializar(c) -> dict:
 @middleware.validate_body
 def cadastrar():
     cliente = request.get_json()["cliente"]
+    nome    = cliente.get("nomeCliente")
 
     sucesso, mensagem = controller.cadastrar(
-        cliente.get("nomeCliente"),
+        nome,
         cliente.get("CNPJCPF"),
         cliente.get("contatoCliente", ""),
         cliente.get("emailCliente", ""),
@@ -57,6 +60,12 @@ def cadastrar():
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Cadastrou", "Cliente",
+        f"Cadastrou o cliente '{nome}'",
+    )
 
     return jsonify({"status": True, "msg": mensagem}), 201
 
@@ -89,10 +98,11 @@ def buscar_por_id(idCliente: int):
 @middleware.validate_body
 def editar(idCliente: int):
     cliente = request.get_json()["cliente"]
+    nome    = cliente.get("nomeCliente")
 
     sucesso, mensagem = controller.editar(
         idCliente,
-        cliente.get("nomeCliente"),
+        nome,
         cliente.get("CNPJCPF"),
         cliente.get("contatoCliente", ""),
         cliente.get("emailCliente", ""),
@@ -109,6 +119,12 @@ def editar(idCliente: int):
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Editou", "Cliente",
+        f"Editou o cliente '{nome}' (ID: {idCliente})",
+    )
+
     return jsonify({"status": True, "msg": mensagem}), 200
 
 
@@ -117,9 +133,18 @@ def editar(idCliente: int):
 @jwt.validate_token
 @middleware.validate_id_param
 def deletar(idCliente: int):
+    cliente = controller.buscar_por_id(idCliente)
+    nome    = cliente._nomeCliente if cliente else str(idCliente)
+
     sucesso, mensagem = controller.deletar(idCliente)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    historico_ctrl.registrar(
+        g.admin_id, g.jwt_payload.get("nomeLogin"),
+        "Deletou", "Cliente",
+        f"Deletou o cliente '{nome}' (ID: {idCliente})",
+    )
 
     return jsonify({"status": True, "msg": mensagem}), 200
