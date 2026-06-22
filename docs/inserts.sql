@@ -4,8 +4,10 @@ USE tcc;
 
 -- ── Login ─────────────────────────────────────────────────────────────────────
 -- senha: adm123 (bcrypt hash)  |  INSERT IGNORE evita erro se já existir
+-- idLogin 1 → adm  |  idLogin 2 → João  (ordem garantida pelo AUTO_INCREMENT)
 INSERT IGNORE INTO login (email, senha, nomeLogin) VALUES
-('adm123@gmail.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'adm');
+('adm123@gmail.com',      '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'adm'),
+('joao@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'João');
 
 -- ── Responsáveis ──────────────────────────────────────────────────────────────
 INSERT INTO responsavel (nomeResponsavel) VALUES
@@ -100,3 +102,77 @@ INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra) VALUES
 (9,  1,  4),
 (9,  2,  2),
 (9,  9,  5);
+
+-- ── Histórico ─────────────────────────────────────────────────────────────────
+-- Representa as ações realizadas pelos dois admins ao longo do período de uso.
+-- idAdmin 1 = adm  |  idAdmin 2 = João
+INSERT INTO historico (idAdmin, nomeAdmin, acao, entidade, descricao, dataHora) VALUES
+
+-- ── Abril 2024 — configuração inicial do sistema ──────────────────────────────
+(1, 'adm',  'Cadastrou', 'Administrador', 'Cadastrou o administrador ''João''',                                          '2024-04-01 08:15:00'),
+(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Carlos Souza''',                                          '2024-04-01 09:00:00'),
+(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Beatriz Almeida''',                                       '2024-04-01 09:05:00'),
+(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Renato Pereira''',                                        '2024-04-01 09:10:00'),
+(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Ana Carolina''',                                          '2024-04-01 09:15:00'),
+
+(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Caua Silva''',                                          '2024-04-03 10:00:00'),
+(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''João Vinicius Oliveira''',                              '2024-04-03 10:10:00'),
+(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Mateus Alves''',                                        '2024-04-03 10:20:00'),
+(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Lúcia Martins''',                                       '2024-04-03 10:30:00'),
+(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Fabrício Rocha''',                                      '2024-04-03 10:40:00'),
+(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Marina Nunes''',                                        '2024-04-03 10:50:00'),
+
+(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Tubo Aço Galvanizado 1"''',                             '2024-04-05 09:00:00'),
+(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Registro de Esfera 3/4"''',                             '2024-04-05 09:10:00'),
+(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Medidor de Gás Industrial G16''',                       '2024-04-05 09:20:00'),
+(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Válvula Redutora de Pressão''',                         '2024-04-05 09:30:00'),
+(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Mangueira Flexível 3/4"''',                             '2024-04-05 09:40:00'),
+(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Cinta de Fixação Metálica''',                           '2024-04-05 09:50:00'),
+(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Tubo PPR 32mm''',                                       '2024-04-05 10:00:00'),
+(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Filtro de Linha para Gás''',                            '2024-04-05 10:10:00'),
+(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Conector Curvo 90° 1/2"''',                             '2024-04-05 10:20:00'),
+(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Adaptador Rosca 1/2" x 3/4"''',                        '2024-04-05 10:30:00'),
+(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Lanterna de Inspeção Antichama''',                      '2024-04-05 10:40:00'),
+(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Detector de Vazão Portátil''',                          '2024-04-05 10:50:00'),
+
+-- ── Abril 2024 — primeiro registro de obra ────────────────────────────────────
+(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Correção de vazamento em cozinha industrial''',            '2024-04-10 14:00:00'),
+
+-- ── Maio 2024 ────────────────────────────────────────────────────────────────
+(2, 'João', 'Editou',    'Obra',          'Alterou status da obra ID 4 para ''Concluida''',                              '2024-05-08 16:30:00'),
+(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Troca de registro e conector em unidade logística''',      '2024-05-12 09:00:00'),
+
+-- ── Junho 2024 ───────────────────────────────────────────────────────────────
+(1, 'adm',  'Editou',    'Obra',          'Alterou status da obra ID 6 para ''Concluida''',                              '2024-06-01 17:00:00'),
+(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Manutenção preventiva em medidor industrial''',            '2024-06-18 08:00:00'),
+
+-- ── Julho 2024 ───────────────────────────────────────────────────────────────
+(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Revisão geral de rede de gás na unidade fabril''',        '2024-07-01 10:00:00'),
+(1, 'adm',  'Editou',    'Obra',          'Alterou status da obra ID 2 para ''Concluida''',                              '2024-07-02 15:00:00'),
+(1, 'adm',  'Editou',    'Produto',       'Editou o produto ''Tubo Aço Galvanizado 1"'' (ID: 1)',                        '2024-07-15 11:00:00'),
+(2, 'João', 'Editou',    'Produto',       'Editou o produto ''Mangueira Flexível 3/4"'' (ID: 5)',                        '2024-07-15 11:15:00'),
+(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Instalação de medidor privativo em prédio comercial''',   '2024-07-22 09:00:00'),
+
+-- ── Agosto 2024 ──────────────────────────────────────────────────────────────
+(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Instalação de ramal de gás em condomínio residencial''',  '2024-08-05 08:30:00'),
+(2, 'João', 'Editou',    'Obra',          'Alterou status da obra ID 8 para ''Concluida''',                              '2024-08-10 16:00:00'),
+(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Instalação de ramal de gás para cozinha de pizzaria''',   '2024-08-12 09:00:00'),
+(2, 'João', 'Editou',    'Obra',          'Alterou status da obra ID 5 para ''Pausada''',                                '2024-08-20 14:00:00'),
+
+-- ── Setembro 2024 ────────────────────────────────────────────────────────────
+(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Extensão de rede de gás em restaurante na região central''', '2024-09-01 08:00:00'),
+(1, 'adm',  'Editou',    'Cliente',       'Editou o cliente ''Fabrício Rocha'' (ID: 5)',                                 '2024-09-10 10:00:00'),
+(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Projeto de ramal de gás para nova loja de estética''',    '2024-09-15 09:00:00'),
+(2, 'João', 'Deletou',   'Produto',       'Deletou o produto ''Bucha de Redução 1/2"'' (ID: 13)',                       '2024-09-28 15:00:00'),
+
+-- ── Outubro 2024 ─────────────────────────────────────────────────────────────
+(2, 'João', 'Editou',    'Produto',       'Editou o produto ''Detector de Vazão Portátil'' (ID: 12)',                   '2024-10-05 11:30:00'),
+(1, 'adm',  'Editou',    'Obra',          'Editou a obra ''Instalação de ramal de gás em condomínio residencial'' (ID: 1)', '2024-10-10 14:00:00'),
+(1, 'adm',  'Editou',    'Field',         'Editou o field para ''Carlos Souza Técnico'' (ID: 1)',                        '2024-10-18 09:30:00'),
+(2, 'João', 'Editou',    'Field',         'Editou o field para ''Carlos Souza'' (ID: 1)',                                '2024-10-18 10:00:00'),
+
+-- ── Novembro 2024 ────────────────────────────────────────────────────────────
+(1, 'adm',  'Deletou',   'Cliente',       'Deletou o cliente ''Empresa Teste Ltda.'' (ID: 7)',                           '2024-11-04 09:00:00'),
+(2, 'João', 'Editou',    'Cliente',       'Editou o cliente ''Marina Nunes'' (ID: 6)',                                   '2024-11-12 14:30:00'),
+(1, 'adm',  'Editou',    'Produto',       'Editou o produto ''Registro de Esfera 3/4"'' (ID: 2)',                        '2024-11-20 11:00:00'),
+(2, 'João', 'Deletou',   'Administrador', 'Deletou o administrador ''teste'' (ID: 3)',                                   '2024-11-25 16:00:00');
