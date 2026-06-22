@@ -1069,7 +1069,8 @@ let cacheClientes = [];
 const PAG_STATE = { produtos: 1, obras: 1, clientes: 1 };
 const PER_PAGE  = 10;
 const filtros   = {
-  produtos: '', produtosStatus: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '', clientesStatus: ''
+  produtos: '', produtosStatus: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '', clientesStatus: '',
+  historicoEntidade: '', historicoQ: '', historicoAdmin: '', historicoAcao: '', historicoDe: '', historicoAte: ''
 };
 const ORDER_STATE = {
   produtos: { key: 'id', dir: 'asc' },
@@ -2318,7 +2319,8 @@ function recarregarAba() {
     'stat-prod-total', 'stat-prod-ok', 'stat-prod-alert', 'stat-prod-zero',
     'stat-obra-total', 'stat-obra-ainiciar', 'stat-obra-andamento', 'stat-obra-pausada', 'stat-obra-concluida',
     'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
-    'stat-admin-total', 'stat-resp-total', 'stat-hist-total',
+    'stat-admin-total', 'stat-resp-total',
+    'stat-hist-total', 'stat-hist-produto', 'stat-hist-obra', 'stat-hist-cliente', 'stat-hist-admin', 'stat-hist-field',
     'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyAdmins', 'bodyResponsaveis', 'bodyHistorico',
     'alertList', 'obrasStatusLegend',
     'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes',
@@ -2692,15 +2694,36 @@ async function carregarHistorico() {
     const res = await apiFetch('/historico');
     cacheHistorico = res.historico || [];
     _cacheReady.historico = true;
+    _atualizarStatsHistorico(cacheHistorico);
     renderTabelaHistorico(cacheHistorico);
-    const statEl = document.getElementById('stat-hist-total');
-    if (statEl) statEl.textContent = cacheHistorico.length;
   } catch (e) {
     const tbody = document.getElementById('bodyHistorico');
     if (tbody) tbody.innerHTML =
       `<tr><td colspan="6" class="empty-row">Erro ao carregar histórico: ${e.message}</td></tr>`;
     console.error('carregarHistorico:', e);
   }
+}
+
+function _atualizarStatsHistorico(lista) {
+  const cnt = (ent) => lista.filter(h => !ent || h.entidade === ent).length;
+  const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+  set('stat-hist-total',    cnt(''));
+  set('stat-hist-produto',  cnt('Produto'));
+  set('stat-hist-obra',     cnt('Obra'));
+  set('stat-hist-cliente',  cnt('Cliente'));
+  set('stat-hist-admin',    cnt('Administrador'));
+  set('stat-hist-field',    cnt('Field'));
+  _preencherSelectAdminsHistorico(lista);
+}
+
+function _preencherSelectAdminsHistorico(lista) {
+  const sel = document.getElementById('histFiltroAdmin');
+  if (!sel) return;
+  const valorAtual = sel.value;
+  const admins = [...new Set(lista.map(h => h.nomeAdmin))].sort();
+  sel.innerHTML = '<option value="">Todos os administradores</option>' +
+    admins.map(a => `<option value="${a}">${a}</option>`).join('');
+  if (admins.includes(valorAtual)) sel.value = valorAtual;
 }
 
 function _badgeAcao(acao) {
@@ -2714,13 +2737,33 @@ function _badgeEntidade(entidade) {
 }
 
 function renderTabelaHistorico(lista) {
+  const ent   = filtros.historicoEntidade;
+  const q     = (filtros.historicoQ || '').toLowerCase();
+  const admin = filtros.historicoAdmin;
+  const acao  = filtros.historicoAcao;
+  const de    = filtros.historicoDe;
+  const ate   = filtros.historicoAte;
+
+  let filtrado = lista;
+  if (ent)   filtrado = filtrado.filter(h => h.entidade === ent);
+  if (admin) filtrado = filtrado.filter(h => h.nomeAdmin === admin);
+  if (acao)  filtrado = filtrado.filter(h => h.acao === acao);
+  if (de)    filtrado = filtrado.filter(h => h.dataHora && _brParaIso(h.dataHora.split(' ')[0]) >= de);
+  if (ate)   filtrado = filtrado.filter(h => h.dataHora && _brParaIso(h.dataHora.split(' ')[0]) <= ate);
+  if (q)     filtrado = filtrado.filter(h =>
+    [h.idHistorico, h.dataHora, h.nomeAdmin, h.acao, h.entidade, h.descricao]
+      .join(' ').toLowerCase().includes(q)
+  );
+
   const tbody = document.getElementById('bodyHistorico');
   if (!tbody) return;
-  const ordenado = ordenarLista(lista, 'historico');
+  const ordenado  = ordenarLista(filtrado, 'historico');
+  const temFiltro = ent || q || admin || acao || de || ate;
   if (!ordenado.length) {
     tbody.innerHTML = _emptyState(
-      'clock-rotate-left', 'Nenhum registro no histórico',
-      'As ações realizadas pelos administradores aparecerão aqui.',
+      'clock-rotate-left',
+      temFiltro ? 'Nenhum registro encontrado' : 'Nenhum registro no histórico',
+      temFiltro ? 'Tente ajustar os filtros de busca.' : 'As ações realizadas pelos administradores aparecerão aqui.',
       null, null, 6
     );
     return;
@@ -2738,13 +2781,43 @@ function renderTabelaHistorico(lista) {
 }
 
 function filtrarHistorico(q) {
-  const lower = q.toLowerCase();
-  const tbody = document.getElementById('bodyHistorico');
-  if (!tbody) return;
-  Array.from(tbody.rows).forEach(row => {
-    const texto = row.textContent.toLowerCase();
-    row.style.display = texto.includes(lower) ? '' : 'none';
-  });
+  filtros.historicoQ = q;
+  renderTabelaHistorico(cacheHistorico);
+}
+
+function filtrarEntidadeHistorico(entidade) {
+  filtros.historicoEntidade = entidade || '';
+  _realcarCartoesFiltro('historico', filtros.historicoEntidade);
+  renderTabelaHistorico(cacheHistorico);
+}
+
+function filtrarAdminHistorico(val) {
+  filtros.historicoAdmin = val || '';
+  renderTabelaHistorico(cacheHistorico);
+}
+
+function filtrarAcaoHistorico(val) {
+  filtros.historicoAcao = val || '';
+  renderTabelaHistorico(cacheHistorico);
+}
+
+function filtrarPeriodoHistorico() {
+  filtros.historicoDe  = _brParaIso(document.getElementById('histFiltroDe')?.value  || '');
+  filtros.historicoAte = _brParaIso(document.getElementById('histFiltroAte')?.value || '');
+  renderTabelaHistorico(cacheHistorico);
+}
+
+function limparFiltrosHistorico() {
+  filtros.historicoEntidade = '';
+  filtros.historicoQ        = '';
+  filtros.historicoAdmin    = '';
+  filtros.historicoAcao     = '';
+  filtros.historicoDe       = '';
+  filtros.historicoAte      = '';
+  ['searchHistorico', 'histFiltroAdmin', 'histFiltroAcao', 'histFiltroDe', 'histFiltroAte']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  _realcarCartoesFiltro('historico', '');
+  renderTabelaHistorico(cacheHistorico);
 }
 
 function exportarHistorico() {

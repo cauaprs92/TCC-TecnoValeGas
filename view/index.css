@@ -818,6 +818,16 @@ body {
   .obras-filtro-periodo { flex: 1 1 auto; }
 }
 
+/* ── HIST TOOLBAR ── */
+.hist-filtro-busca   { flex: 1; min-width: 180px; }
+.hist-filtro-periodo { flex-shrink: 0; }
+.hist-toolbar .toolbar-spacer { display: none; }
+@media (max-width: 1100px) {
+  .hist-toolbar { flex-wrap: wrap; }
+  .hist-filtro-busca   { flex: 1 1 100%; }
+  .hist-filtro-periodo { flex: 1 1 auto; }
+}
+
 /* ── TOOLBAR ── */
 .toolbar-spacer { flex: 1; }
 .toolbar { gap: 10px; }

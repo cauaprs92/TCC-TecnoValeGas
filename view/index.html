@@ -561,31 +561,68 @@
 
         <div class="page-header">
           <div class="page-header-info">
-            <h1>Histórico</h1>
-            <span class="page-subtitle">Registro de todas as ações realizadas pelos administradores</span>
+            <h1>Histórico de Ações</h1>
+            <span class="page-subtitle">Consulte qual administrador realizou cada ação no sistema</span>
           </div>
           <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
         <!-- Stats bar -->
         <div class="page-stats" id="statsHistorico">
-          <div class="stat-item">
+          <div class="stat-item clickable active" data-filter-group="historico" data-filter-value="" onclick="filtrarEntidadeHistorico('')" title="Mostrar todos os registros">
             <span class="stat-num" id="stat-hist-total">—</span>
-            <span class="stat-label">Registros</span>
+            <span class="stat-label">Total</span>
+          </div>
+          <div class="stat-item s-info clickable" data-filter-group="historico" data-filter-value="Produto" onclick="filtrarEntidadeHistorico('Produto')" title="Filtrar por Produto">
+            <span class="stat-num" id="stat-hist-produto">—</span>
+            <span class="stat-label">Produto</span>
+          </div>
+          <div class="stat-item s-warning clickable" data-filter-group="historico" data-filter-value="Obra" onclick="filtrarEntidadeHistorico('Obra')" title="Filtrar por Obra">
+            <span class="stat-num" id="stat-hist-obra">—</span>
+            <span class="stat-label">Obra</span>
+          </div>
+          <div class="stat-item s-success clickable" data-filter-group="historico" data-filter-value="Cliente" onclick="filtrarEntidadeHistorico('Cliente')" title="Filtrar por Cliente">
+            <span class="stat-num" id="stat-hist-cliente">—</span>
+            <span class="stat-label">Cliente</span>
+          </div>
+          <div class="stat-item s-danger clickable" data-filter-group="historico" data-filter-value="Administrador" onclick="filtrarEntidadeHistorico('Administrador')" title="Filtrar por Administrador">
+            <span class="stat-num" id="stat-hist-admin">—</span>
+            <span class="stat-label">Administrador</span>
+          </div>
+          <div class="stat-item clickable" data-filter-group="historico" data-filter-value="Field" onclick="filtrarEntidadeHistorico('Field')" title="Filtrar por Field">
+            <span class="stat-num" id="stat-hist-field">—</span>
+            <span class="stat-label">Field</span>
           </div>
         </div>
 
         <div class="toolbar-title">Filtros</div>
-        <div class="toolbar">
-          <div class="search-inline">
+        <div class="toolbar hist-toolbar">
+          <div class="search-inline hist-filtro-busca">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input
               type="text"
-              placeholder="Buscar por administrador, ação, entidade ou descrição..."
+              placeholder="Buscar na descrição..."
               id="searchHistorico"
               oninput="filtrarHistorico(this.value)"
             />
           </div>
+          <select class="select-filter" id="histFiltroAdmin" onchange="filtrarAdminHistorico(this.value)" title="Filtrar por administrador">
+            <option value="">Todos os administradores</option>
+          </select>
+          <select class="select-filter" id="histFiltroAcao" onchange="filtrarAcaoHistorico(this.value)" title="Filtrar por tipo de ação">
+            <option value="">Todas as ações</option>
+            <option value="Cadastrou">Cadastrou</option>
+            <option value="Editou">Editou</option>
+            <option value="Deletou">Deletou</option>
+          </select>
+          <div class="filtro-periodo hist-filtro-periodo">
+            <input type="text" id="histFiltroDe" placeholder="dd/mm/aaaa" oninput="filtrarPeriodoHistorico()" />
+            <span class="filtro-sep">até</span>
+            <input type="text" id="histFiltroAte" placeholder="dd/mm/aaaa" oninput="filtrarPeriodoHistorico()" />
+          </div>
+          <button class="btn btn-ghost" onclick="limparFiltrosHistorico()" title="Limpar todos os filtros">
+            <i class="fa-solid fa-xmark"></i> Limpar
+          </button>
           <div class="toolbar-spacer"></div>
           <button class="btn btn-secondary" onclick="exportarHistorico()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
