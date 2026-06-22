@@ -704,6 +704,33 @@
               <span class="field-error" id="err-prodDesc"></span>
             </div>
 
+            <!-- ── Fotos e Documentos ── -->
+            <div class="form-group foto-section">
+              <label>Fotos e Documentos</label>
+              <div class="foto-tabs" id="fotoTabsBar">
+                <button class="foto-tab active" data-tipo="produto"
+                        onclick="_selecionarTabFoto(this,'produto')">
+                  <i class="fa-solid fa-image"></i> Fotos do Produto
+                </button>
+                <button class="foto-tab" data-tipo="nota_fiscal"
+                        onclick="_selecionarTabFoto(this,'nota_fiscal')">
+                  <i class="fa-solid fa-file-invoice"></i> Notas Fiscais
+                </button>
+              </div>
+              <div class="foto-dropzone" id="fotoDropzone"
+                   onclick="document.getElementById('fotoInput').click()"
+                   ondragover="event.preventDefault();this.classList.add('drag-over')"
+                   ondragleave="this.classList.remove('drag-over')"
+                   ondrop="_onDropFoto(event)">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Clique ou arraste arquivos aqui</span>
+                <span class="foto-hint">JPG, PNG, PDF — máx. 10 MB por arquivo</span>
+              </div>
+              <input type="file" id="fotoInput" multiple accept="image/*,.pdf"
+                     style="display:none" onchange="_onSelecionarFotos(this.files)" />
+              <div class="foto-grid" id="fotoGrid"></div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="fecharModal('modalProduto')">Cancelar</button>

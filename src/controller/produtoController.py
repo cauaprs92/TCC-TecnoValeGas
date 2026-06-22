@@ -58,8 +58,8 @@ class ProdutoController:
         sucesso = self.dao.inserir(dadoProduto)
         if sucesso:
             aviso = self._verificar_alerta_estoque(nomeProduto.strip(), qtd, qtdMinima)
-            return True, "Produto cadastrado com sucesso!", aviso
-        return False, "Erro ao cadastrar produto.", None
+            return True, "Produto cadastrado com sucesso!", aviso, idProduto
+        return False, "Erro ao cadastrar produto.", None, None
 
     def listar(self) -> list:
         return self.dao.buscar_todos()

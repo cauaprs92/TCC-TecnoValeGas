@@ -15,10 +15,13 @@ if BASE_DIR not in sys.path:
 from src.error_response import ErrorResponse
 from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp, responsavel_bp, relatorio_bp, historico_bp
 
-STATIC_DIR  = os.path.join(BASE_DIR, "view")
-IMAGES_DIR  = os.path.join(BASE_DIR, "images")
+STATIC_DIR   = os.path.join(BASE_DIR, "view")
+IMAGES_DIR   = os.path.join(BASE_DIR, "images")
+UPLOADS_DIR  = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB por arquivo
 
 # ─── CORS — restringe às origens permitidas ──────────────────────────────────
 CORS(app, resources={r"/*": {"origins": ALLOWED_ORIGINS}})
@@ -44,6 +47,11 @@ def index():
 def serve_image(filename):
     """Serve imagens da pasta /images na raiz do projeto."""
     return send_from_directory(IMAGES_DIR, filename)
+
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename):
+    """Serve arquivos enviados pelos usuários (fotos de produtos, notas fiscais)."""
+    return send_from_directory(UPLOADS_DIR, filename)
 
 
 @app.route("/dashboard")

@@ -362,6 +362,136 @@ function _resetErrosProduto() {
   ['prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc'].forEach(id => _erroProd(id, ''));
 }
 
+// ── Fotos do Produto ──────────────────────────────────────────────────────────
+
+let _tipoFotoAtivo   = 'produto';
+let _fotosPendentes  = [];   // { tipo, file, previewUrl }
+let _fotosExistentes = [];   // objetos retornados pela API { idFoto, tipoFoto, url, nomeOriginal }
+let _produtoIdAtual  = null; // id do produto aberto no modal (null = novo)
+
+function _resetFotosProduto() {
+  _tipoFotoAtivo   = 'produto';
+  _fotosPendentes  = [];
+  _fotosExistentes = [];
+  _produtoIdAtual  = null;
+  document.querySelectorAll('#fotoTabsBar .foto-tab').forEach((b, i) =>
+    b.classList.toggle('active', i === 0)
+  );
+  const inp = document.getElementById('fotoInput');
+  if (inp) inp.value = '';
+  _renderFotoGrid();
+}
+
+function _selecionarTabFoto(btn, tipo) {
+  _tipoFotoAtivo = tipo;
+  document.querySelectorAll('#fotoTabsBar .foto-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _renderFotoGrid();
+}
+
+function _onDropFoto(e) {
+  e.preventDefault();
+  document.getElementById('fotoDropzone').classList.remove('drag-over');
+  _onSelecionarFotos(e.dataTransfer.files);
+}
+
+function _onSelecionarFotos(files) {
+  const MAX      = 10 * 1024 * 1024;
+  const ALLOWED  = ['image/jpeg','image/png','image/gif','image/webp','application/pdf'];
+  for (const f of files) {
+    if (!ALLOWED.includes(f.type)) { showToast(`Tipo não permitido: ${f.name}`, 'warning'); continue; }
+    if (f.size > MAX)              { showToast(`${f.name} excede 10 MB.`, 'warning'); continue; }
+    _fotosPendentes.push({ tipo: _tipoFotoAtivo, file: f, previewUrl: URL.createObjectURL(f) });
+  }
+  const inp = document.getElementById('fotoInput');
+  if (inp) inp.value = '';
+  _renderFotoGrid();
+}
+
+function _thumbFotoHTML(url, nome, tipo, pending, onremove) {
+  const isPdf      = nome.toLowerCase().endsWith('.pdf');
+  const badgeLabel = tipo === 'nota_fiscal' ? 'NF' : 'FOTO';
+  const badgeClass = tipo === 'nota_fiscal' ? 'nf' : '';
+  const conteudo   = isPdf
+    ? `<i class="fa-solid fa-file-pdf foto-pdf-icon"></i>`
+    : `<img src="${url}" alt="${_esc(nome)}" onclick="window.open('${url}','_blank')">`;
+  return `<div class="foto-thumb${pending ? ' pending' : ''}">
+    ${conteudo}
+    <span class="foto-badge ${badgeClass}">${badgeLabel}</span>
+    <button class="foto-remove" onclick="${onremove}" title="Remover">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <span class="foto-nome">${_esc(nome)}</span>
+  </div>`;
+}
+
+function _renderFotoGrid() {
+  const grid = document.getElementById('fotoGrid');
+  if (!grid) return;
+  const tipo      = _tipoFotoAtivo;
+  const existente = _fotosExistentes.filter(f => f.tipoFoto === tipo);
+  const pendente  = _fotosPendentes.filter(f => f.tipo === tipo);
+
+  if (!existente.length && !pendente.length) {
+    grid.innerHTML = '<p class="foto-grid-empty">Nenhuma foto adicionada nesta categoria</p>';
+    return;
+  }
+  grid.innerHTML = [
+    ...existente.map(f =>
+      _thumbFotoHTML(f.url, f.nomeOriginal, f.tipoFoto, false, `_removerFotoExistente(${f.idFoto})`)),
+    ...pendente.map(f => {
+      const idx = _fotosPendentes.indexOf(f);
+      return _thumbFotoHTML(f.previewUrl, f.file.name, f.tipo, true, `_removerFotoPendente(${idx})`);
+    }),
+  ].join('');
+}
+
+function _removerFotoPendente(idx) {
+  if (_fotosPendentes[idx]?.previewUrl) URL.revokeObjectURL(_fotosPendentes[idx].previewUrl);
+  _fotosPendentes.splice(idx, 1);
+  _renderFotoGrid();
+}
+
+function _removerFotoExistente(idFoto) {
+  if (!_produtoIdAtual) return;
+  apiFetch(`/produto/${_produtoIdAtual}/fotos/${idFoto}`, 'DELETE')
+    .then(() => {
+      _fotosExistentes = _fotosExistentes.filter(f => f.idFoto !== idFoto);
+      _renderFotoGrid();
+    })
+    .catch(e => showToast(`Erro ao remover foto: ${e.message}`, 'error'));
+}
+
+async function _carregarFotosProduto(idProduto) {
+  try {
+    const res = await apiFetch(`/produto/${idProduto}/fotos`);
+    _fotosExistentes = res.fotos || [];
+  } catch (_) {
+    _fotosExistentes = [];
+  }
+  _renderFotoGrid();
+}
+
+async function _uploadFotosPendentes(idProduto) {
+  if (!_fotosPendentes.length) return;
+  const token = getToken();
+  for (const item of _fotosPendentes) {
+    const fd = new FormData();
+    fd.append('arquivo', item.file);
+    fd.append('tipoFoto', item.tipo);
+    const res = await fetch(`${API_BASE_URL}/produto/${idProduto}/fotos`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: fd,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.msg || `Erro HTTP ${res.status} ao enviar ${item.file.name}`);
+    }
+  }
+  _fotosPendentes = [];
+}
+
 // ── Modal abrir / fechar ───────────────────────────────────────────────────────
 
 function abrirModalNovoProduto() {
@@ -371,6 +501,7 @@ function abrirModalNovoProduto() {
     '<i class="fa-solid fa-boxes-stacked"></i> Novo Produto';
   _resetErrosProduto();
   _ocultarBanner('banner-modalProduto');
+  _resetFotosProduto();
   abrirModal('modalProduto');
 }
 
@@ -387,6 +518,9 @@ function abrirModalEditarProduto(idProduto) {
     '<i class="fa-solid fa-pen"></i> Editar Produto';
   _resetErrosProduto();
   _ocultarBanner('banner-modalProduto');
+  _resetFotosProduto();
+  _produtoIdAtual = idProduto;
+  _carregarFotosProduto(idProduto);
   abrirModal('modalProduto');
 }
 
@@ -413,8 +547,10 @@ async function salvarProduto() {
     let res;
     if (idEdicao) {
       res = await apiFetch(`/produto/${idEdicao}`, 'PUT', payload);
+      await _uploadFotosPendentes(idEdicao);
     } else {
       res = await apiFetch('/produto', 'POST', payload);
+      if (res?.idProduto) await _uploadFotosPendentes(res.idProduto);
     }
     fecharModal('modalProduto');
     await carregarProdutos();

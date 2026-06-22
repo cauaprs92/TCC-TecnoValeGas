@@ -832,6 +832,72 @@ body {
 .toolbar-spacer { flex: 1; }
 .toolbar { gap: 10px; }
 
+/* ── PRODUTO FOTOS ── */
+.foto-section { margin-top: 4px; }
+.foto-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.foto-tab {
+  padding: 6px 14px; border-radius: 6px; border: 1.5px solid var(--gray-200);
+  background: #fff; color: var(--gray-700); font-size: .78rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+}
+.foto-tab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+.foto-dropzone {
+  border: 2px dashed var(--gray-200); border-radius: 10px;
+  padding: 22px 16px; text-align: center; cursor: pointer;
+  color: var(--gray-400); display: flex; flex-direction: column;
+  align-items: center; gap: 5px; transition: all var(--transition);
+  background: var(--gray-50);
+}
+.foto-dropzone:hover, .foto-dropzone.drag-over {
+  border-color: var(--orange); background: var(--orange-pale); color: var(--orange);
+}
+.foto-dropzone i { font-size: 1.6rem; }
+.foto-dropzone span { font-size: .84rem; font-weight: 500; }
+.foto-hint { font-size: .73rem !important; font-weight: 400 !important; color: var(--gray-300) !important; }
+.foto-dropzone.drag-over .foto-hint { color: var(--orange-light) !important; }
+.foto-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.foto-grid-empty { color: var(--gray-400); font-size: .8rem; text-align: center; padding: 8px 0; grid-column: 1/-1; }
+.foto-thumb {
+  position: relative; border-radius: 8px; overflow: hidden;
+  border: 1.5px solid var(--gray-200); aspect-ratio: 1;
+  background: var(--gray-100); display: flex; align-items: center; justify-content: center;
+}
+.foto-thumb img {
+  width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; display: block;
+}
+.foto-pdf-icon { font-size: 2rem; color: var(--gray-400); }
+.foto-badge {
+  position: absolute; top: 4px; left: 4px;
+  background: rgba(0,0,0,.55); color: #fff;
+  font-size: .58rem; font-weight: 700; padding: 2px 5px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: .3px; pointer-events: none;
+}
+.foto-badge.nf { background: rgba(37,99,235,.75); }
+.foto-remove {
+  position: absolute; top: 3px; right: 3px;
+  background: rgba(220,38,38,.85); color: #fff;
+  border: none; border-radius: 50%; width: 20px; height: 20px;
+  font-size: .65rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition);
+}
+.foto-remove:hover { background: #B91C1C; }
+.foto-nome {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.48); color: #fff;
+  font-size: .6rem; padding: 3px 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+}
+.foto-thumb.pending { opacity: .72; }
+.foto-thumb.pending::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,.35);
+  animation: foto-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes foto-pulse { from { opacity: 0 } to { opacity: 1 } }
+
 /* ── TABLE COLUMN SIZES ── */
 .col-id      { width: 44px; color: var(--gray-400); }
 .col-actions { width: auto; white-space: nowrap; text-align: right; padding-right: 20px !important; }

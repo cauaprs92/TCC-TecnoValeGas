@@ -145,6 +145,27 @@
     --   ADD COLUMN celular1     VARCHAR(20),
     --   ADD COLUMN celular2     VARCHAR(20);
 
+    create table produto_fotos (
+    idFoto       INT PRIMARY KEY AUTO_INCREMENT,
+    idProduto    INT NOT NULL,
+    tipoFoto     VARCHAR(20)  NOT NULL DEFAULT 'produto',
+    nomeArquivo  VARCHAR(255) NOT NULL,
+    nomeOriginal VARCHAR(255) NOT NULL,
+    dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
+    );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- CREATE TABLE IF NOT EXISTS produto_fotos (
+    --   idFoto       INT PRIMARY KEY AUTO_INCREMENT,
+    --   idProduto    INT NOT NULL,
+    --   tipoFoto     VARCHAR(20)  NOT NULL DEFAULT 'produto',
+    --   nomeArquivo  VARCHAR(255) NOT NULL,
+    --   nomeOriginal VARCHAR(255) NOT NULL,
+    --   dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    --   FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
+    -- );
+
 
     SELECT * FROM produtos;
     SELECT * FROM clientes;
