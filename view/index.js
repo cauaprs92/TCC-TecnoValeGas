@@ -1622,13 +1622,12 @@ let _obrasStatusChart = null;
 function renderObrasStatus(obras) {
   const statusDefs = [
     { key: 'Em andamento', label: 'Em andamento', color: '#22C55E' },
-    { key: 'Concluida',    label: 'Concluída',    color: '#9CA3AF' },
     { key: 'Pausada',      label: 'Pausada',      color: '#EAB308' },
     { key: 'Cancelada',    label: 'Cancelada',    color: '#EF4444' },
     { key: 'À iniciar',    label: 'À iniciar',    color: '#3B82F6' },
   ];
 
-  const total  = obras.length;
+  const total  = obras.filter(o => o.statusObra !== 'Concluida').length;
   const counts = {};
   statusDefs.forEach(s => { counts[s.key] = obras.filter(o => o.statusObra === s.key).length; });
 
