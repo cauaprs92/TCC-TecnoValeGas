@@ -422,6 +422,10 @@ body {
 .btn-danger:hover { background: #B91C1C; }
 .btn-ghost    { background: #fff; color: var(--gray-700); border: 1.5px solid var(--gray-200); padding: 9px 16px; font-size: .83rem; font-weight: 500; }
 .btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-300); }
+.btn-sm { padding: 5px 12px; font-size: .76rem; }
+.toggle-concluidas { transition: all var(--transition); }
+.toggle-concluidas.active { background: var(--gray-100); border-color: var(--gray-300); color: var(--gray-700); }
+.toggle-concluidas:not(.active) { background: #fff; color: var(--gray-400); border-color: var(--gray-200); }
 .btn-icon { width: 32px; height: 32px; border-radius: 8px; border: 1.5px solid var(--gray-200); background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .78rem; color: var(--gray-500); transition: all var(--transition); }
 .btn-icon:hover { background: var(--gray-50); color: var(--gray-700); border-color: var(--gray-300); }
 .btn-icon.edit:hover   { background: #EFF6FF; color: #2563EB; border-color: #93C5FD; }

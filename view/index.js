@@ -1619,15 +1619,33 @@ function renderAlertas(produtos) {
 
 let _obrasStatusChart = null;
 
+let _mostrarConcluidas = true;
+
+function toggleConcluidas() {
+  _mostrarConcluidas = !_mostrarConcluidas;
+  const btn = document.getElementById('btnToggleConcluidas');
+  if (btn) {
+    btn.classList.toggle('active', _mostrarConcluidas);
+    btn.innerHTML = _mostrarConcluidas
+      ? '<i class="fa-solid fa-eye"></i> Concluídas'
+      : '<i class="fa-solid fa-eye-slash"></i> Concluídas';
+  }
+  renderObrasStatus(cacheObras);
+}
+
 function renderObrasStatus(obras) {
-  const statusDefs = [
+  const todasDefs = [
     { key: 'Em andamento', label: 'Em andamento', color: '#22C55E' },
+    { key: 'Concluida',    label: 'Concluída',    color: '#9CA3AF' },
     { key: 'Pausada',      label: 'Pausada',      color: '#EAB308' },
     { key: 'Cancelada',    label: 'Cancelada',    color: '#EF4444' },
     { key: 'À iniciar',    label: 'À iniciar',    color: '#3B82F6' },
   ];
+  const statusDefs = _mostrarConcluidas
+    ? todasDefs
+    : todasDefs.filter(s => s.key !== 'Concluida');
 
-  const total  = obras.filter(o => o.statusObra !== 'Concluida').length;
+  const total  = obras.filter(o => statusDefs.some(s => s.key === o.statusObra)).length;
   const counts = {};
   statusDefs.forEach(s => { counts[s.key] = obras.filter(o => o.statusObra === s.key).length; });
 

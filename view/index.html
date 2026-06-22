@@ -140,7 +140,15 @@
           <div class="card">
             <div class="card-header">
               <div>
-                <h2><i class="fa-solid fa-chart-pie"></i> Status das Obras no Mês</h2>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <h2><i class="fa-solid fa-chart-pie"></i> Status das Obras no Mês</h2>
+                  <button class="btn btn-ghost btn-sm toggle-concluidas active"
+                          id="btnToggleConcluidas"
+                          onclick="toggleConcluidas()"
+                          title="Exibir/ocultar obras concluídas no gráfico">
+                    <i class="fa-solid fa-eye"></i> Concluídas
+                  </button>
+                </div>
                 <div class="card-header-sub">Distribuição de obras pelo status atual</div>
               </div>
             </div>
