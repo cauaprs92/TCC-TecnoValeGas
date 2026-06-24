@@ -782,8 +782,22 @@ function _limparCamposObra() {
   document.getElementById('obraUnidade').value  = '';
 }
 
-function gerarRelatorioObra() {
-  window.open('/uploads/FOLHA%20DE%20ROSTO%202.pdf', '_blank');
+async function gerarRelatorioObra() {
+  const idObra = document.getElementById('obraIdEdicao').value;
+  if (!idObra) {
+    showToast('Salve a obra antes de gerar o relatório.', 'warning');
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE_URL}/obra/${idObra}/relatorio`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` },
+    });
+    if (!res.ok) { showToast('Erro ao gerar relatório.', 'error'); return; }
+    const blob = await res.blob();
+    window.open(URL.createObjectURL(blob), '_blank');
+  } catch {
+    showToast('Erro ao gerar relatório.', 'error');
+  }
 }
 
 function trocarAbaObra(e, abaId) {
@@ -1910,7 +1924,7 @@ async function renderGraficoProdutos(dias = '') {
     }
   }
 
-  _dadosGraficoAtual = _filtrarPorPeriodo(_todosDadosGrafico, dias);
+  _dadosGraficoAtual = _filtrarPorPeriodo(_todosDadosGrafico, dias).slice(0, 10);
 
   if (_produtosChart) { _produtosChart.destroy(); _produtosChart = null; }
   document.getElementById('chartTooltipCustom')?.remove();
