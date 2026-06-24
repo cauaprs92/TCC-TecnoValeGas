@@ -782,6 +782,11 @@ function _limparCamposObra() {
   document.getElementById('obraUnidade').value  = '';
 }
 
+function gerarRelatorioObra() {
+  const idObra = document.getElementById('obraIdEdicao').value;
+  showToast('Em breve: relatório da obra #' + (idObra || '—'), 'info');
+}
+
 function trocarAbaObra(e, abaId) {
   document.querySelectorAll('.obra-tab').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.obra-tab-content').forEach(div => div.classList.remove('active'));
