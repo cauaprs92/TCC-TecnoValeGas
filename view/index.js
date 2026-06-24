@@ -807,6 +807,52 @@ function trocarAbaObra(e, abaId) {
   document.getElementById(abaId).classList.add('active');
 }
 
+function _parseDateBR(str) {
+  if (!str) return new Date(0);
+  const [datePart, timePart = '00:00:00'] = str.split(' ');
+  const [d, m, y] = datePart.split('/');
+  return new Date(`${y}-${m}-${d}T${timePart}`);
+}
+
+function _renderHistoricoObra(idObra) {
+  const el = document.getElementById('abaHistorico');
+  if (!el) return;
+
+  const registros = cacheHistorico
+    .filter(h => h.entidade === 'Obra' && (
+      h.descricao.includes(`(ID: ${idObra})`) ||
+      h.descricao.includes(`ID ${idObra} `) ||
+      h.descricao.includes(`ID ${idObra}'`)
+    ))
+    .sort((a, b) => _parseDateBR(b.dataHora) - _parseDateBR(a.dataHora));
+
+  if (!registros.length) {
+    el.innerHTML = '<div class="empty-row" style="padding:32px 0;text-align:center">Nenhum registro de histórico para esta obra.</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="data-table" style="margin-top:8px">
+      <thead>
+        <tr>
+          <th style="white-space:nowrap">Data / Hora</th>
+          <th>Usuário</th>
+          <th>Ação</th>
+          <th>Descrição</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${registros.map(h => `
+          <tr>
+            <td style="white-space:nowrap;font-size:.82rem">${h.dataHora}</td>
+            <td style="font-size:.82rem">${h.nomeAdmin}</td>
+            <td style="font-size:.82rem">${h.acao}</td>
+            <td style="font-size:.82rem">${h.descricao}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
 function _resetAbasObra() {
   document.querySelectorAll('.obra-tab').forEach((btn, i) => btn.classList.toggle('active', i === 0));
   document.querySelectorAll('.obra-tab-content').forEach((div, i) => div.classList.toggle('active', i === 0));
@@ -884,6 +930,7 @@ function abrirModalEditarObra(idObra) {
 
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Obra';
+  _renderHistoricoObra(o.idObra);
   _resetAbasObra();
   abrirModal('modalObra');
 }
