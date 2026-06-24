@@ -782,6 +782,18 @@ function _limparCamposObra() {
   document.getElementById('obraUnidade').value  = '';
 }
 
+function trocarAbaObra(e, abaId) {
+  document.querySelectorAll('.obra-tab').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.obra-tab-content').forEach(div => div.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById(abaId).classList.add('active');
+}
+
+function _resetAbasObra() {
+  document.querySelectorAll('.obra-tab').forEach((btn, i) => btn.classList.toggle('active', i === 0));
+  document.querySelectorAll('.obra-tab-content').forEach((div, i) => div.classList.toggle('active', i === 0));
+}
+
 function abrirModalNovaObra() {
   _limparCamposObra();
   const el = document.createElement('div');
@@ -792,6 +804,7 @@ function abrirModalNovaObra() {
   document.getElementById('obraSecaoProdutosVer').classList.add('hidden');
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-hard-hat"></i> Nova Obra';
+  _resetAbasObra();
   abrirModal('modalObra');
 }
 
@@ -853,6 +866,7 @@ function abrirModalEditarObra(idObra) {
 
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Obra';
+  _resetAbasObra();
   abrirModal('modalObra');
 }
 
