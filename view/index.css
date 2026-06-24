@@ -1029,9 +1029,11 @@ body {
     background: transparent;
     border: none;
     padding: 16px 0;
-    font-size: 14px;
-    font-weight: 500;
-    color: #000000;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: .4px;
     cursor: pointer;
     position: relative;
     transition: .2s;
