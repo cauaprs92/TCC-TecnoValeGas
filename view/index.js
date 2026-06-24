@@ -783,8 +783,7 @@ function _limparCamposObra() {
 }
 
 function gerarRelatorioObra() {
-  const idObra = document.getElementById('obraIdEdicao').value;
-  showToast('Em breve: relatório da obra #' + (idObra || '—'), 'info');
+  window.open('/uploads/FOLHA%20DE%20ROSTO%202.pdf', '_blank');
 }
 
 function trocarAbaObra(e, abaId) {
