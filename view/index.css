@@ -1048,3 +1048,11 @@ body {
 .obra-tab-content.active {
     display: block;
 }
+
+#modalObra .modal {
+    height: 90vh;
+}
+
+#modalObra .modal-body {
+    min-height: 0;
+}
