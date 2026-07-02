@@ -6,6 +6,7 @@ from .adminRoteador       import admin_bp
 from .responsavelRoteador import responsavel_bp
 from .relatorioRoteador   import relatorio_bp
 from .historicoRoteador   import historico_bp
+from .servicoRoteador     import servico_bp
 
 __all__ = [
     "cliente_bp",
@@ -16,4 +17,5 @@ __all__ = [
     "responsavel_bp",
     "relatorio_bp",
     "historico_bp",
+    "servico_bp",
 ]

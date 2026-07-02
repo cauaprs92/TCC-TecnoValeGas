@@ -4,7 +4,7 @@ from mysql.connector import Error
 class Conexao:
     _host     = "localhost"
     _usuario  = "root"
-    _senha    = ""  #nois nao tem    
+    _senha    = "Mateus2009#"  #nois nao tem    
     _banco    = "tcc"
 
     @staticmethod
