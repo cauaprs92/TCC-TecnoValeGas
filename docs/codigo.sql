@@ -85,6 +85,7 @@
     emailContato   VARCHAR(100),
     celular1       VARCHAR(20),
     celular2       VARCHAR(20),
+    valorObra      DECIMAL(10,2) DEFAULT NULL,
     FOREIGN KEY (codCliente) REFERENCES clientes(idCliente)
     );
 
@@ -136,6 +137,10 @@
     --   FOREIGN KEY (idAdmin) REFERENCES login(idLogin)
     -- );
 
+    -- ── MIGRAÇÃO obras — valorObra (rodar se a tabela já existir) ──────────────
+    -- ALTER TABLE obras
+    --   ADD COLUMN valorObra DECIMAL(10,2) DEFAULT NULL;
+
     -- ── MIGRAÇÃO obras — novos campos (já incluídos no CREATE TABLE acima) ─────
     -- ALTER TABLE obras
     --   ADD COLUMN tipoObra     VARCHAR(100),
@@ -164,6 +169,57 @@
     --   nomeOriginal VARCHAR(255) NOT NULL,
     --   dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
     --   FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
+    -- );
+
+    create table servicos(
+        idServico    int          primary key NOT NULL AUTO_INCREMENT,
+        nomeServico  VARCHAR(255) NOT NULL,
+        precoServico DECIMAL(10,2) NOT NULL
+    );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- CREATE TABLE IF NOT EXISTS servicos (
+    --   idServico    INT           PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    --   nomeServico  VARCHAR(255)  NOT NULL,
+    --   precoServico DECIMAL(10,2) NOT NULL
+    -- );
+
+    create table servicoProdutos(
+        idServicoProduto int primary key NOT NULL AUTO_INCREMENT,
+        idServico        int NOT NULL,
+        idProduto        int NOT NULL,
+        quantidade       int NOT NULL,
+
+        FOREIGN KEY (idServico) REFERENCES servicos(idServico),
+        FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
+    );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- CREATE TABLE IF NOT EXISTS servicoProdutos (
+    --   idServicoProduto INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    --   idServico        INT NOT NULL,
+    --   idProduto        INT NOT NULL,
+    --   quantidade       INT NOT NULL,
+    --   FOREIGN KEY (idServico) REFERENCES servicos(idServico),
+    --   FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
+    -- );
+
+    create table obraServicos(
+        idObraServico int primary key NOT NULL AUTO_INCREMENT,
+        idObra        int NOT NULL,
+        idServico     int NOT NULL,
+
+        FOREIGN KEY (idObra)    REFERENCES obras(idObra),
+        FOREIGN KEY (idServico) REFERENCES servicos(idServico)
+    );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- CREATE TABLE IF NOT EXISTS obraServicos (
+    --   idObraServico INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    --   idObra        INT NOT NULL,
+    --   idServico     INT NOT NULL,
+    --   FOREIGN KEY (idObra)    REFERENCES obras(idObra),
+    --   FOREIGN KEY (idServico) REFERENCES servicos(idServico)
     -- );
 
 
