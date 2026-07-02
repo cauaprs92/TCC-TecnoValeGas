@@ -2,7 +2,8 @@ from src.dao.conexao import Conexao
 
 class ProdutosObrasDAO:
 
-    def cadastrar_obra_com_produtos(self, obra: dict, produtos_usados: list) -> bool:
+    def cadastrar_obra_com_produtos(self, obra: dict, produtos_usados: list,
+                                    servicos_vinculados: list = None) -> bool:
         conexao = Conexao.obter_conexao()
         if not conexao:
             return False
@@ -33,28 +34,49 @@ class ProdutosObrasDAO:
 
             id_obra_gerado = cursor.lastrowid
 
+            # ── Produtos avulsos ──────────────────────────────────────────────
             for item in produtos_usados:
                 cursor.execute("""
                     INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra)
                     VALUES (%s, %s, %s)
-                """, (
-                    id_obra_gerado,
-                    item["idProduto"],
-                    item["quantidade"]
-                ))
+                """, (id_obra_gerado, item["idProduto"], item["quantidade"]))
 
                 cursor.execute("""
                     UPDATE produtos
                     SET qtdProduto = qtdProduto - %s
                     WHERE idProduto = %s AND qtdProduto >= %s
-                """, (
-                    item["quantidade"],
-                    item["idProduto"],
-                    item["quantidade"]
-                ))
+                """, (item["quantidade"], item["idProduto"], item["quantidade"]))
 
                 if cursor.rowcount == 0:
                     raise Exception(f"Estoque insuficiente para o produto ID {item['idProduto']}")
+
+            # ── Serviços vinculados + receita ─────────────────────────────────
+            for id_servico in (servicos_vinculados or []):
+                cursor.execute(
+                    "INSERT INTO obraServicos (idObra, idServico) VALUES (%s, %s)",
+                    (id_obra_gerado, id_servico)
+                )
+
+                cursor.execute(
+                    "SELECT idProduto, quantidade FROM servicoProdutos WHERE idServico = %s",
+                    (id_servico,)
+                )
+                for id_produto, qtd in cursor.fetchall():
+                    cursor.execute("""
+                        UPDATE produtos
+                        SET qtdProduto = qtdProduto - %s
+                        WHERE idProduto = %s AND qtdProduto >= %s
+                    """, (qtd, id_produto, qtd))
+
+                    if cursor.rowcount == 0:
+                        cursor.execute(
+                            "SELECT nomeProduto FROM produtos WHERE idProduto = %s", (id_produto,)
+                        )
+                        row = cursor.fetchone()
+                        nome = row[0] if row else str(id_produto)
+                        raise Exception(
+                            f"Estoque insuficiente para '{nome}' (serviço ID {id_servico})"
+                        )
 
             conexao.commit()
             print("Obra cadastrada e estoque atualizado com sucesso!")
@@ -98,21 +120,78 @@ class ProdutosObrasDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
+    def adicionar_servicos_obra(self, id_obra: int, servicos: list) -> bool:
+        """Vincula serviços a uma obra já existente e dá baixa na receita de cada um."""
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False
+        cursor = conexao.cursor()
+        try:
+            for id_servico in servicos:
+                cursor.execute(
+                    "INSERT INTO obraServicos (idObra, idServico) VALUES (%s, %s)",
+                    (id_obra, id_servico)
+                )
+                cursor.execute(
+                    "SELECT idProduto, quantidade FROM servicoProdutos WHERE idServico = %s",
+                    (id_servico,)
+                )
+                for id_produto, qtd in cursor.fetchall():
+                    cursor.execute("""
+                        UPDATE produtos
+                        SET qtdProduto = qtdProduto - %s
+                        WHERE idProduto = %s AND qtdProduto >= %s
+                    """, (qtd, id_produto, qtd))
+
+                    if cursor.rowcount == 0:
+                        cursor.execute(
+                            "SELECT nomeProduto FROM produtos WHERE idProduto = %s", (id_produto,)
+                        )
+                        row = cursor.fetchone()
+                        nome = row[0] if row else str(id_produto)
+                        raise Exception(
+                            f"Estoque insuficiente para '{nome}' (serviço ID {id_servico})"
+                        )
+
+            conexao.commit()
+            print("Serviços adicionados à obra com sucesso!")
+            return True
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao adicionar serviços à obra: {e}")
+            return False
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def restaurar_estoque_obra(self, id_obra: int) -> bool:
         conexao = Conexao.obter_conexao()
         if not conexao:
             return False
         cursor = conexao.cursor()
         try:
-            cursor.execute("""
-                SELECT idProduto, qtdProdutosObra FROM produtosObras WHERE idObra = %s
-            """, (id_obra,))
-            produtos = cursor.fetchall()
+            # Produtos avulsos
+            cursor.execute(
+                "SELECT idProduto, qtdProdutosObra FROM produtosObras WHERE idObra = %s",
+                (id_obra,)
+            )
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (qtd, id_produto)
+                )
 
-            for id_produto, qtd in produtos:
-                cursor.execute("""
-                    UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s
-                """, (qtd, id_produto))
+            # Receita dos serviços vinculados
+            cursor.execute("""
+                SELECT sp.idProduto, sp.quantidade
+                FROM obraServicos os
+                JOIN servicoProdutos sp ON sp.idServico = os.idServico
+                WHERE os.idObra = %s
+            """, (id_obra,))
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (qtd, id_produto)
+                )
 
             conexao.commit()
             return True
@@ -129,15 +208,14 @@ class ProdutosObrasDAO:
             return False, "Sem conexão com o banco."
         cursor = conexao.cursor()
         try:
+            # Produtos avulsos
             cursor.execute("""
                 SELECT po.idProduto, p.nomeProduto, po.qtdProdutosObra
                 FROM produtosObras po
                 JOIN produtos p ON p.idProduto = po.idProduto
                 WHERE po.idObra = %s
             """, (id_obra,))
-            produtos = cursor.fetchall()
-
-            for id_produto, nome_produto, qtd in produtos:
+            for id_produto, nome_produto, qtd in cursor.fetchall():
                 cursor.execute("""
                     UPDATE produtos
                     SET qtdProduto = qtdProduto - %s
@@ -145,7 +223,29 @@ class ProdutosObrasDAO:
                 """, (qtd, id_produto, qtd))
 
                 if cursor.rowcount == 0:
-                    raise Exception(f"Estoque insuficiente para '{nome_produto}' (necessário: {qtd}).")
+                    raise Exception(
+                        f"Estoque insuficiente para '{nome_produto}' (necessário: {qtd})."
+                    )
+
+            # Receita dos serviços vinculados
+            cursor.execute("""
+                SELECT sp.idProduto, p.nomeProduto, sp.quantidade
+                FROM obraServicos os
+                JOIN servicoProdutos sp ON sp.idServico = os.idServico
+                JOIN produtos p ON p.idProduto = sp.idProduto
+                WHERE os.idObra = %s
+            """, (id_obra,))
+            for id_produto, nome_produto, qtd in cursor.fetchall():
+                cursor.execute("""
+                    UPDATE produtos
+                    SET qtdProduto = qtdProduto - %s
+                    WHERE idProduto = %s AND qtdProduto >= %s
+                """, (qtd, id_produto, qtd))
+
+                if cursor.rowcount == 0:
+                    raise Exception(
+                        f"Estoque insuficiente para '{nome_produto}' (necessário: {qtd}, via serviço)."
+                    )
 
             conexao.commit()
             return True, "Estoque atualizado."
@@ -162,17 +262,32 @@ class ProdutosObrasDAO:
             return False
         cursor = conexao.cursor()
         try:
-            cursor.execute("""
-                SELECT idProduto, qtdProdutosObra FROM produtosObras WHERE idObra = %s
-            """, (id_obra,))
-            produtos = cursor.fetchall()
+            # Repor estoque dos produtos avulsos
+            cursor.execute(
+                "SELECT idProduto, qtdProdutosObra FROM produtosObras WHERE idObra = %s",
+                (id_obra,)
+            )
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (qtd, id_produto)
+                )
 
-            for id_produto, qtd in produtos:
-                cursor.execute("""
-                    UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s
-                """, (qtd, id_produto))
+            # Repor estoque da receita dos serviços
+            cursor.execute("""
+                SELECT sp.idProduto, sp.quantidade
+                FROM obraServicos os
+                JOIN servicoProdutos sp ON sp.idServico = os.idServico
+                WHERE os.idObra = %s
+            """, (id_obra,))
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (qtd, id_produto)
+                )
 
             cursor.execute("DELETE FROM produtosObras WHERE idObra = %s", (id_obra,))
+            cursor.execute("DELETE FROM obraServicos WHERE idObra = %s", (id_obra,))
             cursor.execute("DELETE FROM obras WHERE idObra = %s", (id_obra,))
             conexao.commit()
             return True
@@ -242,10 +357,7 @@ class ProdutosObrasDAO:
 
             qtd = row[0]
 
-            cursor.execute(
-                "SELECT COUNT(*) FROM produtosObras WHERE idObra = %s",
-                (id_obra,)
-            )
+            cursor.execute("SELECT COUNT(*) FROM produtosObras WHERE idObra = %s", (id_obra,))
             if cursor.fetchone()[0] <= 1:
                 return False, "A obra precisa ter ao menos um produto."
 
@@ -279,17 +391,35 @@ class ProdutosObrasDAO:
         cursor = conexao.cursor()
         try:
             cursor.execute(sql, (id_obra,))
-            linhas = cursor.fetchall()
             return [
-                {
-                    "idProduto":       linha[0],
-                    "nomeProduto":     linha[1],
-                    "qtdProdutosObra": linha[2]
-                }
-                for linha in linhas
+                {"idProduto": l[0], "nomeProduto": l[1], "qtdProdutosObra": l[2]}
+                for l in cursor.fetchall()
             ]
         except Exception as e:
             print(f"Erro ao buscar produtos da obra: {e}")
+            return []
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
+    def buscar_servicos_da_obra(self, id_obra: int) -> list:
+        sql = """
+            SELECT s.idServico, s.nomeServico, s.precoServico
+            FROM obraServicos os
+            JOIN servicos s ON s.idServico = os.idServico
+            WHERE os.idObra = %s
+        """
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return []
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, (id_obra,))
+            return [
+                {"idServico": l[0], "nomeServico": l[1], "precoServico": float(l[2])}
+                for l in cursor.fetchall()
+            ]
+        except Exception as e:
+            print(f"Erro ao buscar serviços da obra: {e}")
             return []
         finally:
             Conexao.fechar_conexao(conexao, cursor)

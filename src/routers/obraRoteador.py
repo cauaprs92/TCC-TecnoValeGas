@@ -52,12 +52,13 @@ def _serializar(o):
 @jwt.validate_token
 @middleware.validate_body
 def cadastrar():
-    body            = request.get_json()
-    dados_obra      = body["obra"]
-    produtos_usados = body["produtosUsados"]
-    desc            = dados_obra.get("descObra", "")
+    body                = request.get_json()
+    dados_obra          = body["obra"]
+    produtos_usados     = body.get("produtosUsados", [])
+    servicos_vinculados = body.get("servicosVinculados", [])
+    desc                = dados_obra.get("descObra", "")
 
-    sucesso, mensagem = controller.cadastrar(dados_obra, produtos_usados)
+    sucesso, mensagem = controller.cadastrar(dados_obra, produtos_usados, servicos_vinculados)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
@@ -117,6 +118,19 @@ def buscar_produtos_da_obra(idObra: int):
     return jsonify({"status": True, "produtos": produtos}), 200
 
 
+# ─── GET /obra/<idObra>/servicos ─────────────────────────────────────────────
+@obra_bp.route("/<int:idObra>/servicos", methods=["GET"])
+@jwt.validate_token
+@middleware.validate_id_param
+def buscar_servicos_da_obra(idObra: int):
+    obra = controller.buscar_por_id(idObra)
+    if not obra:
+        raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
+
+    servicos = controller.buscar_servicos_da_obra(idObra)
+    return jsonify({"status": True, "servicos": servicos}), 200
+
+
 # ─── PUT /obra/<idObra> ───────────────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>", methods=["PUT"])
 @jwt.validate_token
@@ -126,9 +140,10 @@ def atualizar(idObra: int):
     body           = request.get_json()
     dados_obra     = body["obra"]
     produtos_novos = body.get("produtosNovos") or []
+    servicos_novos = body.get("servicosNovos") or []
     desc           = dados_obra.get("descObra", "")
 
-    sucesso, mensagem = controller.atualizar(idObra, dados_obra, produtos_novos)
+    sucesso, mensagem = controller.atualizar(idObra, dados_obra, produtos_novos, servicos_novos)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})

@@ -76,11 +76,11 @@ class ObraMiddleware:
                     {"campo": "respObra", "message": "Selecione o field responsável pela obra!"}
                 )
 
-            produtos = body.get('produtosUsados')
-            if not isinstance(produtos, list) or len(produtos) == 0:
+            produtos = body.get('produtosUsados', [])
+            if not isinstance(produtos, list):
                 raise ErrorResponse(
                     400, "Erro na validação de dados",
-                    {"campo": "produtosUsados", "message": "Informe ao menos um produto para a obra!"}
+                    {"campo": "produtosUsados", "message": "O campo 'produtosUsados' deve ser uma lista!"}
                 )
 
             for i, item in enumerate(produtos):
@@ -112,6 +112,29 @@ class ObraMiddleware:
                         400, "Erro na validação de dados",
                         {"campo": "produtosUsados", "message": f"Item {i}: a quantidade deve ser maior que zero!"}
                     )
+
+            servicos = body.get('servicosVinculados', [])
+            if not isinstance(servicos, list):
+                raise ErrorResponse(
+                    400, "Erro na validação de dados",
+                    {"campo": "servicosVinculados", "message": "O campo 'servicosVinculados' deve ser uma lista!"}
+                )
+            for i, id_s in enumerate(servicos):
+                try:
+                    val = int(id_s)
+                    if val <= 0:
+                        raise ValueError
+                except (ValueError, TypeError):
+                    raise ErrorResponse(
+                        400, "Erro na validação de dados",
+                        {"campo": "servicosVinculados", "message": f"servicosVinculados[{i}]: deve ser um inteiro positivo!"}
+                    )
+
+            if len(produtos) == 0 and len(servicos) == 0:
+                raise ErrorResponse(
+                    400, "Erro na validação de dados",
+                    {"message": "Informe ao menos um produto ou serviço para a obra!"}
+                )
 
             return f(*args, **kwargs)
         return decorated_function
@@ -190,6 +213,25 @@ class ObraMiddleware:
                         raise ErrorResponse(
                             400, "Erro na validação de dados",
                             {"campo": "produtosNovos", "message": f"produtosNovos[{i}]: valores devem ser positivos!"}
+                        )
+
+            # servicosNovos — opcional, mas se vier deve ser válido
+            servicos_novos = body.get('servicosNovos')
+            if servicos_novos is not None:
+                if not isinstance(servicos_novos, list):
+                    raise ErrorResponse(
+                        400, "Erro na validação de dados",
+                        {"campo": "servicosNovos", "message": "O campo 'servicosNovos' deve ser uma lista!"}
+                    )
+                for i, id_s in enumerate(servicos_novos):
+                    try:
+                        val = int(id_s)
+                        if val <= 0:
+                            raise ValueError
+                    except (ValueError, TypeError):
+                        raise ErrorResponse(
+                            400, "Erro na validação de dados",
+                            {"campo": "servicosNovos", "message": f"servicosNovos[{i}]: deve ser um inteiro positivo!"}
                         )
 
             return f(*args, **kwargs)

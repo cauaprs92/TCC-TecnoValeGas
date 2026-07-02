@@ -1,6 +1,7 @@
 from src.dao.obraDAO          import ObraDAO
 from src.dao.produtosObrasDAO import ProdutosObrasDAO
 from src.dao.clienteDAO       import ClienteDAO
+from src.dao.servicoDAO       import ServicoDAO
 from src.controller.produtoController import ProdutoController
 
 class ObraController:
@@ -11,6 +12,7 @@ class ObraController:
         self.dao          = ObraDAO()
         self.daoProdObras = ProdutosObrasDAO()
         self.daoCliente   = ClienteDAO()
+        self.daoServico   = ServicoDAO()
         self.ctrlProduto  = ProdutoController()
 
     def _validar_status(self, status: str) -> tuple:
@@ -19,7 +21,8 @@ class ObraController:
             return False, f"Status invalido. Use: {opcoes}."
         return True, ""
 
-    def cadastrar(self, dadosObra: dict, produtosUsados: list) -> tuple:
+    def cadastrar(self, dadosObra: dict, produtosUsados: list,
+                  servicosVinculados: list = None) -> tuple:
         clienteExistente = self.daoCliente.buscar_por_id(dadosObra["codCliente"])
         if not clienteExistente:
             return False, "Cliente nao encontrado. Cadastre o cliente antes de criar a obra."
@@ -37,10 +40,13 @@ class ObraController:
         if not valido:
             return False, mensagem
 
-        if not produtosUsados:
-            return False, "Informe pelo menos um produto para a obra."
+        servicosVinculados = servicosVinculados or []
+
+        if not produtosUsados and not servicosVinculados:
+            return False, "Informe pelo menos um produto ou servico para a obra."
 
         avisos = []
+
         for item in produtosUsados:
             estoque_ok, mensagem = self.ctrlProduto.verificar_estoque(
                 item["idProduto"], item["quantidade"]
@@ -50,14 +56,28 @@ class ObraController:
             if "ATENCAO" in mensagem or "AVISO" in mensagem:
                 avisos.append(mensagem)
 
-        sucesso = self.daoProdObras.cadastrar_obra_com_produtos(dadosObra, produtosUsados)
+        for id_servico in servicosVinculados:
+            receita = self.daoServico.buscar_produtos_do_servico(id_servico)
+            for item in receita:
+                estoque_ok, mensagem = self.ctrlProduto.verificar_estoque(
+                    item["idProduto"], item["quantidade"]
+                )
+                if not estoque_ok:
+                    return False, mensagem
+                if "ATENCAO" in mensagem or "AVISO" in mensagem:
+                    avisos.append(mensagem)
+
+        sucesso = self.daoProdObras.cadastrar_obra_com_produtos(
+            dadosObra, produtosUsados, servicosVinculados
+        )
         if sucesso:
             if avisos:
                 return True, "Obra cadastrada com sucesso!\n" + "\n".join(avisos)
             return True, "Obra cadastrada com sucesso!"
         return False, "Erro ao cadastrar obra."
 
-    def atualizar(self, idObra: int, dadosObra: dict, produtosNovos: list = None) -> tuple:
+    def atualizar(self, idObra: int, dadosObra: dict,
+                  produtosNovos: list = None, servicosNovos: list = None) -> tuple:
         obraExistente = self.dao.buscar_por_id(idObra)
         if not obraExistente:
             return False, "Obra nao encontrada."
@@ -77,8 +97,9 @@ class ObraController:
         if not sucesso:
             return False, "Erro ao atualizar obra."
 
+        avisos = []
+
         if produtosNovos:
-            avisos = []
             for item in produtosNovos:
                 estoque_ok, msg = self.ctrlProduto.verificar_estoque(item["idProduto"], item["quantidade"])
                 if not estoque_ok:
@@ -89,9 +110,25 @@ class ObraController:
             ok = self.daoProdObras.adicionar_produtos_obra(idObra, produtosNovos)
             if not ok:
                 return False, "Erro ao adicionar produtos à obra."
-            if avisos:
-                return True, "Obra atualizada!\n" + "\n".join(avisos)
 
+        if servicosNovos:
+            for id_servico in servicosNovos:
+                receita = self.daoServico.buscar_produtos_do_servico(id_servico)
+                for item in receita:
+                    estoque_ok, msg = self.ctrlProduto.verificar_estoque(
+                        item["idProduto"], item["quantidade"]
+                    )
+                    if not estoque_ok:
+                        return False, msg
+                    if "ATENCAO" in msg or "AVISO" in msg:
+                        avisos.append(msg)
+
+            ok = self.daoProdObras.adicionar_servicos_obra(idObra, servicosNovos)
+            if not ok:
+                return False, "Erro ao adicionar serviços à obra."
+
+        if avisos:
+            return True, "Obra atualizada!\n" + "\n".join(avisos)
         return True, "Obra atualizada com sucesso!"
 
     def listar(self) -> list:
@@ -149,6 +186,9 @@ class ObraController:
 
     def buscar_produtos_da_obra(self, idObra: int) -> list:
         return self.daoProdObras.buscar_produtos_da_obra(idObra)
+
+    def buscar_servicos_da_obra(self, idObra: int) -> list:
+        return self.daoProdObras.buscar_servicos_da_obra(idObra)
 
     def atualizar_produto_obra(self, idObra: int, idProduto: int, nova_qtd: int) -> tuple:
         if not self.dao.buscar_por_id(idObra):
