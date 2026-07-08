@@ -1,4 +1,4 @@
-    DROP SCHEMA IF EXISTS tcc;
+DROP SCHEMA IF EXISTS tcc;
     create database tcc;
     use tcc;
 
@@ -228,14 +228,17 @@
     SELECT * FROM produtosObras;
     SELECT * FROM obras;
     SELECT * FROM responsavel;
-
-
-   
+    SELECT * FROM servicos;
+    SELECT * FROM servicoProdutos;
+    SELECT * FROM obraServicos;
 
 
     ## para reiniciar o banco
     SET FOREIGN_KEY_CHECKS = 0;
 
+    TRUNCATE TABLE obraServicos;
+    TRUNCATE TABLE servicoProdutos;
+    TRUNCATE TABLE servicos;
     TRUNCATE TABLE produtosObras;
     TRUNCATE TABLE obras;
     TRUNCATE TABLE produtos;

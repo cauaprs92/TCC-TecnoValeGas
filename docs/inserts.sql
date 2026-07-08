@@ -288,3 +288,85 @@ INSERT INTO historico (idAdmin, nomeAdmin, acao, entidade, descricao, dataHora) 
 (2, 'João', 'Editou',    'Cliente',       'Editou o cliente ''Marina Nunes'' (ID: 6)',                                   '2024-11-12 14:30:00'),
 (1, 'adm',  'Editou',    'Produto',       'Editou o produto ''Registro de Esfera 3/4"'' (ID: 2)',                        '2024-11-20 11:00:00'),
 (2, 'João', 'Deletou',   'Administrador', 'Deletou o administrador ''teste'' (ID: 3)',                                   '2024-11-25 16:00:00');
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- CATÁLOGO DE SERVIÇOS (FICTÍCIO)
+-- Dados fictícios para desenvolvimento — SUBSTITUIR pelo catálogo real
+-- assim que recebido da TecnoVale Gás.
+-- ══════════════════════════════════════════════════════════════════════════════
+
+INSERT INTO servicos (idServico, nomeServico, precoServico) VALUES
+(1, 'Instalação de Ramal Residencial',  850.00),
+(2, 'Instalação de Ramal Comercial',   1450.00),
+(3, 'Manutenção Preventiva de Medidor', 320.00),
+(4, 'Correção de Vazamento',            480.00),
+(5, 'Troca de Registro e Conector',     210.00),
+(6, 'Extensão de Rede Comercial',      1200.00),
+(7, 'Instalação de Medidor Privativo',  690.00),
+(8, 'Vistoria e Laudo Técnico',         380.00);
+
+-- ── Receita de produtos por serviço ────────────────────────────────────────────
+-- idProduto buscado pelo nome exato já cadastrado na tabela produtos, para não
+-- depender da ordem/IDs de quem rodar este script.
+
+-- Serviço 1 — Instalação de Ramal Residencial
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 1, idProduto, qtd FROM (
+  SELECT idProduto, 10 AS qtd FROM produtos WHERE nomeProduto = 'Tubo Aço Galvanizado 1"'
+  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
+  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Válvula Redutora de Pressão'
+  UNION ALL SELECT idProduto, 2  FROM produtos WHERE nomeProduto = 'Mangueira Flexível 3/4"'
+  UNION ALL SELECT idProduto, 4  FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
+) AS receita;
+
+-- Serviço 2 — Instalação de Ramal Comercial
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 2, idProduto, qtd FROM (
+  SELECT idProduto, 25 AS qtd FROM produtos WHERE nomeProduto = 'Tubo Aço Galvanizado 1"'
+  UNION ALL SELECT idProduto, 2  FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
+  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Medidor de Gás Industrial G16'
+  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Válvula Redutora de Pressão'
+  UNION ALL SELECT idProduto, 10 FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
+) AS receita;
+
+-- Serviço 3 — Manutenção Preventiva de Medidor
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 3, idProduto, qtd FROM (
+  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Filtro de Linha para Gás'
+) AS receita;
+
+-- Serviço 4 — Correção de Vazamento
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 4, idProduto, qtd FROM (
+  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Mangueira Flexível 3/4"'
+  UNION ALL SELECT idProduto, 3 FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
+  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
+) AS receita;
+
+-- Serviço 5 — Troca de Registro e Conector
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 5, idProduto, qtd FROM (
+  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
+  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Conector Curvo 90° 1/2"'
+) AS receita;
+
+-- Serviço 6 — Extensão de Rede Comercial
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 6, idProduto, qtd FROM (
+  SELECT idProduto, 18 AS qtd FROM produtos WHERE nomeProduto = 'Tubo Aço Galvanizado 1"'
+  UNION ALL SELECT idProduto, 8  FROM produtos WHERE nomeProduto = 'Tubo PPR 32mm'
+  UNION ALL SELECT idProduto, 12 FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
+  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Válvula Redutora de Pressão'
+) AS receita;
+
+-- Serviço 7 — Instalação de Medidor Privativo
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
+SELECT 7, idProduto, qtd FROM (
+  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Medidor de Gás Industrial G16'
+  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
+  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Filtro de Linha para Gás'
+) AS receita;
+
+-- Serviço 8 — Vistoria e Laudo Técnico (sem consumo de produtos — apenas mão de obra)
+-- Nenhum insert em servicoProdutos para este serviço.
