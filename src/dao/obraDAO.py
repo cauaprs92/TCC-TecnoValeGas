@@ -3,7 +3,8 @@ from src.dao.conexao import Conexao
 _COLS_SELECT = """
     idObra, codCliente, descObra, dataInicio, dataFim,
     statusObra, respObra, obsObra, orientacaoObra,
-    tipoObra, fieldObra, unidadeObra, emailContato, celular1, celular2
+    tipoObra, fieldObra, unidadeObra, emailContato, celular1, celular2,
+    valorObra
 """
 
 class ObraDAO:
