@@ -132,13 +132,40 @@ class ObraDAO:
             Conexao.fechar_conexao(conexao, cursor)
 
     def atualizar_status(self, id_obra: int, novo_status: str) -> bool:
-        sql = "UPDATE obras SET statusObra=%s WHERE idObra=%s"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return False
         cursor = conexao.cursor()
         try:
-            cursor.execute(sql, (novo_status, id_obra))
+            cursor.execute("SELECT statusObra FROM obras WHERE idObra=%s", (id_obra,))
+            row = cursor.fetchone()
+            status_atual = row[0] if row else None
+
+            if novo_status == "Concluida":
+                cursor.execute("""
+                    SELECT SUM(s.precoServico) AS total
+                    FROM obraServicos os
+                    JOIN servicos s ON os.idServico = s.idServico
+                    WHERE os.idObra = %s
+                """, (id_obra,))
+                total = cursor.fetchone()[0]
+                valor_obra = float(total) if total is not None else 0.00
+
+                cursor.execute(
+                    "UPDATE obras SET statusObra=%s, valorObra=%s WHERE idObra=%s",
+                    (novo_status, valor_obra, id_obra)
+                )
+            elif status_atual == "Concluida":
+                cursor.execute(
+                    "UPDATE obras SET statusObra=%s, valorObra=NULL WHERE idObra=%s",
+                    (novo_status, id_obra)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE obras SET statusObra=%s WHERE idObra=%s",
+                    (novo_status, id_obra)
+                )
+
             conexao.commit()
             return True
         except Exception as e:
