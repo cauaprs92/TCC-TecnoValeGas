@@ -44,6 +44,7 @@ def _serializar(o):
         "emailContato":   o[12] if len(o) > 12 else None,
         "celular1":       o[13] if len(o) > 13 else None,
         "celular2":       o[14] if len(o) > 14 else None,
+        "valorObra":      float(o[15]) if len(o) > 15 and o[15] is not None else None,
     }
 
 
