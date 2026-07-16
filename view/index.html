@@ -136,6 +136,13 @@
               <span class="kpi-label">Alertas de Estoque</span>
             </div>
           </div>
+          <div class="kpi-card kpi-nav" onclick="irParaObrasConcluidas()" title="Ver obras concluídas">
+            <div class="kpi-icon green"><i class="fa-solid fa-sack-dollar"></i></div>
+            <div class="kpi-info">
+              <span class="kpi-value" id="kpi-valor-faturado">—</span>
+              <span class="kpi-label">Valor Total Faturado</span>
+            </div>
+          </div>
         </div>
 
         <div class="dashboard-grid">
@@ -362,11 +369,12 @@
                 <th class="sortable" data-sort-key="obra" onclick="ordenarTabela('obras','obra')">Obra <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="inicio" onclick="ordenarTabela('obras','inicio')" style="width:96px">Início <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="status" onclick="ordenarTabela('obras','status')" style="width:130px">Status <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="valor" onclick="ordenarTabela('obras','valor')" style="width:130px">Valor <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody id="bodyObras">
-              <tr><td colspan="6" class="loading-cell">
+              <tr><td colspan="7" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando obras...
               </td></tr>
             </tbody>
@@ -1053,9 +1061,9 @@
               </button>
             </div>
 
-            <!-- Valor total estimado da obra — soma dos serviços selecionados -->
+            <!-- Valor total da obra — estimado (em aberto) ou definitivo (Concluída) -->
             <div class="obra-edit-context" id="obraValorTotalBox" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-              <span><i class="fa-solid fa-sack-dollar"></i> Valor Total Estimado da Obra</span>
+              <span id="obraValorTotalLabel"><i class="fa-solid fa-sack-dollar"></i> Valor Total Estimado da Obra</span>
               <strong id="obraValorTotalEstimado">R$ 0,00</strong>
             </div>
 

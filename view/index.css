@@ -258,7 +258,7 @@ body {
 }
 
 /* ── KPIs ── */
-.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 14px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; margin-bottom: 14px; }
 .kpi-card {
   background: #fff; border-radius: var(--radius);
   padding: 20px 22px; display: flex; align-items: center; gap: 18px;
@@ -271,6 +271,7 @@ body {
 .kpi-icon.orange { background: #F0F4FF; color: #4B6BCC; }
 .kpi-icon.dark   { background: var(--gray-700); color: #fff; }
 .kpi-icon.red    { background: #FEE2E2; color: #DC2626; }
+.kpi-icon.green  { background: #EAF7EE; color: #2D8A4E; }
 .kpi-info { display: flex; flex-direction: column; }
 .kpi-value { font-family: var(--font-cond); font-size: 1.8rem; font-weight: 800; color: var(--dark); line-height: 1; }
 .kpi-label { font-size: .78rem; color: var(--gray-500); margin-top: 3px; }
@@ -486,6 +487,9 @@ body {
 .prod-dropdown-item .prod-stock { flex-shrink: 0; font-size: .75rem; white-space: nowrap; }
 .form-group input[readonly] { background: var(--gray-50); color: var(--gray-500); cursor: default; }
 .obra-edit-context { font-size: .88rem; color: var(--gray-700); background: var(--gray-50); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; border-left: 3px solid var(--gray-300); }
+.obra-edit-context strong { font-size: 1rem; }
+.obra-edit-context.valor-obra-final { background: #EAF7EE; border-left-color: #2D8A4E; color: #1E6B3A; }
+.obra-edit-context.valor-obra-final strong { color: #2D8A4E; font-size: 1.05rem; }
 
 /* ── TOAST ── */
 .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 999; }
