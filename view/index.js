@@ -723,6 +723,120 @@ function fecharDropdownProduto(input) {
   drop.classList.add('hidden');
 }
 
+// ── Serviços vinculados à Obra ────────────────────────────────────────────────
+
+function _servSearchHTML(btnRemove) {
+  return `
+    <div class="produto-obra-row">
+      <div class="prod-search-wrap">
+        <input type="text" class="serv-search" placeholder="Buscar serviço (nome ou ID)..."
+          oninput="buscarServicoInput(this)"
+          onfocus="buscarServicoInput(this)"
+          onblur="setTimeout(()=>fecharDropdownServico(this),150)"
+          autocomplete="off" />
+        <input type="hidden" class="servico-select" />
+        <div class="prod-dropdown hidden"></div>
+      </div>
+      <input type="text" placeholder="Preço" class="prod-estoque-input" readonly />
+      ${btnRemove}
+    </div>`;
+}
+
+function _novaServicoObraRow() {
+  return _servSearchHTML(`<button class="btn-icon danger" onclick="removerServicoObra(this)"><i class="fa-solid fa-minus"></i></button>`);
+}
+
+function _novaServicoObraRowEd() {
+  return _servSearchHTML(`<button class="btn-icon danger" onclick="removerServicoObraEd(this)"><i class="fa-solid fa-minus"></i></button>`);
+}
+
+function adicionarServicoObra() {
+  const el = document.createElement('div');
+  el.innerHTML = _novaServicoObraRow();
+  document.getElementById('servicosObraList').appendChild(el.firstElementChild);
+}
+
+function removerServicoObra(btn) {
+  btn.closest('.produto-obra-row').remove();
+  _atualizarValorTotalObra();
+}
+
+function adicionarServicoObraEd() {
+  const el = document.createElement('div');
+  el.innerHTML = _novaServicoObraRowEd();
+  document.getElementById('servicosObraEdList').appendChild(el.firstElementChild);
+}
+
+function removerServicoObraEd(btn) {
+  btn.closest('.produto-obra-row').remove();
+  _atualizarValorTotalObra();
+}
+
+function buscarServicoInput(input) {
+  const q    = input.value.toLowerCase().trim();
+  const wrap = input.closest('.prod-search-wrap');
+  const drop = wrap.querySelector('.prod-dropdown');
+
+  const matches = q
+    ? cacheServicos.filter(s =>
+        s.nomeServico.toLowerCase().includes(q) || String(s.idServico).includes(q)
+      )
+    : cacheServicos;
+
+  if (!matches.length) { drop.classList.add('hidden'); return; }
+
+  drop.innerHTML = matches.map(s => `
+    <div class="prod-dropdown-item" onmousedown="selecionarServicoDropdown(this,${s.idServico})">
+      <span class="prod-id">${s.idServico}</span>
+      <span class="prod-name">${s.nomeServico}</span>
+      <span class="prod-stock" style="color:#16A34A">${_fmtMoeda(s.precoServico)}</span>
+    </div>`).join('');
+  drop.classList.remove('hidden');
+}
+
+function selecionarServicoDropdown(item, idServico) {
+  const wrap = item.closest('.prod-search-wrap');
+  const row  = wrap.closest('.produto-obra-row');
+  const s    = cacheServicos.find(x => x.idServico === idServico);
+  if (!s) return;
+
+  wrap.querySelector('.serv-search').value    = `${s.idServico} — ${s.nomeServico}`;
+  wrap.querySelector('.servico-select').value = s.idServico;
+  wrap.querySelector('.prod-dropdown').classList.add('hidden');
+
+  row.querySelector('.prod-estoque-input').value = _fmtMoeda(s.precoServico);
+  _atualizarValorTotalObra();
+}
+
+function fecharDropdownServico(input) {
+  const drop = input.closest('.prod-search-wrap').querySelector('.prod-dropdown');
+  drop.classList.add('hidden');
+}
+
+function _coletarServicosObra(containerId) {
+  const ids = [];
+  document.querySelectorAll(`#${containerId} .produto-obra-row`).forEach(row => {
+    const sid = row.querySelector('.servico-select')?.value.trim();
+    if (sid) ids.push(parseInt(sid));
+  });
+  return ids;
+}
+
+// Serviços já vinculados à obra em edição (somente leitura) — usados no cálculo do total
+let _obraServicosExistentes = [];
+
+function _atualizarValorTotalObra() {
+  let total = _obraServicosExistentes.reduce((acc, s) => acc + Number(s.precoServico || 0), 0);
+  document.querySelectorAll('#servicosObraList .servico-select, #servicosObraEdList .servico-select').forEach(hidden => {
+    const idServico = parseInt(hidden.value);
+    if (!idServico) return;
+    const s = cacheServicos.find(x => x.idServico === idServico);
+    if (s) total += Number(s.precoServico || 0);
+  });
+  const el = document.getElementById('obraValorTotalEstimado');
+  if (el) el.textContent = _fmtMoeda(total);
+}
+
 // Mapa: campo retornado pelo backend → id do elemento no HTML
 const _OBRA_CAMPO_MAP = {
   codCliente:     'obraCodCliente',
@@ -731,8 +845,10 @@ const _OBRA_CAMPO_MAP = {
   dataFim:        'obraDataFim',
   statusObra:     'obraStatus',
   respObra:       'obraResp',
-  produtosUsados: 'produtosUsados',
-  produtosNovos:  'produtosUsados',
+  produtosUsados:     'produtosUsados',
+  produtosNovos:      'produtosUsados',
+  servicosVinculados: 'produtosUsados',
+  servicosNovos:      'produtosUsados',
 };
 
 function _obraSetError(fieldId, msg) {
@@ -868,6 +984,11 @@ function abrirModalNovaObra() {
   document.getElementById('produtosObraList').appendChild(el.firstElementChild);
   document.getElementById('obraSecaoProdutos').classList.remove('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.add('hidden');
+  document.getElementById('servicosObraList').innerHTML = '';
+  document.getElementById('obraSecaoServicos').classList.remove('hidden');
+  document.getElementById('obraSecaoServicosVer').classList.add('hidden');
+  _obraServicosExistentes = [];
+  _atualizarValorTotalObra();
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-hard-hat"></i> Nova Obra';
   _resetAbasObra();
@@ -928,6 +1049,32 @@ function abrirModalEditarObra(idObra) {
       </div>`).join('');
   }).catch(() => {
     listEl.innerHTML = '<div style="font-size:.84rem;color:#DC2626;padding:6px 0">Erro ao carregar produtos.</div>';
+  });
+
+  document.getElementById('obraSecaoServicos').classList.add('hidden');
+  document.getElementById('obraSecaoServicosVer').classList.remove('hidden');
+  document.getElementById('servicosObraEdList').innerHTML = '';
+  _obraServicosExistentes = [];
+  _atualizarValorTotalObra();
+
+  const servListEl = document.getElementById('obraServicosVerList');
+  servListEl.innerHTML = '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>';
+
+  apiFetch(`/obra/${o.idObra}/servicos`).then(res => {
+    const servicos = res.servicos || [];
+    _obraServicosExistentes = servicos;
+    if (!servicos.length) {
+      servListEl.innerHTML = '<div style="font-size:.84rem;color:var(--gray-500);padding:6px 0">Nenhum serviço vinculado.</div>';
+    } else {
+      servListEl.innerHTML = servicos.map(s => `
+        <div class="produto-obra-row" style="pointer-events:none">
+          <input type="text" class="prod-nome-input" value="${_esc(s.nomeServico)}" readonly />
+          <input type="text" class="prod-estoque-input" value="${_fmtMoeda(s.precoServico)}" readonly />
+        </div>`).join('');
+    }
+    _atualizarValorTotalObra();
+  }).catch(() => {
+    servListEl.innerHTML = '<div style="font-size:.84rem;color:#DC2626;padding:6px 0">Erro ao carregar serviços.</div>';
   });
 
   document.getElementById('modalObraTitle').innerHTML =
@@ -1097,7 +1244,7 @@ async function salvarObra() {
     emailContato: email, celular1: cel1, celular2: cel2,
   };
 
-  // Modo edição — PUT completo + produtos novos opcionais
+  // Modo edição — PUT completo + produtos/serviços novos opcionais
   if (idEdicao) {
     const produtosNovos = [];
     document.querySelectorAll('#produtosObraEdList .produto-obra-row').forEach(row => {
@@ -1105,11 +1252,12 @@ async function salvarObra() {
       const pqt = row.querySelector('.prod-qtd-input').value.trim();
       if (pid && pqt) produtosNovos.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
     });
+    const servicosNovos = _coletarServicosObra('servicosObraEdList');
 
     try {
-      await apiFetch(`/obra/${idEdicao}`, 'PUT', { obra, produtosNovos });
+      await apiFetch(`/obra/${idEdicao}`, 'PUT', { obra, produtosNovos, servicosNovos });
       fecharModal('modalObra');
-      await Promise.all([carregarObras(), carregarProdutos()]);
+      await Promise.all([carregarObras(), carregarProdutos(), carregarServicos()]);
       showToast('Obra atualizada!', 'success');
     } catch (e) {
       _obraExibirErroApi(e);
@@ -1117,24 +1265,25 @@ async function salvarObra() {
     return;
   }
 
-  // Modo criação — valida produtos e POST
+  // Modo criação — valida produtos/serviços e POST
   const produtosUsados = [];
   document.querySelectorAll('#produtosObraList .produto-obra-row').forEach(row => {
     const pid = row.querySelector('.prod-select')?.value.trim();
     const pqt = row.querySelector('.prod-qtd-input').value.trim();
     if (pid && pqt) produtosUsados.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
   });
-  if (!produtosUsados.length) {
-    _obraSetError('produtosUsados', 'Informe ao menos um produto para a obra.');
+  const servicosVinculados = _coletarServicosObra('servicosObraList');
+  if (!produtosUsados.length && !servicosVinculados.length) {
+    _obraSetError('produtosUsados', 'Informe ao menos um produto ou serviço para a obra.');
     _mostrarBanner('banner-modalObra');
     _scrollPrimeiroErro('modalObra');
     return;
   }
 
   try {
-    await apiFetch('/obra', 'POST', { obra, produtosUsados });
+    await apiFetch('/obra', 'POST', { obra, produtosUsados, servicosVinculados });
     fecharModal('modalObra');
-    await Promise.all([carregarObras(), carregarProdutos()]);
+    await Promise.all([carregarObras(), carregarProdutos(), carregarServicos()]);
     showToast(`Obra "${desc}" cadastrada!`, 'success');
   } catch (e) {
     _obraExibirErroApi(e);

@@ -1031,6 +1031,34 @@
               </button>
             </div>
 
+            <!-- Serviços — visível apenas no modo criação -->
+            <div id="obraSecaoServicos">
+              <div class="form-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Serviços Vinculados</div>
+              <div id="servicosObraList"></div>
+              <button class="btn btn-ghost" onclick="adicionarServicoObra()">
+                <i class="fa-solid fa-plus"></i> Adicionar Serviço
+              </button>
+            </div>
+
+            <!-- Serviços somente leitura + adição — visível apenas no modo edição -->
+            <div id="obraSecaoServicosVer" class="hidden">
+              <div class="form-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Serviços Vinculados</div>
+              <div id="obraServicosVerList"></div>
+              <div class="form-section-title" style="margin-top:14px">
+                <i class="fa-solid fa-plus"></i> Adicionar Serviços
+              </div>
+              <div id="servicosObraEdList"></div>
+              <button class="btn btn-ghost" onclick="adicionarServicoObraEd()">
+                <i class="fa-solid fa-plus"></i> Adicionar Serviço
+              </button>
+            </div>
+
+            <!-- Valor total estimado da obra — soma dos serviços selecionados -->
+            <div class="obra-edit-context" id="obraValorTotalBox" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span><i class="fa-solid fa-sack-dollar"></i> Valor Total Estimado da Obra</span>
+              <strong id="obraValorTotalEstimado">R$ 0,00</strong>
+            </div>
+
             </div><!-- fim abaProjeto -->
 
             <!-- ── ABA: DOCUMENTOS E FORMULÁRIOS ── -->
