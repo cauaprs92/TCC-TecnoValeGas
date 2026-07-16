@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarConsumo();
   _setupValidacaoProduto();
   _setupValidacaoModais();
+  _setupValidacaoServico();
 
   fpInicio = flatpickr('#obraDataInicio', {
     dateFormat: 'd/m/Y', locale: 'pt', allowInput: true,
@@ -170,6 +171,7 @@ async function carregarTodos() {
     carregarProdutos(),
     carregarObras(),
     carregarClientes(),
+    carregarServicos(),
     carregarAdmins(),
     carregarResponsaveis(),
     carregarHistorico(),
@@ -190,7 +192,7 @@ function carregarAdministrador() {
 // ══════════════════════════════════════════════════
 
 let cacheProdutos = [];
-const _cacheReady = { produtos: false, obras: false, clientes: false, admins: false, responsaveis: false, historico: false };
+const _cacheReady = { produtos: false, obras: false, clientes: false, servicos: false, admins: false, responsaveis: false, historico: false };
 
 async function carregarProdutos() {
   try {
@@ -1281,16 +1283,18 @@ async function buscarCEP(cep) {
 
 let cacheClientes = [];
 
-const PAG_STATE = { produtos: 1, obras: 1, clientes: 1 };
+const PAG_STATE = { produtos: 1, obras: 1, clientes: 1, servicos: 1 };
 const PER_PAGE  = 10;
 const filtros   = {
   produtos: '', produtosStatus: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '', clientesStatus: '',
+  servicos: '',
   historicoEntidade: '', historicoQ: '', historicoAdmin: '', historicoAcao: '', historicoDe: '', historicoAte: ''
 };
 const ORDER_STATE = {
   produtos: { key: 'id', dir: 'asc' },
   obras: { key: 'id', dir: 'asc' },
   clientes: { key: 'id', dir: 'asc' },
+  servicos: { key: 'id', dir: 'asc' },
   admins: { key: 'id', dir: 'asc' },
   responsaveis: { key: 'id', dir: 'asc' },
   historico: { key: 'dataHora', dir: 'desc' },
@@ -1335,6 +1339,12 @@ function _getSortValue(item, table, key) {
       }
       if (key === 'contato') return `${item.contatoCliente || ''} ${item.telefone2 || ''} ${item.emailCliente || ''}`.trim();
       return '';
+    case 'servicos':
+      if (key === 'id') return item.idServico;
+      if (key === 'nome') return item.nomeServico || '';
+      if (key === 'preco') return item.precoServico ?? 0;
+      if (key === 'produtos') return (item.produtos || []).length;
+      return '';
     case 'admins':
       if (key === 'id') return item.idLogin;
       if (key === 'nome') return item.nomeLogin || '';
@@ -1378,6 +1388,7 @@ function ordenarTabela(table, key) {
   if (table === 'produtos') renderTabelaProdutos(cacheProdutos);
   if (table === 'obras') renderTabelaObras(cacheObras);
   if (table === 'clientes') renderTabelaClientes(cacheClientes);
+  if (table === 'servicos') renderTabelaServicos(cacheServicos);
   if (table === 'admins') renderTabelaAdmins(cacheAdmins);
   if (table === 'responsaveis') renderTabelaResponsaveis(cacheResponsaveis);
   if (table === 'historico') renderTabelaHistorico(cacheHistorico);
@@ -1385,7 +1396,7 @@ function ordenarTabela(table, key) {
 
 function atualizarIndicadoresOrdenacao(table) {
   const tableId = {
-    produtos: 'tabelaProdutos', obras: 'tabelaObras', clientes: 'tabelaClientes',
+    produtos: 'tabelaProdutos', obras: 'tabelaObras', clientes: 'tabelaClientes', servicos: 'tabelaServicos',
     admins: 'tabelaAdmins', responsaveis: 'tabelaResponsaveis', historico: 'tabelaHistorico'
   }[table];
   const state = ORDER_STATE[table];
@@ -1616,6 +1627,257 @@ async function salvarCliente() {
   } catch (e) {
     showToast(`Erro: ${e.message}`, 'error');
   }
+}
+
+
+// ══════════════════════════════════════════════════
+// SERVIÇOS  →  GET/POST/PUT/DELETE /servico
+// ══════════════════════════════════════════════════
+
+let cacheServicos = [];
+
+async function carregarServicos() {
+  try {
+    const res = await apiFetch('/servico');
+    cacheServicos = res.servicos || [];
+    _cacheReady.servicos = true;
+    renderTabelaServicos(cacheServicos);
+    atualizarStats();
+  } catch (e) {
+    document.getElementById('bodyServicos').innerHTML =
+      `<tr><td colspan="5" class="empty-row">Erro ao carregar serviços: ${e.message}</td></tr>`;
+    console.error('carregarServicos:', e);
+  }
+}
+
+function _fmtMoeda(v) {
+  return (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function renderTabelaServicos(servicos) {
+  const q = filtros.servicos;
+  const filtrado = q ? servicos.filter(s =>
+    `${s.idServico} ${s.nomeServico}`.toLowerCase().includes(q)
+  ) : servicos;
+
+  const ordenado   = ordenarLista(filtrado, 'servicos');
+  const total       = ordenado.length;
+  const totalPags   = Math.ceil(total / PER_PAGE) || 1;
+  if (PAG_STATE.servicos > totalPags) PAG_STATE.servicos = 1;
+  const inicio      = (PAG_STATE.servicos - 1) * PER_PAGE;
+  const pagina      = ordenado.slice(inicio, inicio + PER_PAGE);
+
+  const tbody = document.getElementById('bodyServicos');
+  if (!pagina.length) {
+    tbody.innerHTML = _emptyState(
+      'screwdriver-wrench',
+      total === 0 && q ? 'Nenhum resultado encontrado' : 'Nenhum serviço cadastrado',
+      total === 0 && q
+        ? `A busca por "${q}" não retornou resultados.`
+        : 'Comece cadastrando o primeiro serviço do catálogo.',
+      !q ? 'Novo Serviço' : '', 'abrirModalNovoServico()', 5
+    );
+  } else {
+    tbody.innerHTML = pagina.map(s => {
+      const nomeSafe    = _esc(s.nomeServico);
+      const qtdProdutos = (s.produtos || []).length;
+      return `
+        <tr onclick="abrirModalEditarServico(${s.idServico})">
+          <td><span class="cell-id">${s.idServico}</span></td>
+          <td><span class="cell-primary">${s.nomeServico}</span></td>
+          <td><span class="cell-secondary">${_fmtMoeda(s.precoServico)}</span></td>
+          <td><span class="cell-secondary">${qtdProdutos} produto${qtdProdutos !== 1 ? 's' : ''}</span></td>
+          <td>${_actionMenu([
+            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarServico(${s.idServico})` },
+            { divider: true },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarServico(${s.idServico},'${nomeSafe}')` },
+          ])}</td>
+        </tr>`;
+    }).join('');
+  }
+  renderPaginacao('paginacaoServicos', total, PAG_STATE.servicos, 'mudarPaginaServicos');
+  atualizarIndicadoresOrdenacao('servicos');
+}
+
+function mudarPaginaServicos(pg) { PAG_STATE.servicos = pg; renderTabelaServicos(cacheServicos); }
+
+function filtrarServicos(q) {
+  filtros.servicos   = q.toLowerCase();
+  PAG_STATE.servicos = 1;
+  renderTabelaServicos(cacheServicos);
+}
+
+// ── Produtos do Serviço (receita) ────────────────────────────────────────────
+
+function _linhaProdutoServico(idProduto, nomeProduto, quantidade) {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = _prodSearchHTML(
+    `<button class="btn-icon danger" onclick="removerProdutoServico(this)"><i class="fa-solid fa-minus"></i></button>`
+  );
+  const row = wrap.firstElementChild;
+  if (idProduto) {
+    const p = cacheProdutos.find(x => x.idProduto === idProduto);
+    row.querySelector('.prod-search').value = p ? `${p.idProduto} — ${p.nomeProduto}` : (nomeProduto || '');
+    row.querySelector('.prod-select').value = idProduto;
+    if (p) {
+      const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
+      const estoqueEl = row.querySelector('.prod-estoque-input');
+      estoqueEl.value = `${p.qtdProduto} em estoque`;
+      estoqueEl.style.color = cor;
+    }
+  }
+  row.querySelector('.prod-qtd-input').value = quantidade || '';
+  return row;
+}
+
+function adicionarProdutoServico(idProduto = null, nomeProduto = null, quantidade = null) {
+  document.getElementById('produtosServicoList').appendChild(
+    _linhaProdutoServico(idProduto, nomeProduto, quantidade)
+  );
+}
+
+function removerProdutoServico(btn) {
+  btn.closest('.produto-obra-row').remove();
+}
+
+function _coletarProdutosServico() {
+  const produtos = [];
+  document.querySelectorAll('#produtosServicoList .produto-obra-row').forEach(row => {
+    const pid = row.querySelector('.prod-select')?.value.trim();
+    const pqt = row.querySelector('.prod-qtd-input').value.trim();
+    if (pid && pqt) produtos.push({ idProduto: parseInt(pid), quantidade: parseInt(pqt) });
+  });
+  return produtos;
+}
+
+// ── Validação inline — Modal de Serviço ──────────────────────────────────────
+
+function _vServNome(show = true) {
+  const v = document.getElementById('servNome').value.trim();
+  let msg = '';
+  if (!v)                msg = 'O nome do serviço é obrigatório.';
+  else if (v.length < 3) msg = 'O nome deve ter pelo menos 3 caracteres.';
+  if (msg && show) _erroCampo('servNome', msg);
+  else if (!msg)   _limparErroCampo('servNome');
+  return !msg;
+}
+
+function _vServPreco(show = true) {
+  const v = document.getElementById('servPreco').value.trim();
+  let msg = '';
+  if (v === '')                          msg = 'O preço é obrigatório.';
+  else if (isNaN(Number(v)) || Number(v) <= 0) msg = 'O preço deve ser um número positivo.';
+  if (msg && show) _erroCampo('servPreco', msg);
+  else if (!msg)   _limparErroCampo('servPreco');
+  return !msg;
+}
+
+function _validarFormServico() {
+  return [_vServNome(), _vServPreco()].every(Boolean);
+}
+
+function _setupValidacaoServico() {
+  const bind = (id, fn) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur',  () => fn(true));
+    el.addEventListener('input', () => fn(false));
+  };
+  bind('servNome',  _vServNome);
+  bind('servPreco', _vServPreco);
+}
+
+function abrirModalNovoServico() {
+  document.getElementById('servIdEdicao').value = '';
+  document.getElementById('servNome').value     = '';
+  document.getElementById('servPreco').value    = '';
+  document.getElementById('produtosServicoList').innerHTML = '';
+  _limparErroCampo('servNome');
+  _limparErroCampo('servPreco');
+  _ocultarBanner('banner-modalServico');
+  document.getElementById('modalServicoTitle').innerHTML =
+    '<i class="fa-solid fa-screwdriver-wrench"></i> Novo Serviço';
+  abrirModal('modalServico');
+}
+
+function abrirModalEditarServico(idServico) {
+  const s = cacheServicos.find(x => x.idServico == idServico);
+  if (!s) { showToast('Serviço não encontrado.', 'error'); return; }
+  document.getElementById('servIdEdicao').value = s.idServico;
+  document.getElementById('servNome').value     = s.nomeServico;
+  document.getElementById('servPreco').value    = s.precoServico;
+  _limparErroCampo('servNome');
+  _limparErroCampo('servPreco');
+  _ocultarBanner('banner-modalServico');
+
+  const list = document.getElementById('produtosServicoList');
+  list.innerHTML = '';
+  (s.produtos || []).forEach(p =>
+    list.appendChild(_linhaProdutoServico(p.idProduto, p.nomeProduto, p.quantidade))
+  );
+
+  document.getElementById('modalServicoTitle').innerHTML =
+    '<i class="fa-solid fa-pen"></i> Editar Serviço';
+  abrirModal('modalServico');
+}
+
+async function salvarServico() {
+  _ocultarBanner('banner-modalServico');
+  if (!_validarFormServico()) {
+    _mostrarBanner('banner-modalServico');
+    _scrollPrimeiroErro('modalServico');
+    return;
+  }
+
+  const idEdicao = document.getElementById('servIdEdicao').value;
+  const nome     = document.getElementById('servNome').value.trim();
+  const preco    = parseFloat(document.getElementById('servPreco').value);
+  const produtos = _coletarProdutosServico();
+
+  const payload = { servico: { nomeServico: nome, precoServico: preco, produtos } };
+
+  try {
+    if (idEdicao) {
+      await apiFetch(`/servico/${idEdicao}`, 'PUT', payload);
+      showToast('Serviço atualizado!', 'success');
+    } else {
+      await apiFetch('/servico', 'POST', payload);
+      showToast(`Serviço "${nome}" cadastrado!`, 'success');
+    }
+    fecharModal('modalServico');
+    await carregarServicos();
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+function deletarServico(idServico, nome) {
+  document.getElementById('confirmarMsg').textContent =
+    `Tem certeza que deseja excluir o serviço "${nome}"?`;
+  document.getElementById('btnConfirmarExcluir').onclick = () =>
+    confirmarExcluirServico(idServico);
+  abrirModal('modalConfirmar');
+}
+
+async function confirmarExcluirServico(idServico) {
+  fecharModal('modalConfirmar');
+  try {
+    await apiFetch(`/servico/${idServico}`, 'DELETE');
+    showToast('Serviço excluído com sucesso.', 'success');
+    await carregarServicos();
+  } catch (e) {
+    showToast(`Erro ao excluir: ${e.message}`, 'error');
+  }
+}
+
+function exportarServicos() {
+  if (!cacheServicos.length) { showToast('Nenhum serviço para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Serviço', 'Preço', 'Qtd. Produtos'];
+  const linhas = cacheServicos.map(s => [
+    s.idServico, s.nomeServico, s.precoServico, (s.produtos || []).length,
+  ]);
+  _downloadXLSX(`servicos_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  showToast('Exportação concluída!', 'success');
 }
 
 
@@ -2179,6 +2441,7 @@ function atualizarStats() {
       _setStatEl('stat-cli-ativos', clientesComObra.size);
     }
   }
+  if (_cacheReady.servicos) _setStatEl('stat-serv-total', cacheServicos.length);
   if (_cacheReady.admins)       _setStatEl('stat-admin-total', cacheAdmins.length);
   if (_cacheReady.responsaveis) _setStatEl('stat-resp-total',  cacheResponsaveis.length);
 }
@@ -2197,7 +2460,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     document.getElementById(`page-${page}`).classList.add('active');
-    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
+    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', servicos: 'Serviços', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
   });
 });
@@ -2551,11 +2814,12 @@ function recarregarAba() {
     'stat-prod-total', 'stat-prod-ok', 'stat-prod-alert', 'stat-prod-zero',
     'stat-obra-total', 'stat-obra-ainiciar', 'stat-obra-andamento', 'stat-obra-pausada', 'stat-obra-concluida',
     'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
+    'stat-serv-total',
     'stat-admin-total', 'stat-resp-total',
     'stat-hist-total', 'stat-hist-produto', 'stat-hist-obra', 'stat-hist-cliente', 'stat-hist-admin', 'stat-hist-field',
-    'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyAdmins', 'bodyResponsaveis', 'bodyHistorico',
+    'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyServicos', 'bodyAdmins', 'bodyResponsaveis', 'bodyHistorico',
     'alertList', 'obrasStatusLegend',
-    'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes',
+    'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes', 'paginacaoServicos',
   ].forEach(id => {
     const el = document.getElementById(id);
     if (el) snap[id] = el.innerHTML;

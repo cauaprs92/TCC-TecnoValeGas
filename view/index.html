@@ -32,6 +32,9 @@
       <a href="#" class="nav-item" data-page="clientes">
         <i class="fa-solid fa-users"></i><span>Clientes</span>
       </a>
+      <a href="#" class="nav-item" data-page="servicos">
+        <i class="fa-solid fa-screwdriver-wrench"></i><span>Serviços</span>
+      </a>
       <a href="#" class="nav-item" data-page="admins">
         <i class="fa-solid fa-user-shield"></i><span>Administradores</span>
       </a>
@@ -432,6 +435,61 @@
             </tbody>
           </table>
           <div id="paginacaoClientes"></div>
+        </div>
+      </section>
+
+      <!-- ===== SERVIÇOS ===== -->
+      <section class="page" id="page-servicos">
+        <div class="page-header">
+          <div class="page-header-info">
+            <h1>Serviços</h1>
+            <span class="page-subtitle">Catálogo de serviços e valores</span>
+          </div>
+          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="page-stats" id="statsServicos">
+          <div class="stat-item">
+            <span class="stat-num" id="stat-serv-total">—</span>
+            <span class="stat-label">Total de Serviços</span>
+          </div>
+        </div>
+
+        <div class="toolbar-title">Filtros</div>
+        <div class="toolbar">
+          <div class="search-inline">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Buscar serviço por nome ou ID..." id="searchServico"
+              oninput="filtrarServicos(this.value)" />
+          </div>
+          <div class="toolbar-spacer"></div>
+          <button class="btn btn-secondary" onclick="exportarServicos()">
+            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
+          </button>
+          <button class="btn btn-primary" onclick="abrirModalNovoServico()">
+            <i class="fa-solid fa-plus"></i> Novo Serviço
+          </button>
+        </div>
+
+        <div class="card">
+          <table class="data-table" id="tabelaServicos">
+            <thead>
+              <tr>
+                <th class="col-id sortable" data-sort-key="id" onclick="ordenarTabela('servicos','id')">ID <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('servicos','nome')">Serviço <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="preco" onclick="ordenarTabela('servicos','preco')">Preço <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="produtos" onclick="ordenarTabela('servicos','produtos')">Produtos <span class="sort-arrow"></span></th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="bodyServicos">
+              <tr><td colspan="5" class="loading-cell">
+                <i class="fa-solid fa-spinner fa-spin"></i> Carregando serviços...
+              </td></tr>
+            </tbody>
+          </table>
+          <div id="paginacaoServicos"></div>
         </div>
       </section>
 
@@ -1089,6 +1147,47 @@
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="fecharModal('modalCliente')">Cancelar</button>
             <button class="btn btn-primary" onclick="salvarCliente()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: SERVIÇO ===== -->
+      <div class="modal-overlay hidden" id="modalServico">
+        <div class="modal modal-large">
+          <div class="modal-header">
+            <h2 id="modalServicoTitle"><i class="fa-solid fa-screwdriver-wrench"></i> Novo Serviço</h2>
+            <button class="modal-close" onclick="fecharModal('modalServico')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-error-banner hidden" id="banner-modalServico">
+              <i class="fa-solid fa-circle-exclamation"></i> Preencha todos os campos obrigatórios antes de salvar.
+            </div>
+            <input type="hidden" id="servIdEdicao" />
+
+            <div class="form-group">
+              <label>Nome do Serviço<span class="required">*</span></label>
+              <input type="text" id="servNome" placeholder="Ex: Instalação de Ramal Residencial" />
+              <span class="field-error" id="err-servNome"></span>
+            </div>
+
+            <div class="form-group">
+              <label>Preço (R$)<span class="required">*</span></label>
+              <input type="number" id="servPreco" placeholder="850.00" min="0.01" step="0.01" />
+              <span class="field-error" id="err-servPreco"></span>
+            </div>
+
+            <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos do Serviço</div>
+            <div id="produtosServicoList"></div>
+            <button class="btn btn-ghost" onclick="adicionarProdutoServico()">
+              <i class="fa-solid fa-plus"></i> Adicionar Produto
+            </button>
+
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalServico')">Cancelar</button>
+            <button class="btn btn-primary" onclick="salvarServico()">
               <i class="fa-solid fa-floppy-disk"></i> Salvar
             </button>
           </div>
