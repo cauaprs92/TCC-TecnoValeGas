@@ -1,16 +1,23 @@
 import subprocess
 import sys
-import mysql.connector
-from mysql.connector import errorcode
 
 # --------- Passo 1: Instalar bibliotecas ---------
 def install_packages():
-    packages = ["flask", "mysql-connector-python", "pyjwt", "flask-cors", "bcrypt"]
+    packages = [
+        "flask", "mysql-connector-python", "pyjwt", "flask-cors", "bcrypt",
+        "reportlab", "pypdf",
+    ]
     for pkg in packages:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
 
 # --------- Passo 2: Criar banco de dados a partir do arquivo SQL ---------
 def setup_database(host="127.0.0.1", user="root", password="", database="tcc", port=3306, sql_file="./docs/codigo.sql"):
+    # Importado aqui (não no topo do arquivo) porque essa biblioteca só existe
+    # depois que install_packages() rodar — numa máquina limpa, um import no
+    # topo do módulo quebraria com ModuleNotFoundError antes disso acontecer.
+    import mysql.connector
+    from mysql.connector import errorcode
+
     try:
         cnx = mysql.connector.connect(host=host, user=user, password=password, port=port)
         cursor = cnx.cursor()
