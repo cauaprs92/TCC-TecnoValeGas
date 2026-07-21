@@ -483,6 +483,10 @@ body {
 #obraProdutosVerList .prod-estoque-input { flex: 0 0 80px; }
 #obraProdutosVerList .btn-icon           { flex: 0 0 30px; width: 30px; height: 30px; font-size: .7rem; }
 
+.produto-obra-header { margin-bottom: 6px; }
+.produto-obra-header span { padding-left: 10px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; }
+.produto-obra-header .prod-estoque-input { flex: 0 0 80px; }
+
 .prod-search-wrap   { position: relative; flex: 1; min-width: 220px; }
 .prod-search        { width: 100%; }
 .prod-dropdown      { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--gray-200); border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 999; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
