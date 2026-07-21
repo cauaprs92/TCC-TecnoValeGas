@@ -621,7 +621,7 @@ function renderTabelaObras(obras) {
       'hard-hat',
       temFiltro ? 'Nenhuma obra encontrada' : 'Nenhuma obra cadastrada',
       temFiltro ? 'Tente ajustar os filtros de busca.' : 'Comece cadastrando a primeira obra.',
-      !temFiltro ? 'Nova Obra' : '', 'abrirModalNovaObra()', 6
+      !temFiltro ? 'Nova Obra' : '', 'abrirModalNovaObra()', 7
     );
   } else {
     tbody.innerHTML = pagina.map(o => {
@@ -630,6 +630,9 @@ function renderTabelaObras(obras) {
       const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '—');
       const descEsc = _esc(o.descObra);
       const tags = [o.tipoObra, o.respObra].filter(Boolean);
+      const valorHtml = (o.statusObra === 'Concluida' && o.valorObra != null)
+        ? `<span style="color:#2D8A4E;font-weight:700">${_fmtMoeda(o.valorObra)}</span>`
+        : `<span class="cell-secondary">—</span>`;
       return `
         <tr onclick="abrirModalEditarObra(${o.idObra})">
           <td><span class="cell-id">${o.idObra}</span></td>
@@ -647,6 +650,7 @@ function renderTabelaObras(obras) {
           </td>
           <td><span class="cell-secondary">${fmtData(o.dataInicio)}</span></td>
           <td>${badge}</td>
+          <td>${valorHtml}</td>
           <td>${_actionMenu([
             { icon:'fa-eye',   label:'Ver Produtos', onclick:`verProdutosObra(${o.idObra})` },
             { icon:'fa-pen',   label:'Editar',       onclick:`abrirModalEditarObra(${o.idObra})` },
@@ -982,6 +986,25 @@ function _resetAbasObra() {
   document.querySelectorAll('.obra-tab-content').forEach((div, i) => div.classList.toggle('active', i === 0));
 }
 
+// Alterna a caixa de valor entre "estimativa dinâmica" (obra em aberto) e
+// "valor definitivo" (obra Concluída, com destaque visual) — valorObra só é
+// gravado pelo backend quando o status vira "Concluida" (ver handoff).
+function _atualizarBoxValorObra(o) {
+  const box   = document.getElementById('obraValorTotalBox');
+  const label = document.getElementById('obraValorTotalLabel');
+  if (!box || !label) return;
+  const concluida = !!(o && o.statusObra === 'Concluida');
+  box.classList.toggle('valor-obra-final', concluida);
+  if (concluida) {
+    label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Valor Total da Obra (Concluída)';
+    const valEl = document.getElementById('obraValorTotalEstimado');
+    if (valEl) valEl.textContent = _fmtMoeda(o.valorObra);
+  } else {
+    label.innerHTML = '<i class="fa-solid fa-sack-dollar"></i> Valor Total Estimado da Obra';
+    _atualizarValorTotalObra();
+  }
+}
+
 function abrirModalNovaObra() {
   _limparCamposObra();
   const el = document.createElement('div');
@@ -994,7 +1017,7 @@ function abrirModalNovaObra() {
   document.getElementById('obraSecaoServicos').classList.remove('hidden');
   document.getElementById('obraSecaoServicosVer').classList.add('hidden');
   _obraServicosExistentes = [];
-  _atualizarValorTotalObra();
+  _atualizarBoxValorObra(null);
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-hard-hat"></i> Nova Obra';
   _resetAbasObra();
@@ -1062,7 +1085,7 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraSecaoServicosVer').classList.remove('hidden');
   document.getElementById('servicosObraEdList').innerHTML = '';
   _obraServicosExistentes = [];
-  _atualizarValorTotalObra();
+  _atualizarBoxValorObra(o);
 
   const servListEl = document.getElementById('obraServicosVerList');
   servListEl.innerHTML = '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>';
@@ -1079,7 +1102,9 @@ function abrirModalEditarObra(idObra) {
           <input type="text" class="prod-estoque-input" value="${_fmtMoeda(s.precoServico)}" readonly />
         </div>`).join('');
     }
-    _atualizarValorTotalObra();
+    // O valor definitivo (obra Concluída) já vem pronto em o.valorObra — só
+    // recalculamos a estimativa dinâmica quando a obra ainda está em aberto.
+    if (o.statusObra !== 'Concluida') _atualizarValorTotalObra();
   }).catch(() => {
     servListEl.innerHTML = '<div style="font-size:.84rem;color:#DC2626;padding:6px 0">Erro ao carregar serviços.</div>';
   });
@@ -1485,6 +1510,7 @@ function _getSortValue(item, table, key) {
       if (key === 'obra') return item.descObra || '';
       if (key === 'inicio') return item.dataInicio || '';
       if (key === 'status') return item.statusObra || '';
+      if (key === 'valor') return (item.statusObra === 'Concluida' && item.valorObra != null) ? Number(item.valorObra) : null;
       return '';
     case 'clientes':
       if (key === 'id') return item.idCliente;
@@ -2923,7 +2949,7 @@ function exportarProdutos() {
 
 function exportarObras() {
   if (!cacheObras.length) { showToast('Nenhuma obra para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Observações', 'Orientações'];
+  const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Valor da Obra', 'Observações', 'Orientações'];
   const fmtData    = d => { if (!d) return ''; const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`; };
   const linhas = cacheObras.map(o => {
     const cliente = cacheClientes.find(c => c.idCliente === o.codCliente);
@@ -2931,6 +2957,7 @@ function exportarObras() {
       o.idObra, o.descObra, o.respObra || '', o.codCliente,
       cliente ? cliente.nomeCliente : '',
       fmtData(o.dataInicio), fmtData(o.dataFim), o.statusObra,
+      (o.statusObra === 'Concluida' && o.valorObra != null) ? o.valorObra : '',
       o.obsObra || '', o.orientacaoObra || '',
     ];
   });
@@ -2978,7 +3005,7 @@ function recarregarAba() {
 
   const snap = {};
   [
-    'kpi-produtos', 'kpi-obras', 'kpi-clientes', 'kpi-alertas',
+    'kpi-produtos', 'kpi-obras', 'kpi-clientes', 'kpi-alertas', 'kpi-valor-faturado',
     'stat-prod-total', 'stat-prod-ok', 'stat-prod-alert', 'stat-prod-zero',
     'stat-obra-total', 'stat-obra-ainiciar', 'stat-obra-andamento', 'stat-obra-pausada', 'stat-obra-concluida',
     'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
@@ -3038,6 +3065,14 @@ function irParaObrasAtivas() {
   if (_cacheReady.obras) { filtrarStatusObra('Em andamento'); return; }
   const t = setInterval(() => {
     if (_cacheReady.obras) { clearInterval(t); filtrarStatusObra('Em andamento'); }
+  }, 80);
+}
+
+function irParaObrasConcluidas() {
+  navegarPara('obras');
+  if (_cacheReady.obras) { filtrarStatusObra('Concluida'); return; }
+  const t = setInterval(() => {
+    if (_cacheReady.obras) { clearInterval(t); filtrarStatusObra('Concluida'); }
   }, 80);
 }
 
