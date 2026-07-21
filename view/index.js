@@ -1061,24 +1061,7 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraSecaoProdutosVer').classList.remove('hidden');
   document.getElementById('produtosObraEdList').innerHTML = '';
 
-  const listEl = document.getElementById('obraProdutosVerList');
-  listEl.innerHTML = '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>';
-
-  apiFetch(`/obra/${o.idObra}/produtos`).then(res => {
-    const produtos = res.produtos || [];
-    if (!produtos.length) {
-      listEl.innerHTML = '<div style="font-size:.84rem;color:var(--gray-500);padding:6px 0">Nenhum produto vinculado.</div>';
-      return;
-    }
-    listEl.innerHTML = produtos.map(p => `
-      <div class="produto-obra-row" style="pointer-events:none">
-        <input type="number" class="prod-id-input" value="${p.idProduto}" readonly />
-        <input type="text" class="prod-nome-input" value="${p.nomeProduto}" readonly />
-        <input type="text" class="prod-estoque-input" value="Qtd: ${p.qtdProdutosObra}" readonly />
-      </div>`).join('');
-  }).catch(() => {
-    listEl.innerHTML = '<div style="font-size:.84rem;color:#DC2626;padding:6px 0">Erro ao carregar produtos.</div>';
-  });
+  _carregarProdutosVerObra(o.idObra);
 
   document.getElementById('obraSecaoServicos').classList.add('hidden');
   document.getElementById('obraSecaoServicosVer').classList.remove('hidden');
@@ -1113,6 +1096,35 @@ function abrirModalEditarObra(idObra) {
   _renderHistoricoObra(o.idObra);
   _resetAbasObra();
   abrirModal('modalObra');
+}
+
+function _carregarProdutosVerObra(idObra) {
+  const listEl = document.getElementById('obraProdutosVerList');
+  listEl.innerHTML = '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>';
+
+  apiFetch(`/obra/${idObra}/produtos`).then(res => {
+    const produtos = res.produtos || [];
+    if (!produtos.length) {
+      listEl.innerHTML = '<div style="font-size:.84rem;color:var(--gray-500);padding:6px 0">Nenhum produto vinculado.</div>';
+      return;
+    }
+    listEl.innerHTML = produtos.map(p => `
+      <div class="produto-obra-row">
+        <input type="number" class="prod-id-input" value="${p.idProduto}" readonly />
+        <input type="text" class="prod-nome-input" value="${p.nomeProduto}" readonly />
+        <input type="text" class="prod-estoque-input" value="Qtd: ${p.qtdProdutosObra}" readonly />
+        <button class="btn-icon edit" title="Editar quantidade"
+          onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}',${p.qtdProdutosObra})">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn-icon danger" title="Remover produto"
+          onclick="excluirProdutoObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}')">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>`).join('');
+  }).catch(() => {
+    listEl.innerHTML = '<div style="font-size:.84rem;color:#DC2626;padding:6px 0">Erro ao carregar produtos.</div>';
+  });
 }
 
 // Limpa todos os campos da seção Cliente e seus erros inline
@@ -3325,9 +3337,19 @@ async function confirmarEditarProdObra() {
     fecharModal('modalEditarProdObra');
     showToast('Quantidade atualizada!', 'success');
     await Promise.all([carregarObras(), carregarProdutos()]);
-    verProdutosObra(parseInt(idObra));
+    _atualizarListasProdutosObra(parseInt(idObra));
   } catch (e) {
     errQtd.textContent = e.message || 'Erro ao atualizar quantidade.';
+  }
+}
+
+function _atualizarListasProdutosObra(idObra) {
+  if (!document.getElementById('modalVerObra').classList.contains('hidden')) {
+    verProdutosObra(idObra);
+  }
+  if (!document.getElementById('modalObra').classList.contains('hidden') &&
+      !document.getElementById('obraSecaoProdutosVer').classList.contains('hidden')) {
+    _carregarProdutosVerObra(idObra);
   }
 }
 
@@ -3335,7 +3357,9 @@ async function confirmarEditarProdObra() {
 let _totalProdutosParaExcluir = 0;
 
 function excluirProdutoObra(idObra, idProduto, nomeProduto) {
-  _totalProdutosParaExcluir = document.querySelectorAll('#modalVerObraBody tbody tr').length;
+  const countModal    = document.querySelectorAll('#modalVerObraBody tbody tr').length;
+  const countEditList = document.querySelectorAll('#obraProdutosVerList .produto-obra-row').length;
+  _totalProdutosParaExcluir = Math.max(countModal, countEditList);
   document.getElementById('confirmarMsg').textContent =
     `Tem certeza que deseja remover "${nomeProduto}" desta obra?`;
   document.getElementById('btnConfirmarExcluir').onclick = () =>
@@ -3345,10 +3369,9 @@ function excluirProdutoObra(idObra, idProduto, nomeProduto) {
 
 async function confirmarExcluirProdObra(idObra, idProduto) {
   fecharModal('modalConfirmar');
-  _limparErroVerObra();
 
   if (_totalProdutosParaExcluir <= 1) {
-    mostrarErroVerObra('Não é possível remover o único produto da obra. A obra deve ter pelo menos um produto.');
+    showToast('Não é possível remover o único produto da obra. A obra deve ter pelo menos um produto.', 'error');
     return;
   }
 
@@ -3356,28 +3379,10 @@ async function confirmarExcluirProdObra(idObra, idProduto) {
     await apiFetch(`/obra/${idObra}/produto/${idProduto}`, 'DELETE');
     showToast('Produto removido da obra.', 'success');
     await Promise.all([carregarObras(), carregarProdutos()]);
-    verProdutosObra(idObra);
+    _atualizarListasProdutosObra(idObra);
   } catch (e) {
-    mostrarErroVerObra(e.message || 'Erro ao remover produto da obra.');
+    showToast(e.message || 'Erro ao remover produto da obra.', 'error');
   }
-}
-
-function mostrarErroVerObra(msg) {
-  const body = document.getElementById('modalVerObraBody');
-  let banner = document.getElementById('erroVerObra');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'erroVerObra';
-    banner.className = 'modal-error-banner';
-    body.prepend(banner);
-  }
-  banner.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> ${msg}`;
-  banner.style.display = 'flex';
-}
-
-function _limparErroVerObra() {
-  const banner = document.getElementById('erroVerObra');
-  if (banner) banner.style.display = 'none';
 }
 
 
