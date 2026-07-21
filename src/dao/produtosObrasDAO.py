@@ -425,3 +425,104 @@ class ProdutosObrasDAO:
             return []
         finally:
             Conexao.fechar_conexao(conexao, cursor)
+
+    def atualizar_servico_obra(self, id_obra: int, id_servico_atual: int, id_servico_novo: int) -> tuple:
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False, "Sem conexão com o banco."
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(
+                "SELECT 1 FROM obraServicos WHERE idObra = %s AND idServico = %s",
+                (id_obra, id_servico_atual)
+            )
+            if not cursor.fetchone():
+                return False, "Serviço não vinculado a esta obra."
+
+            if id_servico_atual == id_servico_novo:
+                return True, "Nenhuma alteração necessária."
+
+            # Restaura o estoque consumido pela receita do serviço atual
+            cursor.execute(
+                "SELECT idProduto, quantidade FROM servicoProdutos WHERE idServico = %s",
+                (id_servico_atual,)
+            )
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (qtd, id_produto)
+                )
+
+            # Dá baixa na receita do novo serviço
+            cursor.execute(
+                "SELECT idProduto, quantidade FROM servicoProdutos WHERE idServico = %s",
+                (id_servico_novo,)
+            )
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute("""
+                    UPDATE produtos
+                    SET qtdProduto = qtdProduto - %s
+                    WHERE idProduto = %s AND qtdProduto >= %s
+                """, (qtd, id_produto, qtd))
+
+                if cursor.rowcount == 0:
+                    cursor.execute("SELECT nomeProduto FROM produtos WHERE idProduto = %s", (id_produto,))
+                    row = cursor.fetchone()
+                    nome = row[0] if row else str(id_produto)
+                    raise Exception(f"Estoque insuficiente para '{nome}'.")
+
+            cursor.execute(
+                "UPDATE obraServicos SET idServico = %s WHERE idObra = %s AND idServico = %s",
+                (id_servico_novo, id_obra, id_servico_atual)
+            )
+            conexao.commit()
+            return True, "Serviço atualizado com sucesso!"
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao atualizar serviço da obra: {e}")
+            return False, str(e)
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
+    def remover_servico_obra(self, id_obra: int, id_servico: int) -> tuple:
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False, "Sem conexão com o banco."
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(
+                "SELECT 1 FROM obraServicos WHERE idObra = %s AND idServico = %s",
+                (id_obra, id_servico)
+            )
+            if not cursor.fetchone():
+                return False, "Serviço não vinculado a esta obra."
+
+            cursor.execute("SELECT COUNT(*) FROM obraServicos WHERE idObra = %s", (id_obra,))
+            total_servicos = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM produtosObras WHERE idObra = %s", (id_obra,))
+            total_produtos = cursor.fetchone()[0]
+            if total_servicos + total_produtos <= 1:
+                return False, "A obra precisa ter ao menos um produto ou serviço vinculado."
+
+            cursor.execute(
+                "SELECT idProduto, quantidade FROM servicoProdutos WHERE idServico = %s",
+                (id_servico,)
+            )
+            for id_produto, qtd in cursor.fetchall():
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
+                    (qtd, id_produto)
+                )
+
+            cursor.execute(
+                "DELETE FROM obraServicos WHERE idObra = %s AND idServico = %s",
+                (id_obra, id_servico)
+            )
+            conexao.commit()
+            return True, "Serviço removido da obra com sucesso!"
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao remover serviço da obra: {e}")
+            return False, str(e)
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)

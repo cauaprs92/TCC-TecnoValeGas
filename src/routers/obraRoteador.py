@@ -185,6 +185,32 @@ def remover_produto_obra(idObra: int, idProduto: int):
     return jsonify({"status": True, "msg": mensagem}), 200
 
 
+# ─── PATCH /obra/<idObra>/servico/<idServico> ────────────────────────────────
+@obra_bp.route("/<int:idObra>/servico/<int:idServico>", methods=["PATCH"])
+@jwt.validate_token
+@middleware.validate_id_param
+def atualizar_servico_obra(idObra: int, idServico: int):
+    body           = request.get_json() or {}
+    id_servico_novo = body.get("idServicoNovo")
+    if not id_servico_novo:
+        raise ErrorResponse(400, "Serviço inválido.", {"message": "Informe o novo serviço."})
+    sucesso, mensagem = controller.atualizar_servico_obra(idObra, idServico, int(id_servico_novo))
+    if not sucesso:
+        raise ErrorResponse(400, mensagem, {"message": mensagem})
+    return jsonify({"status": True, "msg": mensagem}), 200
+
+
+# ─── DELETE /obra/<idObra>/servico/<idServico> ───────────────────────────────
+@obra_bp.route("/<int:idObra>/servico/<int:idServico>", methods=["DELETE"])
+@jwt.validate_token
+@middleware.validate_id_param
+def remover_servico_obra(idObra: int, idServico: int):
+    sucesso, mensagem = controller.remover_servico_obra(idObra, idServico)
+    if not sucesso:
+        raise ErrorResponse(400, mensagem, {"message": mensagem})
+    return jsonify({"status": True, "msg": mensagem}), 200
+
+
 # ─── PATCH /obra/<idObra>/status ─────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>/status", methods=["PATCH"])
 @jwt.validate_token

@@ -1066,6 +1066,12 @@
             <!-- Serviços somente leitura + adição — visível apenas no modo edição -->
             <div id="obraSecaoServicosVer" class="hidden">
               <div class="form-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Serviços Vinculados</div>
+              <div class="produto-obra-row servico-obra-header">
+                <span class="prod-nome-input">Nome</span>
+                <span class="prod-estoque-input">Valor</span>
+                <span class="produto-obra-header-spacer"></span>
+                <span class="produto-obra-header-spacer"></span>
+              </div>
               <div id="obraServicosVerList"></div>
               <div class="form-section-title" style="margin-top:14px">
                 <i class="fa-solid fa-plus"></i> Adicionar Serviços
@@ -1396,6 +1402,42 @@
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="fecharModal('modalEditarProdObra')">Cancelar</button>
             <button class="btn btn-primary" onclick="confirmarEditarProdObra()">
+              <i class="fa-solid fa-floppy-disk"></i> Salvar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: EDITAR SERVIÇO DA OBRA (trocar) ===== -->
+      <div class="modal-overlay hidden" id="modalEditarServObra">
+        <div class="modal modal-small">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-pen"></i> Trocar Serviço</h2>
+            <button class="modal-close" onclick="fecharModal('modalEditarServObra')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="editServObraIdObra" />
+            <input type="hidden" id="editServObraIdServicoAtual" />
+            <p style="font-weight:600;margin-bottom:14px;color:var(--dark)">
+              Serviço atual: <span id="editServObraNomeAtual"></span>
+            </p>
+            <div class="form-group">
+              <label>Novo Serviço</label>
+              <div class="prod-search-wrap">
+                <input type="text" id="editServObraBusca" placeholder="Buscar serviço (nome ou ID)..."
+                  oninput="buscarServicoInputEdit(this)"
+                  onfocus="buscarServicoInputEdit(this)"
+                  onblur="setTimeout(()=>fecharDropdownServico(this),150)"
+                  autocomplete="off" />
+                <input type="hidden" id="editServObraIdServicoNovo" />
+                <div class="prod-dropdown hidden"></div>
+              </div>
+              <span class="field-error" id="err-editServObra"></span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalEditarServObra')">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarEditarServObra()">
               <i class="fa-solid fa-floppy-disk"></i> Salvar
             </button>
           </div>

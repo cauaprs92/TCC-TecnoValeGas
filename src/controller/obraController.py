@@ -206,3 +206,15 @@ class ObraController:
         if not self.dao.buscar_por_id(idObra):
             return False, "Obra não encontrada."
         return self.daoProdObras.remover_produto_obra(idObra, idProduto)
+
+    def atualizar_servico_obra(self, idObra: int, idServicoAtual: int, idServicoNovo: int) -> tuple:
+        if not self.dao.buscar_por_id(idObra):
+            return False, "Obra não encontrada."
+        if not self.daoServico.buscar_por_id(idServicoNovo):
+            return False, "Serviço não encontrado."
+        return self.daoProdObras.atualizar_servico_obra(idObra, idServicoAtual, idServicoNovo)
+
+    def remover_servico_obra(self, idObra: int, idServico: int) -> tuple:
+        if not self.dao.buscar_por_id(idObra):
+            return False, "Obra não encontrada."
+        return self.daoProdObras.remover_servico_obra(idObra, idServico)
