@@ -370,3 +370,58 @@ SELECT 7, idProduto, qtd FROM (
 
 -- Serviço 8 — Vistoria e Laudo Técnico (sem consumo de produtos — apenas mão de obra)
 -- Nenhum insert em servicoProdutos para este serviço.
+
+-- ── Serviços por Obra ─────────────────────────────────────────────────────────
+-- Vincula cada obra ao serviço do catálogo mais próximo do que foi descrito.
+-- Precisa rodar depois do catálogo de serviços acima (FK idServico → servicos).
+INSERT INTO obraServicos (idObra, idServico) VALUES
+(1,  1), -- Instalação de ramal residencial            → Instalação de Ramal Residencial
+(2,  3), -- Manutenção preventiva medidor industrial    → Manutenção Preventiva de Medidor
+(3,  6), -- Extensão de rede restaurante                → Extensão de Rede Comercial
+(4,  4), -- Correção de vazamento cozinha industrial    → Correção de Vazamento
+(5,  7), -- Medidor privativo prédio comercial          → Instalação de Medidor Privativo
+(6,  5), -- Troca de registro/conector logística        → Troca de Registro e Conector
+(7,  2), -- Ramal pizzaria                              → Instalação de Ramal Comercial
+(8,  8), -- Revisão geral rede fabril                   → Vistoria e Laudo Técnico
+(9,  2), -- Projeto ramal loja de estética              → Instalação de Ramal Comercial
+(10, 6), -- Instalação rede GLP cozinha industrial      → Extensão de Rede Comercial
+(11, 5), -- Substituição reguladores/mangueiras GLP     → Troca de Registro e Conector
+(12, 2), -- Projeto GLP industrial fase 1               → Instalação de Ramal Comercial
+(13, 8), -- Vistoria central GLP hospitalar             → Vistoria e Laudo Técnico
+(14, 6), -- Adequação rede GLP padaria                  → Extensão de Rede Comercial
+(15, 2), -- Instalação industrial GLP câmara fria       → Instalação de Ramal Comercial
+(16, 8), -- Revisão central GLP hotel                   → Vistoria e Laudo Técnico
+(17, 6), -- Rede GLP cantina escolar                    → Extensão de Rede Comercial
+(18, 6), -- Rede GLP churrasqueiras (Cancelada)         → Extensão de Rede Comercial
+(19, 2), -- Rede GLP solda a gás                        → Instalação de Ramal Comercial
+(20, 6), -- Fornos e fogões a GLP                       → Extensão de Rede Comercial
+(21, 2), -- Forno industrial a gás cerâmica             → Instalação de Ramal Comercial
+(22, 1), -- GLP cozinha escolar                         → Instalação de Ramal Residencial
+(23, 6), -- Ampliação central GLP depósito 2            → Extensão de Rede Comercial
+(24, 3), -- Manutenção corretiva pós-vistoria           → Manutenção Preventiva de Medidor
+(25, 8), -- Revisão semestral central GLP hospitalar    → Vistoria e Laudo Técnico
+(26, 2), -- Projeto GLP industrial fase 2               → Instalação de Ramal Comercial
+(27, 3), -- Manutenção preventiva anual frigorífico     → Manutenção Preventiva de Medidor
+(28, 6), -- Seção de frios supermercado                 → Extensão de Rede Comercial
+(29, 6), -- Ampliação rede GLP industrial novo setor    → Extensão de Rede Comercial
+(30, 1); -- Novo setor de churrasco expansão            → Instalação de Ramal Residencial
+
+-- Recalcula valorObra das obras concluídas com base nos serviços vinculados,
+-- replicando a regra de negócio real (ObraDAO.atualizar_status): soma do
+-- precoServico de todos os serviços ligados à obra via obraServicos.
+-- SQL_SAFE_UPDATES desligado temporariamente: o MySQL Workbench bloqueia
+-- UPDATE...JOIN por não reconhecer a condição do join como uma cláusula de
+-- chave simples, mesmo o WHERE final usando idObra (chave primária).
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE obras o
+JOIN (
+    SELECT os.idObra, SUM(s.precoServico) AS total
+    FROM obraServicos os
+    JOIN servicos s ON s.idServico = os.idServico
+    GROUP BY os.idObra
+) totais ON totais.idObra = o.idObra
+SET o.valorObra = totais.total
+WHERE o.statusObra = 'Concluida';
+
+SET SQL_SAFE_UPDATES = 1;
