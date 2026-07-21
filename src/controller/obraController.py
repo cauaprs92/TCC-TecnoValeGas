@@ -67,10 +67,12 @@ class ObraController:
                 if "ATENCAO" in mensagem or "AVISO" in mensagem:
                     avisos.append(mensagem)
 
-        sucesso = self.daoProdObras.cadastrar_obra_com_produtos(
+        idObraGerado = self.daoProdObras.cadastrar_obra_com_produtos(
             dadosObra, produtosUsados, servicosVinculados
         )
-        if sucesso:
+        if idObraGerado:
+            if dadosObra.get("statusObra") == "Concluida":
+                self.dao.recalcular_valor_concluida(idObraGerado)
             if avisos:
                 return True, "Obra cadastrada com sucesso!\n" + "\n".join(avisos)
             return True, "Obra cadastrada com sucesso!"
@@ -126,6 +128,9 @@ class ObraController:
             ok = self.daoProdObras.adicionar_servicos_obra(idObra, servicosNovos)
             if not ok:
                 return False, "Erro ao adicionar serviços à obra."
+
+        if dadosObra.get("statusObra") == "Concluida":
+            self.dao.recalcular_valor_concluida(idObra)
 
         if avisos:
             return True, "Obra atualizada!\n" + "\n".join(avisos)

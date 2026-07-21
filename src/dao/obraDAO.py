@@ -176,6 +176,42 @@ class ObraDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
+    def recalcular_valor_concluida(self, id_obra: int) -> bool:
+        """Recalcula valorObra (soma do precoServico dos serviços vinculados),
+        mas só grava se a obra estiver com statusObra = 'Concluida'. Usado por
+        cadastro/edição, que vinculam serviços fora do fluxo de atualizar_status."""
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False
+        cursor = conexao.cursor()
+        try:
+            cursor.execute("SELECT statusObra FROM obras WHERE idObra=%s", (id_obra,))
+            row = cursor.fetchone()
+            if not row or row[0] != "Concluida":
+                return True
+
+            cursor.execute("""
+                SELECT SUM(s.precoServico) AS total
+                FROM obraServicos os
+                JOIN servicos s ON os.idServico = s.idServico
+                WHERE os.idObra = %s
+            """, (id_obra,))
+            total = cursor.fetchone()[0]
+            valor_obra = float(total) if total is not None else 0.00
+
+            cursor.execute(
+                "UPDATE obras SET valorObra=%s WHERE idObra=%s",
+                (valor_obra, id_obra)
+            )
+            conexao.commit()
+            return True
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao recalcular valor da obra: {e}")
+            return False
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def deletar(self, id_obra: int) -> bool:
         sql = "DELETE FROM obras WHERE idObra=%s"
         conexao = Conexao.obter_conexao()

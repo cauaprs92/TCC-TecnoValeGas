@@ -3,7 +3,8 @@ from src.dao.conexao import Conexao
 class ProdutosObrasDAO:
 
     def cadastrar_obra_com_produtos(self, obra: dict, produtos_usados: list,
-                                    servicos_vinculados: list = None) -> bool:
+                                    servicos_vinculados: list = None):
+        """Retorna o idObra gerado em caso de sucesso, ou False em caso de erro."""
         conexao = Conexao.obter_conexao()
         if not conexao:
             return False
@@ -80,7 +81,7 @@ class ProdutosObrasDAO:
 
             conexao.commit()
             print("Obra cadastrada e estoque atualizado com sucesso!")
-            return True
+            return id_obra_gerado
 
         except Exception as e:
             conexao.rollback()
