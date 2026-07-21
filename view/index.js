@@ -145,6 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
       _obraSetError('obraTipo', 'Selecione o tipo de obra.');
     else _obraClearError('obraTipo');
   });
+  document.getElementById('obraClientePrimario').addEventListener('change', () => {
+    if (!document.getElementById('obraClientePrimario').value)
+      _obraSetError('obraClientePrimario', 'Selecione o cliente primário.');
+    else _obraClearError('obraClientePrimario');
+  });
   const _clienteBlurCfg = {
     obraClienteCNPJ:         'CNPJ / CPF é obrigatório.',
     obraClienteNome:         'Nome do cliente é obrigatório.',
@@ -867,7 +872,7 @@ function _obraClearError(fieldId) {
 
 function _obraLimparErros() {
   ['obraResp', 'obraCodCliente', 'obraDataInicio', 'obraDataFim',
-   'obraDesc', 'obraStatus', 'obraUnidade', 'obraTipo',
+   'obraDesc', 'obraStatus', 'obraUnidade', 'obraTipo', 'obraClientePrimario',
    'obraClienteCNPJ', 'obraClienteNome', 'obraClienteRua',
    'obraClienteNumero', 'obraClienteComplemento', 'obraClienteBairro',
    'produtosUsados'].forEach(_obraClearError);
@@ -895,9 +900,10 @@ function _limparCamposObra() {
   if (fpInicio) fpInicio.clear();
   if (fpFim)    { fpFim.clear(); fpFim.set('minDate', null); }
   _obraLimparErros();
-  document.getElementById('obraStatus').value   = 'Em andamento';
-  document.getElementById('obraResp').value     = '';
-  document.getElementById('obraUnidade').value  = '';
+  document.getElementById('obraStatus').value          = 'Em andamento';
+  document.getElementById('obraResp').value            = '';
+  document.getElementById('obraUnidade').value         = '';
+  document.getElementById('obraClientePrimario').value = '';
 }
 
 async function gerarRelatorioObra() {
@@ -1019,6 +1025,7 @@ function abrirModalEditarObra(idObra) {
   }
   document.getElementById('obraCodCliente').value        = o.codCliente || '';
   document.getElementById('obraTipo').value              = o.tipoObra || '';
+  document.getElementById('obraClientePrimario').value   = o.clientePrimario || '';
   document.getElementById('obraUnidade').value           = o.unidadeObra || '';
   document.getElementById('obraEmail').value             = o.emailContato || '';
   document.getElementById('obraCelular1').value          = o.celular1 || '';
@@ -1198,6 +1205,7 @@ async function salvarObra() {
   const obs        = document.getElementById('obraObs').value.trim() || null;
   const orientacao = document.getElementById('obraOrientacao').value.trim() || null;
   const tipoObra   = document.getElementById('obraTipo').value.trim() || null;
+  const clientePrimario = document.getElementById('obraClientePrimario').value || null;
   const unidade    = document.getElementById('obraUnidade').value || null;
   const email      = document.getElementById('obraEmail').value.trim() || null;
   const cel1       = document.getElementById('obraCelular1').value.trim() || null;
@@ -1216,6 +1224,7 @@ async function salvarObra() {
   let temErro = false;
   if (!unidade)    { _obraSetError('obraUnidade',    'Selecione a unidade.');               temErro = true; }
   if (!tipoObra)   { _obraSetError('obraTipo',       'Selecione o tipo de obra.');          temErro = true; }
+  if (!clientePrimario) { _obraSetError('obraClientePrimario', 'Selecione o cliente primário.'); temErro = true; }
   if (!resp)       { _obraSetError('obraResp',       'Selecione o field responsável.');     temErro = true; }
   if (!cod)        { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.');       temErro = true; }
   else if (!cacheClientes.find(x => x.idCliente === parseInt(cod)))
@@ -1240,7 +1249,7 @@ async function salvarObra() {
     descObra: desc, respObra: resp, codCliente: parseInt(cod),
     dataInicio, dataFim, statusObra: status,
     obsObra: obs, orientacaoObra: orientacao,
-    tipoObra, unidadeObra: unidade,
+    tipoObra, clientePrimario, unidadeObra: unidade,
     emailContato: email, celular1: cel1, celular2: cel2,
   };
 

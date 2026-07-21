@@ -3,7 +3,7 @@ from src.dao.conexao import Conexao
 _COLS_SELECT = """
     idObra, codCliente, descObra, dataInicio, dataFim,
     statusObra, respObra, obsObra, orientacaoObra,
-    tipoObra, fieldObra, unidadeObra, emailContato, celular1, celular2,
+    tipoObra, clientePrimario, fieldObra, unidadeObra, emailContato, celular1, celular2,
     valorObra
 """
 
@@ -13,9 +13,9 @@ class ObraDAO:
         sql = """
             INSERT INTO obras
               (codCliente, descObra, dataInicio, dataFim, statusObra, respObra,
-               obsObra, orientacaoObra, tipoObra, fieldObra, unidadeObra,
+               obsObra, orientacaoObra, tipoObra, clientePrimario, fieldObra, unidadeObra,
                emailContato, celular1, celular2)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -32,6 +32,7 @@ class ObraDAO:
                 obra.get("obsObra"),
                 obra.get("orientacaoObra"),
                 obra.get("tipoObra"),
+                obra.get("clientePrimario"),
                 obra.get("fieldObra"),
                 obra.get("unidadeObra"),
                 obra.get("emailContato"),
@@ -82,7 +83,7 @@ class ObraDAO:
             UPDATE obras SET
               codCliente=%s, descObra=%s, dataInicio=%s, dataFim=%s,
               statusObra=%s, respObra=%s, obsObra=%s, orientacaoObra=%s,
-              tipoObra=%s, fieldObra=%s, unidadeObra=%s,
+              tipoObra=%s, clientePrimario=%s, fieldObra=%s, unidadeObra=%s,
               emailContato=%s, celular1=%s, celular2=%s
             WHERE idObra=%s
         """
@@ -101,6 +102,7 @@ class ObraDAO:
                 obra.get("obsObra"),
                 obra.get("orientacaoObra"),
                 obra.get("tipoObra"),
+                obra.get("clientePrimario"),
                 obra.get("fieldObra"),
                 obra.get("unidadeObra"),
                 obra.get("emailContato"),

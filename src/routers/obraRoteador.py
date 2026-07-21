@@ -38,13 +38,14 @@ def _serializar(o):
         "respObra":       o[6],
         "obsObra":        o[7],
         "orientacaoObra": o[8],
-        "tipoObra":       o[9]  if len(o) > 9  else None,
-        "fieldObra":      o[10] if len(o) > 10 else None,
-        "unidadeObra":    o[11] if len(o) > 11 else None,
-        "emailContato":   o[12] if len(o) > 12 else None,
-        "celular1":       o[13] if len(o) > 13 else None,
-        "celular2":       o[14] if len(o) > 14 else None,
-        "valorObra":      float(o[15]) if len(o) > 15 and o[15] is not None else None,
+        "tipoObra":         o[9]  if len(o) > 9  else None,
+        "clientePrimario":  o[10] if len(o) > 10 else None,
+        "fieldObra":        o[11] if len(o) > 11 else None,
+        "unidadeObra":      o[12] if len(o) > 12 else None,
+        "emailContato":     o[13] if len(o) > 13 else None,
+        "celular1":         o[14] if len(o) > 14 else None,
+        "celular2":         o[15] if len(o) > 15 else None,
+        "valorObra":        float(o[16]) if len(o) > 16 and o[16] is not None else None,
     }
 
 

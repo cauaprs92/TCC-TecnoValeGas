@@ -13,9 +13,9 @@ class ProdutosObrasDAO:
             cursor.execute("""
                 INSERT INTO obras
                   (codCliente, descObra, dataInicio, dataFim, statusObra, respObra,
-                   obsObra, orientacaoObra, tipoObra, fieldObra, unidadeObra,
+                   obsObra, orientacaoObra, tipoObra, clientePrimario, fieldObra, unidadeObra,
                    emailContato, celular1, celular2)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 obra["codCliente"],
                 obra["descObra"],
@@ -26,6 +26,7 @@ class ProdutosObrasDAO:
                 obra.get("obsObra"),
                 obra.get("orientacaoObra"),
                 obra.get("tipoObra"),
+                obra.get("clientePrimario"),
                 obra.get("fieldObra"),
                 obra.get("unidadeObra"),
                 obra.get("emailContato"),

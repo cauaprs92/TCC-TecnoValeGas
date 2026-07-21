@@ -80,6 +80,7 @@ DROP SCHEMA IF EXISTS tcc;
     obsObra        VARCHAR(255),
     orientacaoObra VARCHAR(255),
     tipoObra       VARCHAR(100),
+    clientePrimario VARCHAR(100),
     fieldObra      VARCHAR(100),
     unidadeObra    VARCHAR(20),
     emailContato   VARCHAR(100),
@@ -149,6 +150,13 @@ DROP SCHEMA IF EXISTS tcc;
     --   ADD COLUMN emailContato VARCHAR(100),
     --   ADD COLUMN celular1     VARCHAR(20),
     --   ADD COLUMN celular2     VARCHAR(20);
+
+    -- ── MIGRAÇÃO obras — clientePrimario (rodar se a tabela já existir) ────────
+    -- Empresa "guarda-chuva" para quem a TecnoValeGas presta serviço nessa obra
+    -- (ex.: Supergásbras). Lista fechada por enquanto, editável no HTML do
+    -- <select id="obraClientePrimario"> conforme novos parceiros forem surgindo.
+    -- ALTER TABLE obras
+    --   ADD COLUMN clientePrimario VARCHAR(100) AFTER tipoObra;
 
     create table produto_fotos (
     idFoto       INT PRIMARY KEY AUTO_INCREMENT,
@@ -243,5 +251,6 @@ DROP SCHEMA IF EXISTS tcc;
     TRUNCATE TABLE obras;
     TRUNCATE TABLE produtos;
     TRUNCATE TABLE clientes;
+    TRUNCATE TABLE responsavel;
 
     SET FOREIGN_KEY_CHECKS = 1;
