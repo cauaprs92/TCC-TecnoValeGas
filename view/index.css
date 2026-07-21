@@ -272,8 +272,12 @@ body {
 .kpi-icon.dark   { background: var(--gray-700); color: #fff; }
 .kpi-icon.red    { background: #FEE2E2; color: #DC2626; }
 .kpi-icon.green  { background: #EAF7EE; color: #2D8A4E; }
-.kpi-info { display: flex; flex-direction: column; }
-.kpi-value { font-family: var(--font-cond); font-size: 1.8rem; font-weight: 800; color: var(--dark); line-height: 1; }
+.kpi-info { display: flex; flex-direction: column; min-width: 0; }
+.kpi-value {
+  font-family: var(--font-cond); font-size: 1.8rem; font-weight: 800; color: var(--dark); line-height: 1;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kpi-value.kpi-value-money { font-size: 1.3rem; }
 .kpi-label { font-size: .78rem; color: var(--gray-500); margin-top: 3px; }
 
 /* ── DASHBOARD GRID ── */

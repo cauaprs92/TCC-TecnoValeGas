@@ -2503,7 +2503,17 @@ function atualizarKPI() {
     document.getElementById('kpi-produtos').textContent = cacheProdutos.length;
     document.getElementById('kpi-alertas').textContent  = cacheProdutos.filter(_produtoEmAlerta).length;
   }
-  if (_cacheReady.obras)    document.getElementById('kpi-obras').textContent    = cacheObras.filter(o => o.statusObra === 'Em andamento').length;
+  if (_cacheReady.obras) {
+    document.getElementById('kpi-obras').textContent = cacheObras.filter(o => o.statusObra === 'Em andamento').length;
+    const valorFaturado = cacheObras
+      .filter(o => o.statusObra === 'Concluida' && o.valorObra != null)
+      .reduce((acc, o) => acc + Number(o.valorObra), 0);
+    const elFaturado = document.getElementById('kpi-valor-faturado');
+    if (elFaturado) {
+      elFaturado.textContent = _fmtMoeda(valorFaturado);
+      elFaturado.title = _fmtMoeda(valorFaturado);
+    }
+  }
   if (_cacheReady.clientes) document.getElementById('kpi-clientes').textContent = cacheClientes.length;
   atualizarStats();
 }
