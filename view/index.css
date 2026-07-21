@@ -485,7 +485,9 @@ body {
 
 .produto-obra-header { margin-bottom: 6px; }
 .produto-obra-header span { padding-left: 10px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; }
-.produto-obra-header .prod-estoque-input { flex: 0 0 80px; }
+.produto-obra-header .prod-nome-input    { padding-left: 120px; }
+.produto-obra-header .prod-estoque-input { flex: 0 0 80px; padding-right: 60px; }
+.produto-obra-header-spacer { flex: 0 0 30px; }
 
 .prod-search-wrap   { position: relative; flex: 1; min-width: 220px; }
 .prod-search        { width: 100%; }
