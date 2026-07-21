@@ -1075,7 +1075,6 @@ function abrirModalEditarObra(idObra) {
         <input type="number" class="prod-id-input" value="${p.idProduto}" readonly />
         <input type="text" class="prod-nome-input" value="${p.nomeProduto}" readonly />
         <input type="text" class="prod-estoque-input" value="Qtd: ${p.qtdProdutosObra}" readonly />
-        <input type="number" class="prod-qtd-input" value="${p.qtdProdutosObra}" readonly />
       </div>`).join('');
   }).catch(() => {
     listEl.innerHTML = '<div style="font-size:.84rem;color:#DC2626;padding:6px 0">Erro ao carregar produtos.</div>';
