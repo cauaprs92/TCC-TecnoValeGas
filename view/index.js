@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
     navegarPara(abaAtual);
   }
   document.documentElement.classList.remove('restoring-tab');
+  ajustarFonteKpiMoeda();
+  _observarKpiMoeda();
 
   carregarAdministrador();
   carregarTodos();
@@ -1948,6 +1950,34 @@ function _fmtMoeda(v) {
   return (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// Valores altos estouravam a largura do card e apareciam cortados ("R$ 15.360,...").
+// Reduz a fonte em passos até o texto caber por inteiro.
+const _KPI_MOEDA_MAX = 1.3;
+const _KPI_MOEDA_MIN = 0.8;
+let _kpiMoedaObserver = null;
+
+function ajustarFonteKpiMoeda() {
+  document.querySelectorAll('.kpi-value-money').forEach(el => {
+    let rem = _KPI_MOEDA_MAX;
+    el.style.fontSize = rem + 'rem';
+    if (!el.clientWidth) return;           // card oculto: nada a medir
+    while (el.scrollWidth > el.clientWidth && rem > _KPI_MOEDA_MIN) {
+      rem = Math.round((rem - 0.05) * 100) / 100;
+      el.style.fontSize = rem + 'rem';
+    }
+  });
+}
+
+// Reajusta quando o card muda de largura (resize, troca de aba, sidebar).
+function _observarKpiMoeda() {
+  if (_kpiMoedaObserver || typeof ResizeObserver === 'undefined') return;
+  _kpiMoedaObserver = new ResizeObserver(() => ajustarFonteKpiMoeda());
+  document.querySelectorAll('.kpi-value-money').forEach(el => {
+    const card = el.closest('.kpi-card');
+    if (card) _kpiMoedaObserver.observe(card);
+  });
+}
+
 function renderTabelaServicos(servicos) {
   const q = filtros.servicos;
   const filtrado = q ? servicos.filter(s =>
@@ -2657,6 +2687,7 @@ function atualizarKPI() {
     if (elFaturado) {
       elFaturado.textContent = _fmtMoeda(valorFaturado);
       elFaturado.title = _fmtMoeda(valorFaturado);
+      ajustarFonteKpiMoeda();
     }
   }
   if (_cacheReady.clientes) document.getElementById('kpi-clientes').textContent = cacheClientes.length;

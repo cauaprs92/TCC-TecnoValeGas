@@ -277,7 +277,8 @@ body {
   font-family: var(--font-cond); font-size: 1.8rem; font-weight: 800; color: var(--dark); line-height: 1;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.kpi-value.kpi-value-money { font-size: 1.3rem; }
+/* fonte final ajustada por ajustarFonteKpiMoeda() para o valor nunca ser cortado */
+.kpi-value.kpi-value-money { font-size: 1.3rem; letter-spacing: -.01em; }
 .kpi-label { font-size: .78rem; color: var(--gray-500); margin-top: 3px; }
 
 /* ── DASHBOARD GRID ── */
