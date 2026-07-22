@@ -3,12 +3,7 @@ import sys
 
 # --------- Passo 1: Instalar bibliotecas ---------
 def install_packages():
-    packages = [
-        "flask", "mysql-connector-python", "pyjwt", "flask-cors", "bcrypt",
-        "reportlab", "pypdf",
-    ]
-    for pkg in packages:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
 # --------- Passo 2: Criar banco de dados a partir do arquivo SQL ---------
 def setup_database(host="127.0.0.1", user="root", password="", database="tcc", port=3306, sql_file="./docs/codigo.sql"):
