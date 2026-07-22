@@ -179,6 +179,25 @@ DROP SCHEMA IF EXISTS tcc;
     --   FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
     -- );
 
+    create table obra_fotos (
+    idFoto       INT PRIMARY KEY AUTO_INCREMENT,
+    idObra       INT NOT NULL,
+    nomeArquivo  VARCHAR(255) NOT NULL,
+    nomeOriginal VARCHAR(255) NOT NULL,
+    dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (idObra) REFERENCES obras(idObra) ON DELETE CASCADE
+    );
+
+    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
+    -- CREATE TABLE IF NOT EXISTS obra_fotos (
+    --   idFoto       INT PRIMARY KEY AUTO_INCREMENT,
+    --   idObra       INT NOT NULL,
+    --   nomeArquivo  VARCHAR(255) NOT NULL,
+    --   nomeOriginal VARCHAR(255) NOT NULL,
+    --   dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    --   FOREIGN KEY (idObra) REFERENCES obras(idObra) ON DELETE CASCADE
+    -- );
+
     create table servicos(
         idServico    int          primary key NOT NULL AUTO_INCREMENT,
         nomeServico  VARCHAR(255) NOT NULL,

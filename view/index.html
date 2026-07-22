@@ -1266,6 +1266,35 @@
         </div>
       </div>
 
+      <!-- ===== MODAL: IMAGENS DA OBRA ===== -->
+      <div class="modal-overlay hidden" id="modalFotosObra">
+        <div class="modal">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-image"></i> Imagens da Obra</h2>
+            <button class="modal-close" onclick="fecharModal('modalFotosObra')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group foto-section">
+              <div class="foto-dropzone" id="fotoObraDropzone"
+                   onclick="document.getElementById('fotoObraInput').click()"
+                   ondragover="event.preventDefault();this.classList.add('drag-over')"
+                   ondragleave="this.classList.remove('drag-over')"
+                   ondrop="_onDropFotoObra(event)">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Clique ou arraste imagens aqui</span>
+                <span class="foto-hint">JPG, PNG, GIF, WebP — máx. 10 MB por arquivo</span>
+              </div>
+              <input type="file" id="fotoObraInput" multiple accept="image/*"
+                     style="display:none" onchange="_onSelecionarFotosObra(this.files)" />
+              <div class="foto-grid" id="fotoObraGrid"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalFotosObra')">Fechar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ===== MODAL: ADMINISTRADOR ===== -->
       <div class="modal-overlay hidden" id="modalAdmin">
         <div class="modal">

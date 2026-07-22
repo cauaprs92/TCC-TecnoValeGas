@@ -653,6 +653,7 @@ function renderTabelaObras(obras) {
           <td>${valorHtml}</td>
           <td>${_actionMenu([
             { icon:'fa-eye',   label:'Ver Produtos', onclick:`verProdutosObra(${o.idObra})` },
+            { icon:'fa-image', label:'Imagens',      onclick:`abrirModalFotosObra(${o.idObra})` },
             { icon:'fa-pen',   label:'Editar',       onclick:`abrirModalEditarObra(${o.idObra})` },
             { divider: true },
             { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('obra',${o.idObra},'${descEsc}')` },
@@ -1387,6 +1388,91 @@ async function verProdutosObra(idObra) {
   } catch (e) {
     body.innerHTML = `<div class="empty-row">Erro ao carregar produtos: ${e.message}</div>`;
   }
+}
+
+// ── Imagens da Obra ───────────────────────────────────────────────────────────
+
+let _obraIdFotoAtual = null;
+
+async function abrirModalFotosObra(idObra) {
+  _obraIdFotoAtual = idObra;
+  const inp = document.getElementById('fotoObraInput');
+  if (inp) inp.value = '';
+  document.getElementById('fotoObraGrid').innerHTML =
+    '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando...</div>';
+  abrirModal('modalFotosObra');
+  await _carregarFotosObra(idObra);
+}
+
+async function _carregarFotosObra(idObra) {
+  try {
+    const res = await apiFetch(`/obra/${idObra}/fotos`);
+    _renderFotoGridObra(res.fotos || []);
+  } catch (e) {
+    document.getElementById('fotoObraGrid').innerHTML =
+      `<div class="empty-row">Erro ao carregar imagens: ${e.message}</div>`;
+  }
+}
+
+function _renderFotoGridObra(fotos) {
+  const grid = document.getElementById('fotoObraGrid');
+  if (!fotos.length) {
+    grid.innerHTML = '<p class="foto-grid-empty">Nenhuma imagem enviada para esta obra</p>';
+    return;
+  }
+  grid.innerHTML = fotos.map(f =>
+    _thumbFotoHTML(f.url, f.nomeOriginal, 'obra', false, `_removerFotoObra(${f.idFoto})`)
+  ).join('');
+}
+
+function _onDropFotoObra(e) {
+  e.preventDefault();
+  document.getElementById('fotoObraDropzone').classList.remove('drag-over');
+  _uploadFotosObra(e.dataTransfer.files);
+}
+
+function _onSelecionarFotosObra(files) {
+  _uploadFotosObra(files);
+}
+
+async function _uploadFotosObra(files) {
+  if (!files || !files.length) return;
+  const idObra = _obraIdFotoAtual;
+  const MAX     = 10 * 1024 * 1024;
+  const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const token   = getToken();
+
+  for (const file of Array.from(files)) {
+    if (!ALLOWED.includes(file.type)) { showToast(`Tipo não permitido: ${file.name}`, 'warning'); continue; }
+    if (file.size > MAX)              { showToast(`${file.name} excede 10 MB.`, 'warning'); continue; }
+
+    const fd = new FormData();
+    fd.append('arquivo', file);
+    try {
+      const res = await fetch(`${API_BASE_URL}/obra/${idObra}/fotos`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.msg || `Erro HTTP ${res.status} ao enviar ${file.name}`);
+      }
+    } catch (e) {
+      showToast(`Erro ao enviar ${file.name}: ${e.message}`, 'error');
+    }
+  }
+
+  const inp = document.getElementById('fotoObraInput');
+  if (inp) inp.value = '';
+  await _carregarFotosObra(idObra);
+}
+
+function _removerFotoObra(idFoto) {
+  if (!_obraIdFotoAtual) return;
+  apiFetch(`/obra/${_obraIdFotoAtual}/fotos/${idFoto}`, 'DELETE')
+    .then(() => _carregarFotosObra(_obraIdFotoAtual))
+    .catch(e => showToast(`Erro ao remover imagem: ${e.message}`, 'error'));
 }
 
 function adicionarProdutoObra() {

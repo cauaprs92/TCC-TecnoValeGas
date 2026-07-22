@@ -1,4 +1,5 @@
 import os
+import uuid
 from io import BytesIO
 from flask import Blueprint, request, jsonify, g, send_file
 import pypdf
@@ -10,16 +11,24 @@ from src.middleware.obraMiddleware      import ObraMiddleware
 from src.middleware.jwtMiddleware       import JwtMiddleware
 from src.error_response                 import ErrorResponse
 from src.dao.conexao                    import Conexao
+from src.dao.fotoObraDAO                import FotoObraDAO
 
 _PDF_TEMPLATE = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "uploads", "FOLHA DE ROSTO 2.pdf")
 )
+
+UPLOADS_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads')
+_ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+
+def _extensao_permitida(filename: str) -> bool:
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in _ALLOWED_EXT
 
 obra_bp        = Blueprint("obra", __name__, url_prefix="/obra")
 controller     = ObraController()
 historico_ctrl = HistoricoController()
 middleware     = ObraMiddleware()
 jwt            = JwtMiddleware()
+foto_dao       = FotoObraDAO()
 
 
 @obra_bp.errorhandler(ErrorResponse)
@@ -131,6 +140,71 @@ def buscar_servicos_da_obra(idObra: int):
 
     servicos = controller.buscar_servicos_da_obra(idObra)
     return jsonify({"status": True, "servicos": servicos}), 200
+
+
+# ─── GET /obra/<idObra>/fotos ─────────────────────────────────────────────────
+@obra_bp.route("/<int:idObra>/fotos", methods=["GET"])
+@jwt.validate_token
+@middleware.validate_id_param
+def listar_fotos(idObra: int):
+    fotos = foto_dao.buscar_por_obra(idObra)
+    return jsonify({"status": True, "fotos": fotos}), 200
+
+
+# ─── POST /obra/<idObra>/fotos ────────────────────────────────────────────────
+@obra_bp.route("/<int:idObra>/fotos", methods=["POST"])
+@jwt.validate_token
+@middleware.validate_id_param
+def upload_foto(idObra: int):
+    obra = controller.buscar_por_id(idObra)
+    if not obra:
+        raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
+
+    if 'arquivo' not in request.files:
+        raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
+
+    arquivo = request.files['arquivo']
+    if not arquivo.filename:
+        raise ErrorResponse(400, "Arquivo inválido.", {"message": "Nome de arquivo vazio."})
+
+    if not _extensao_permitida(arquivo.filename):
+        raise ErrorResponse(400, "Tipo de arquivo não permitido.", {"message": "Permitidos: JPG, PNG, GIF, WebP."})
+
+    ext        = arquivo.filename.rsplit('.', 1)[1].lower()
+    nome_unico = f"{uuid.uuid4().hex}.{ext}"
+
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
+    arquivo.save(os.path.join(UPLOADS_DIR, nome_unico))
+
+    idFoto = foto_dao.inserir(idObra, nome_unico, arquivo.filename)
+    if not idFoto:
+        raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
+
+    return jsonify({
+        "status": True,
+        "foto": {
+            "idFoto":       idFoto,
+            "nomeArquivo":  nome_unico,
+            "nomeOriginal": arquivo.filename,
+            "url":          f"/uploads/{nome_unico}",
+        }
+    }), 201
+
+
+# ─── DELETE /obra/<idObra>/fotos/<idFoto> ─────────────────────────────────────
+@obra_bp.route("/<int:idObra>/fotos/<int:idFoto>", methods=["DELETE"])
+@jwt.validate_token
+@middleware.validate_id_param
+def deletar_foto(idObra: int, idFoto: int):
+    nome = foto_dao.deletar(idFoto)
+    if not nome:
+        raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
+
+    caminho = os.path.join(UPLOADS_DIR, nome)
+    if os.path.exists(caminho):
+        os.remove(caminho)
+
+    return jsonify({"status": True, "msg": "Foto removida."}), 200
 
 
 # ─── PUT /obra/<idObra> ───────────────────────────────────────────────────────
