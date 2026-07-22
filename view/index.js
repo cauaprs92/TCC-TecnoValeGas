@@ -8,7 +8,7 @@
 // CONFIGURAÇÃO DA API + TOKEN JWT
 // ══════════════════════════════════════════════════
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = '';
 
 // Escapa string para uso seguro em atributo onclick="func('...')"
 // Trata: & → &amp;  |  " → &quot;  |  ' → \'
