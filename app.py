@@ -61,6 +61,42 @@ def dashboard():
     return send_from_directory(STATIC_DIR, "index.html")
 
 
+# ─── ROTA TEMPORÁRIA DE DIAGNÓSTICO — REMOVER APÓS RESOLVER A CONEXÃO ────────
+@app.route("/debug-db")
+def debug_db():
+    from src.dao.conexao import Conexao
+    try:
+        conexao = Conexao.obter_conexao()
+        if conexao is not None:
+            conexao.close()
+            return jsonify({"conectado": True})
+
+        # obter_conexao() engoliu a exceção e retornou None; reconecta
+        # diretamente aqui só para capturar a mensagem de erro real.
+        import mysql.connector
+        try:
+            mysql.connector.connect(
+                host=Conexao._host, port=Conexao._porta,
+                user=Conexao._usuario, password=Conexao._senha,
+                database=Conexao._banco,
+                ssl_disabled=False,
+                connection_timeout=10
+            ).close()
+            return jsonify({"conectado": True})
+        except Exception as e:
+            return jsonify({
+                "conectado": False,
+                "erro": str(e),
+                "stack": traceback.format_exc(),
+            })
+    except Exception as e:
+        return jsonify({
+            "conectado": False,
+            "erro": str(e),
+            "stack": traceback.format_exc(),
+        })
+
+
 # ─── Tratamento global de ErrorResponse ──────────────────────────────────────
 @app.errorhandler(ErrorResponse)
 def handle_error_response(e: ErrorResponse):

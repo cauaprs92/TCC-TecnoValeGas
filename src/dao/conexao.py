@@ -1,25 +1,29 @@
+import os
+import sys
+import traceback
 import mysql.connector
-from mysql.connector import Error
 
 class Conexao:
-    _host     = "localhost"
-    _usuario  = "root"
-    _senha    = "Mateus2009#"  #nois nao tem    
-    _banco    = "tcc"
+    _host    = os.environ.get("DB_HOST")
+    _porta   = int(os.environ.get("DB_PORT", 3306))
+    _usuario = os.environ.get("DB_USER")
+    _senha   = os.environ.get("DB_PASSWORD")
+    _banco   = os.environ.get("DB_NAME")
 
     @staticmethod
     def obter_conexao():
         try:
-            conexao = mysql.connector.connect(
-                host     = Conexao._host,
-                user     = Conexao._usuario,
-                password = Conexao._senha,
-                database = Conexao._banco
+            return mysql.connector.connect(
+                host=Conexao._host, port=Conexao._porta,
+                user=Conexao._usuario, password=Conexao._senha,
+                database=Conexao._banco,
+                ssl_disabled=False,
+                connection_timeout=10
             )
-            if conexao.is_connected():
-                return conexao
-        except Error as e:
-            print(f"Erro ao conectar ao banco: {e}")
+        except Exception as e:
+            print(f"Erro ao conectar: {e}", flush=True)
+            traceback.print_exc()
+            sys.stdout.flush()
             return None
 
     @staticmethod
@@ -29,5 +33,5 @@ class Conexao:
                 cursor.close()
             if conexao and conexao.is_connected():
                 conexao.close()
-        except Error as e:
-            print(f"Erro ao fechar conexão: {e}")
+        except Exception as e:
+            print(f"Erro ao fechar conexão: {e}", flush=True)
