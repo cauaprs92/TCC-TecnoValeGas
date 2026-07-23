@@ -152,6 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
       _obraSetError('obraClientePrimario', 'Selecione o cliente primário.');
     else _obraClearError('obraClientePrimario');
   });
+  document.getElementById('obraSetor').addEventListener('change', () => {
+    if (!document.getElementById('obraSetor').value)
+      _obraSetError('obraSetor', 'Selecione o setor.');
+    else _obraClearError('obraSetor');
+  });
   const _clienteBlurCfg = {
     obraClienteCNPJ:         'CNPJ / CPF é obrigatório.',
     obraClienteNome:         'Nome do cliente é obrigatório.',
@@ -917,7 +922,7 @@ function _obraClearError(fieldId) {
 
 function _obraLimparErros() {
   ['obraResp', 'obraCodCliente', 'obraDataInicio', 'obraDataFim',
-   'obraDesc', 'obraStatus', 'obraUnidade', 'obraTipo', 'obraClientePrimario',
+   'obraDesc', 'obraStatus', 'obraUnidade', 'obraTipo', 'obraClientePrimario', 'obraSetor',
    'obraClienteCNPJ', 'obraClienteNome', 'obraClienteRua',
    'obraClienteNumero', 'obraClienteComplemento', 'obraClienteBairro',
    'produtosUsados'].forEach(_obraClearError);
@@ -934,7 +939,7 @@ function _obraExibirErroApi(e) {
 
 function _limparCamposObra() {
   const ids = [
-    'obraIdEdicao','obraIdDisplay','obraCodCliente','obraTipo',
+    'obraIdEdicao','obraIdDisplay','obraCodCliente','obraTipo','obraSetor',
     'obraClienteCNPJ','obraClienteNome','obraClienteRua','obraClienteNumero',
     'obraClienteComplemento','obraClienteBairro','obraClienteCEP',
     'obraClienteCidade','obraClienteEstado',
@@ -1089,6 +1094,7 @@ function abrirModalEditarObra(idObra) {
   }
   document.getElementById('obraCodCliente').value        = o.codCliente || '';
   document.getElementById('obraTipo').value              = o.tipoObra || '';
+  document.getElementById('obraSetor').value             = o.setorObra || '';
   document.getElementById('obraClientePrimario').value   = o.clientePrimario || '';
   document.getElementById('obraUnidade').value           = o.unidadeObra || '';
   document.getElementById('obraEmail').value             = o.emailContato || '';
@@ -1296,6 +1302,7 @@ async function salvarObra() {
   const obs        = document.getElementById('obraObs').value.trim() || null;
   const orientacao = document.getElementById('obraOrientacao').value.trim() || null;
   const tipoObra   = document.getElementById('obraTipo').value.trim() || null;
+  const setorObra  = document.getElementById('obraSetor').value || null;
   const clientePrimario = document.getElementById('obraClientePrimario').value || null;
   const unidade    = document.getElementById('obraUnidade').value || null;
   const email      = document.getElementById('obraEmail').value.trim() || null;
@@ -1315,6 +1322,7 @@ async function salvarObra() {
   let temErro = false;
   if (!unidade)    { _obraSetError('obraUnidade',    'Selecione a unidade.');               temErro = true; }
   if (!tipoObra)   { _obraSetError('obraTipo',       'Selecione o tipo de obra.');          temErro = true; }
+  if (!setorObra)  { _obraSetError('obraSetor',      'Selecione o setor.');                 temErro = true; }
   if (!clientePrimario) { _obraSetError('obraClientePrimario', 'Selecione o cliente primário.'); temErro = true; }
   if (!resp)       { _obraSetError('obraResp',       'Selecione o field responsável.');     temErro = true; }
   if (!cod)        { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.');       temErro = true; }
@@ -1340,7 +1348,7 @@ async function salvarObra() {
     descObra: desc, respObra: resp, codCliente: parseInt(cod),
     dataInicio, dataFim, statusObra: status,
     obsObra: obs, orientacaoObra: orientacao,
-    tipoObra, clientePrimario, unidadeObra: unidade,
+    tipoObra, setorObra, clientePrimario, unidadeObra: unidade,
     emailContato: email, celular1: cel1, celular2: cel2,
   };
 
@@ -3133,13 +3141,13 @@ function exportarProdutos() {
 
 function exportarObras() {
   if (!cacheObras.length) { showToast('Nenhuma obra para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Data Início', 'Data Fim', 'Status', 'Valor da Obra', 'Observações', 'Orientações'];
+  const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Setor', 'Data Início', 'Data Fim', 'Status', 'Valor da Obra', 'Observações', 'Orientações'];
   const fmtData    = d => { if (!d) return ''; const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`; };
   const linhas = cacheObras.map(o => {
     const cliente = cacheClientes.find(c => c.idCliente === o.codCliente);
     return [
       o.idObra, o.descObra, o.respObra || '', o.codCliente,
-      cliente ? cliente.nomeCliente : '',
+      cliente ? cliente.nomeCliente : '', o.setorObra || '',
       fmtData(o.dataInicio), fmtData(o.dataFim), o.statusObra,
       (o.statusObra === 'Concluida' && o.valorObra != null) ? o.valorObra : '',
       o.obsObra || '', o.orientacaoObra || '',

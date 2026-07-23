@@ -4,7 +4,7 @@ _COLS_SELECT = """
     idObra, codCliente, descObra, dataInicio, dataFim,
     statusObra, respObra, obsObra, orientacaoObra,
     tipoObra, clientePrimario, fieldObra, unidadeObra, emailContato, celular1, celular2,
-    valorObra
+    valorObra, setorObra
 """
 
 class ObraDAO:
@@ -14,8 +14,8 @@ class ObraDAO:
             INSERT INTO obras
               (codCliente, descObra, dataInicio, dataFim, statusObra, respObra,
                obsObra, orientacaoObra, tipoObra, clientePrimario, fieldObra, unidadeObra,
-               emailContato, celular1, celular2)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               emailContato, celular1, celular2, setorObra)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -38,6 +38,7 @@ class ObraDAO:
                 obra.get("emailContato"),
                 obra.get("celular1"),
                 obra.get("celular2"),
+                obra.get("setorObra"),
             ))
             conexao.commit()
             return True
@@ -84,7 +85,7 @@ class ObraDAO:
               codCliente=%s, descObra=%s, dataInicio=%s, dataFim=%s,
               statusObra=%s, respObra=%s, obsObra=%s, orientacaoObra=%s,
               tipoObra=%s, clientePrimario=%s, fieldObra=%s, unidadeObra=%s,
-              emailContato=%s, celular1=%s, celular2=%s
+              emailContato=%s, celular1=%s, celular2=%s, setorObra=%s
             WHERE idObra=%s
         """
         conexao = Conexao.obter_conexao()
@@ -108,6 +109,7 @@ class ObraDAO:
                 obra.get("emailContato"),
                 obra.get("celular1"),
                 obra.get("celular2"),
+                obra.get("setorObra"),
                 id_obra,
             ))
             conexao.commit()

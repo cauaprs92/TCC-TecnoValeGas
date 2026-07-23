@@ -1037,6 +1037,20 @@
                 placeholder="Ex: Acesso somente pela entrada lateral..."></textarea>
             </div>
 
+            <div class="form-group">
+              <label>Setor <span class="campo-obrigatorio">*</span></label>
+              <select id="obraSetor">
+                <option value="">- Selecione -</option>
+                <option value="Ambiental">Ambiental</option>
+                <option value="ART">ART</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Industrial">Industrial</option>
+                <option value="Judicial">Judicial</option>
+                <option value="Residencial">Residencial</option>
+              </select>
+              <span class="field-error" id="err-obraSetor"></span>
+            </div>
+
             <!-- Produtos — visível apenas no modo criação -->
             <div id="obraSecaoProdutos">
               <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>

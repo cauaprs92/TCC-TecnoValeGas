@@ -103,6 +103,7 @@ DROP SCHEMA IF EXISTS tcc;
     celular1       VARCHAR(20),
     celular2       VARCHAR(20),
     valorObra      DECIMAL(10,2) DEFAULT NULL,
+    setorObra      VARCHAR(20),
     FOREIGN KEY (codCliente) REFERENCES clientes(idCliente)
     );
 
@@ -173,6 +174,13 @@ DROP SCHEMA IF EXISTS tcc;
     -- <select id="obraClientePrimario"> conforme novos parceiros forem surgindo.
     -- ALTER TABLE obras
     --   ADD COLUMN clientePrimario VARCHAR(100) AFTER tipoObra;
+
+    -- ── MIGRAÇÃO obras — setorObra (rodar se a tabela já existir) ──────────────
+    -- Lista fechada por enquanto (Ambiental, ART, Comercial, Industrial, Judicial,
+    -- Residencial), editável no HTML do <select id="obraSetor"> conforme surgirem
+    -- novos setores.
+    -- ALTER TABLE obras
+    --   ADD COLUMN setorObra VARCHAR(20);
 
     create table produto_fotos (
     idFoto       INT PRIMARY KEY AUTO_INCREMENT,
