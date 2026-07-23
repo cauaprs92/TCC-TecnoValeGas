@@ -215,9 +215,10 @@ DROP SCHEMA IF EXISTS tcc;
     -- );
 
     create table servicos(
-        idServico    int          primary key NOT NULL AUTO_INCREMENT,
-        nomeServico  VARCHAR(255) NOT NULL,
-        precoServico DECIMAL(10,2) NOT NULL
+        idServico         int          primary key NOT NULL AUTO_INCREMENT,
+        nomeServico       VARCHAR(255) NOT NULL,
+        precoServico      DECIMAL(10,2) NOT NULL,
+        fornecedorServico VARCHAR(150) NOT NULL DEFAULT 'Tecnovale Gás'
     );
 
     -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
@@ -226,6 +227,12 @@ DROP SCHEMA IF EXISTS tcc;
     --   nomeServico  VARCHAR(255)  NOT NULL,
     --   precoServico DECIMAL(10,2) NOT NULL
     -- );
+
+    -- ── MIGRAÇÃO — fornecedorServico (rodar se a tabela já existir) ────────────
+    -- Lista fechada por enquanto (apenas "Tecnovale Gás"), editável no HTML do
+    -- <select id="servFornecedor"> conforme novos fornecedores de serviço surgirem.
+    -- ALTER TABLE servicos
+    --   ADD COLUMN fornecedorServico VARCHAR(150) NOT NULL DEFAULT 'Tecnovale Gás';
 
     create table servicoProdutos(
         idServicoProduto int primary key NOT NULL AUTO_INCREMENT,

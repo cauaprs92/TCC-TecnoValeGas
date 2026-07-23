@@ -2154,6 +2154,7 @@ function abrirModalNovoServico() {
   document.getElementById('servIdEdicao').value = '';
   document.getElementById('servNome').value     = '';
   document.getElementById('servPreco').value    = '';
+  document.getElementById('servFornecedor').value = 'Tecnovale Gás';
   document.getElementById('produtosServicoList').innerHTML = '';
   _limparErroCampo('servNome');
   _limparErroCampo('servPreco');
@@ -2169,6 +2170,7 @@ function abrirModalEditarServico(idServico) {
   document.getElementById('servIdEdicao').value = s.idServico;
   document.getElementById('servNome').value     = s.nomeServico;
   document.getElementById('servPreco').value    = s.precoServico;
+  document.getElementById('servFornecedor').value = s.fornecedorServico || 'Tecnovale Gás';
   _limparErroCampo('servNome');
   _limparErroCampo('servPreco');
   _ocultarBanner('banner-modalServico');
@@ -2196,8 +2198,9 @@ async function salvarServico() {
   const nome     = document.getElementById('servNome').value.trim();
   const preco    = parseFloat(document.getElementById('servPreco').value);
   const produtos = _coletarProdutosServico();
+  const fornecedorServico = document.getElementById('servFornecedor').value;
 
-  const payload = { servico: { nomeServico: nome, precoServico: preco, produtos } };
+  const payload = { servico: { nomeServico: nome, precoServico: preco, produtos, fornecedorServico } };
 
   try {
     if (idEdicao) {
@@ -2235,9 +2238,9 @@ async function confirmarExcluirServico(idServico) {
 
 function exportarServicos() {
   if (!cacheServicos.length) { showToast('Nenhum serviço para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Serviço', 'Preço', 'Qtd. Produtos'];
+  const cabecalhos = ['ID', 'Serviço', 'Preço', 'Fornecedor', 'Qtd. Produtos'];
   const linhas = cacheServicos.map(s => [
-    s.idServico, s.nomeServico, s.precoServico, (s.produtos || []).length,
+    s.idServico, s.nomeServico, s.precoServico, s.fornecedorServico || '', (s.produtos || []).length,
   ]);
   _downloadXLSX(`servicos_${_dataHoje()}.xlsx`, cabecalhos, linhas);
   showToast('Exportação concluída!', 'success');

@@ -40,7 +40,7 @@ class ServicoController:
                 return False, "quantidade deve ser um inteiro maior que zero."
         return True, ""
 
-    def cadastrar(self, nomeServico, precoServico, produtos: list = None) -> tuple:
+    def cadastrar(self, nomeServico, precoServico, produtos: list = None, fornecedorServico: str = None) -> tuple:
         valido, msg = self._validar_campos(nomeServico, precoServico)
         if not valido:
             return False, msg, None
@@ -51,12 +51,13 @@ class ServicoController:
             return False, msg, None
 
         servico = Servico()
-        servico._nomeServico  = str(nomeServico).strip()
-        servico._precoServico = float(precoServico)
-        servico._produtos     = [
+        servico._nomeServico       = str(nomeServico).strip()
+        servico._precoServico      = float(precoServico)
+        servico._produtos          = [
             {"idProduto": int(p["idProduto"]), "quantidade": int(p["quantidade"])}
             for p in produtos
         ]
+        servico._fornecedorServico = (fornecedorServico or '').strip() or 'Tecnovale Gás'
 
         sucesso = self.dao.inserir(servico)
         if sucesso:
@@ -69,7 +70,7 @@ class ServicoController:
     def buscar_por_id(self, idServico: int):
         return self.dao.buscar_por_id(idServico)
 
-    def editar(self, idServico, nomeServico, precoServico, produtos: list = None) -> tuple:
+    def editar(self, idServico, nomeServico, precoServico, produtos: list = None, fornecedorServico: str = None) -> tuple:
         valido, msg = self._validar_campos(nomeServico, precoServico)
         if not valido:
             return False, msg
@@ -80,13 +81,14 @@ class ServicoController:
             return False, msg
 
         servico = Servico()
-        servico._idServico    = int(idServico)
-        servico._nomeServico  = str(nomeServico).strip()
-        servico._precoServico = float(precoServico)
-        servico._produtos     = [
+        servico._idServico         = int(idServico)
+        servico._nomeServico       = str(nomeServico).strip()
+        servico._precoServico      = float(precoServico)
+        servico._produtos          = [
             {"idProduto": int(p["idProduto"]), "quantidade": int(p["quantidade"])}
             for p in produtos
         ]
+        servico._fornecedorServico = (fornecedorServico or '').strip() or 'Tecnovale Gás'
 
         sucesso = self.dao.atualizar(servico)
         if sucesso:

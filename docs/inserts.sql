@@ -360,6 +360,8 @@ INSERT INTO historico (idAdmin, nomeAdmin, acao, entidade, descricao, dataHora) 
 -- assim que recebido da TecnoVale Gás.
 -- ══════════════════════════════════════════════════════════════════════════════
 
+-- fornecedorServico: por enquanto só existe "Tecnovale Gás" (prestador único),
+-- por isso não é listado por linha — a coluna já assume o DEFAULT da tabela.
 INSERT INTO servicos (idServico, nomeServico, precoServico) VALUES
 (1, 'Instalação de Ramal Residencial',  850.00),
 (2, 'Instalação de Ramal Comercial',   1450.00),

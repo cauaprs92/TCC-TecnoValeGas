@@ -19,10 +19,11 @@ def handle_error(e: ErrorResponse):
 
 def _serializar(s) -> dict:
     return {
-        "idServico":    s._idServico,
-        "nomeServico":  s._nomeServico,
-        "precoServico": float(s._precoServico) if s._precoServico is not None else None,
-        "produtos":     s._produtos,
+        "idServico":         s._idServico,
+        "nomeServico":       s._nomeServico,
+        "precoServico":      float(s._precoServico) if s._precoServico is not None else None,
+        "produtos":          s._produtos,
+        "fornecedorServico": s._fornecedorServico,
     }
 
 
@@ -38,6 +39,7 @@ def cadastrar():
         nome,
         servico.get("precoServico"),
         servico.get("produtos", []),
+        servico.get("fornecedorServico"),
     )
 
     if not sucesso:
@@ -87,6 +89,7 @@ def editar(idServico: int):
         nome,
         servico.get("precoServico"),
         servico.get("produtos", []),
+        servico.get("fornecedorServico"),
     )
 
     if not sucesso:

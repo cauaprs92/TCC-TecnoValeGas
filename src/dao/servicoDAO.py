@@ -6,8 +6,8 @@ class ServicoDAO:
 
     def inserir(self, servico: Servico) -> bool:
         sql_servico = """
-            INSERT INTO servicos (nomeServico, precoServico)
-            VALUES (%s, %s)
+            INSERT INTO servicos (nomeServico, precoServico, fornecedorServico)
+            VALUES (%s, %s, %s)
         """
         sql_item = """
             INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
@@ -18,7 +18,7 @@ class ServicoDAO:
             return False
         cursor = conexao.cursor()
         try:
-            cursor.execute(sql_servico, (servico._nomeServico, servico._precoServico))
+            cursor.execute(sql_servico, (servico._nomeServico, servico._precoServico, servico._fornecedorServico))
             servico._idServico = cursor.lastrowid
             for item in servico._produtos:
                 cursor.execute(sql_item, (servico._idServico, item["idProduto"], item["quantidade"]))
@@ -32,7 +32,7 @@ class ServicoDAO:
             Conexao.fechar_conexao(conexao, cursor)
 
     def buscar_todos(self) -> list:
-        sql = "SELECT idServico, nomeServico, precoServico FROM servicos"
+        sql = "SELECT idServico, nomeServico, precoServico, fornecedorServico FROM servicos"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return []
@@ -52,7 +52,7 @@ class ServicoDAO:
 
     def buscar_por_id(self, idServico: int):
         sql = """
-            SELECT idServico, nomeServico, precoServico
+            SELECT idServico, nomeServico, precoServico, fornecedorServico
             FROM servicos WHERE idServico = %s
         """
         conexao = Conexao.obter_conexao()
@@ -77,7 +77,7 @@ class ServicoDAO:
     def atualizar(self, servico: Servico) -> bool:
         sql_update = """
             UPDATE servicos
-            SET nomeServico=%s, precoServico=%s
+            SET nomeServico=%s, precoServico=%s, fornecedorServico=%s
             WHERE idServico=%s
         """
         sql_delete = "DELETE FROM servicoProdutos WHERE idServico = %s"
@@ -90,7 +90,7 @@ class ServicoDAO:
             return False
         cursor = conexao.cursor()
         try:
-            cursor.execute(sql_update, (servico._nomeServico, servico._precoServico, servico._idServico))
+            cursor.execute(sql_update, (servico._nomeServico, servico._precoServico, servico._fornecedorServico, servico._idServico))
             cursor.execute(sql_delete, (servico._idServico,))
             for item in servico._produtos:
                 cursor.execute(sql_item, (servico._idServico, item["idProduto"], item["quantidade"]))
@@ -143,8 +143,9 @@ class ServicoDAO:
 
     def _linha_para_servico(self, linha) -> Servico:
         s = Servico()
-        s._idServico    = linha[0]
-        s._nomeServico  = linha[1]
-        s._precoServico = float(linha[2]) if linha[2] is not None else 0.0
-        s._produtos     = []
+        s._idServico         = linha[0]
+        s._nomeServico       = linha[1]
+        s._precoServico      = float(linha[2]) if linha[2] is not None else 0.0
+        s._produtos          = []
+        s._fornecedorServico = linha[3] or 'Tecnovale Gás'
         return s
