@@ -16,6 +16,14 @@ INSERT INTO responsavel (nomeResponsavel) VALUES
 ('Renato Pereira'),
 ('Ana Carolina');
 
+-- ── Fornecedores ──────────────────────────────────────────────────────────────
+INSERT INTO fornecedores (nomeFornecedor) VALUES
+('Metalúrgica Vale do Aço'),
+('Fersol Equipamentos de Gás'),
+('Conexão Flex Indústria e Comércio'),
+('SafeWork Proteção Industrial'),
+('QuimGás Insumos Técnicos');
+
 -- ── Clientes ──────────────────────────────────────────────────────────────────
 INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailCliente, telefone2, cep, rua, numero, complemento, bairro, cidade, estado) VALUES
 (1,  'Caua Silva',                  '123.456.789-00',     'Caua',          'caua.silva@sjcgas.com.br',            '(12) 98811-2233', '12245-000', 'Rua São Sebastião',           '112',  'Apto 101', 'Jardim Aquarius',       'São José dos Campos', 'SP'),
@@ -87,6 +95,62 @@ INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima
 (43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro',  50, 800),
 (44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro',        40, 600),
 (45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 8, 100);
+
+-- ── Fornecedor de cada produto ────────────────────────────────────────────────
+-- Vincula por nomeProduto/nomeFornecedor para não depender da ordem/IDs de quem
+-- rodar este script (mesmo padrão usado na receita de servicoProdutos abaixo).
+-- SQL_SAFE_UPDATES desligado pelo mesmo motivo do UPDATE de valorObra no fim
+-- deste arquivo: o WHERE usa nomeProduto, não a chave primária.
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE produtos p
+JOIN fornecedores f ON f.nomeFornecedor = 'Metalúrgica Vale do Aço'
+SET p.idFornecedor = f.idFornecedor
+WHERE p.nomeProduto IN (
+  'Tubo Aço Galvanizado 1"', 'Cinta de Fixação Metálica', 'Tubo PPR 32mm',
+  'Conector Curvo 90° 1/2"', 'Adaptador Rosca 1/2" x 3/4"', 'Abraçadeira Metálica 3/4"',
+  'Luva de Redução 3/4" x 1/2"', 'Niple Duplo 1/2"', 'Tê 1/2" Galvanizado',
+  'Joelho 90° 1/2" Galvanizado', 'Joelho 90° 3/4" Galvanizado', 'Tampão Macho 1/2"',
+  'Tubo de Cobre 1/2" (metro)', 'Cano de Aço Preto 1/2" (metro)'
+);
+
+UPDATE produtos p
+JOIN fornecedores f ON f.nomeFornecedor = 'Fersol Equipamentos de Gás'
+SET p.idFornecedor = f.idFornecedor
+WHERE p.nomeProduto IN (
+  'Registro de Esfera 3/4"', 'Medidor de Gás Industrial G16', 'Válvula Redutora de Pressão',
+  'Filtro de Linha para Gás', 'Detector de Vazão Portátil', 'Regulador de Pressão 1ª Família',
+  'Regulador de Pressão 2ª Família', 'Válvula de Alívio 1/2" 1,5 kgf', 'Detector de Gás Natural/GLP',
+  'Manômetro 0-4 kgf/cm² 1/4"', 'Manifold GLP 4 Saídas', 'Válvula Solenóide GLP 1/2" 220V',
+  'Filtro de GLP Inline 3/4"', 'Queimador Industrial 50.000 BTU', 'Queimador Industrial 100.000 BTU',
+  'Medidor de Gás Residencial G4'
+);
+
+UPDATE produtos p
+JOIN fornecedores f ON f.nomeFornecedor = 'Conexão Flex Indústria e Comércio'
+SET p.idFornecedor = f.idFornecedor
+WHERE p.nomeProduto IN (
+  'Mangueira Flexível 3/4"', 'Mangueira GLP 1,20m Certificada', 'Tubo Flexível Metálico 1m',
+  'Tubo Flexível Metálico 2m', 'Conector Rápido GLP 1/2"'
+);
+
+UPDATE produtos p
+JOIN fornecedores f ON f.nomeFornecedor = 'SafeWork Proteção Industrial'
+SET p.idFornecedor = f.idFornecedor
+WHERE p.nomeProduto IN (
+  'Lanterna de Inspeção Antichama', 'Extintor CO2 6kg', 'Extintor Pó Químico Seco 4kg',
+  'Capacete de Segurança CA', 'Óculos de Segurança Incolor', 'Luva de Couro Cano Longo',
+  'Bota de Segurança Bico de Aço'
+);
+
+UPDATE produtos p
+JOIN fornecedores f ON f.nomeFornecedor = 'QuimGás Insumos Técnicos'
+SET p.idFornecedor = f.idFornecedor
+WHERE p.nomeProduto IN (
+  'Fita Veda Rosca 18mm x 50m', 'Selante para GLP 250ml', 'Kit Reparo de Regulador GLP'
+);
+
+SET SQL_SAFE_UPDATES = 1;
 
 -- ── Obras ─────────────────────────────────────────────────────────────────────
 -- Status: Concluida(14) | Em andamento(8) | Pausada(5) | À iniciar(2) | Cancelada(1)
