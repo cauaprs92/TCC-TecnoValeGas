@@ -182,6 +182,7 @@ async function carregarTodos() {
     carregarAdmins(),
     carregarResponsaveis(),
     carregarHistorico(),
+    carregarFornecedores(),
   ]);
   renderGraficoProdutos();
 }
@@ -199,7 +200,18 @@ function carregarAdministrador() {
 // ══════════════════════════════════════════════════
 
 let cacheProdutos = [];
-const _cacheReady = { produtos: false, obras: false, clientes: false, servicos: false, admins: false, responsaveis: false, historico: false };
+let cacheFornecedores = [];
+const _cacheReady = { produtos: false, obras: false, clientes: false, servicos: false, admins: false, responsaveis: false, historico: false, fornecedores: false };
+
+async function carregarFornecedores() {
+  try {
+    const res = await apiFetch('/fornecedor');
+    cacheFornecedores = res.fornecedores || [];
+    _cacheReady.fornecedores = true;
+  } catch (e) {
+    console.error('carregarFornecedores:', e);
+  }
+}
 
 async function carregarProdutos() {
   try {
@@ -264,6 +276,7 @@ function renderTabelaProdutos(produtos) {
           <td>
             <div class="cell-stack">
               <span class="cell-primary">${p.nomeProduto}</span>
+              ${p.nomeFornecedor ? `<span class="cell-secondary"><i class="fa-solid fa-truck-field" style="opacity:.6"></i> ${_esc(p.nomeFornecedor)}</span>` : ''}
               ${p.descProduto ? `<span class="cell-secondary">${p.descProduto}</span>` : ''}
             </div>
           </td>
@@ -504,7 +517,7 @@ async function _uploadFotosPendentes(idProduto) {
 // ── Modal abrir / fechar ───────────────────────────────────────────────────────
 
 function abrirModalNovoProduto() {
-  ['prodIdEdicao','prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc']
+  ['prodIdEdicao','prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc','prodFornecedor']
     .forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-boxes-stacked"></i> Novo Produto';
@@ -523,6 +536,7 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('prodQtdMin').value   = p.qtdMinima ?? '';
   document.getElementById('prodQtdMax').value   = p.qtdMaxima ?? '';
   document.getElementById('prodDesc').value     = p.descProduto || '';
+  document.getElementById('prodFornecedor').value = p.nomeFornecedor || '';
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Produto';
   _resetErrosProduto();
@@ -547,9 +561,10 @@ async function salvarProduto() {
   const qtdMin = parseInt(document.getElementById('prodQtdMin').value);
   const qtdMax = parseInt(document.getElementById('prodQtdMax').value);
   const desc   = document.getElementById('prodDesc').value.trim();
+  const fornecedor = document.getElementById('prodFornecedor').value.trim() || null;
 
   const payload = {
-    produto: { nomeProduto: nome, qtdProduto: qtd, qtdMinima: qtdMin, qtdMaxima: qtdMax, descProduto: desc }
+    produto: { nomeProduto: nome, qtdProduto: qtd, qtdMinima: qtdMin, qtdMaxima: qtdMax, descProduto: desc, fornecedor }
   };
 
   try {
@@ -562,7 +577,7 @@ async function salvarProduto() {
       if (res?.idProduto) await _uploadFotosPendentes(res.idProduto);
     }
     fecharModal('modalProduto');
-    await carregarProdutos();
+    await Promise.all([carregarProdutos(), carregarFornecedores()]);
     if (res?.aviso) showToast(res.aviso, 'warning');
     else showToast(idEdicao ? 'Produto atualizado!' : `Produto "${nome}" cadastrado!`, 'success');
   } catch (e) {
@@ -733,6 +748,29 @@ function selecionarProdutoDropdown(item, idProduto) {
 function fecharDropdownProduto(input) {
   const drop = input.closest('.prod-search-wrap').querySelector('.prod-dropdown');
   drop.classList.add('hidden');
+}
+
+function buscarFornecedorInput(input) {
+  const q    = input.value.toLowerCase().trim();
+  const drop = input.closest('.prod-search-wrap').querySelector('.prod-dropdown');
+
+  const matches = q
+    ? cacheFornecedores.filter(f => f.nomeFornecedor.toLowerCase().includes(q))
+    : cacheFornecedores;
+
+  if (!matches.length) { drop.classList.add('hidden'); return; }
+
+  drop.innerHTML = matches.map(f => `
+    <div class="prod-dropdown-item" onmousedown="selecionarFornecedorDropdown(this,'${_esc(f.nomeFornecedor)}')">
+      <span class="prod-name">${_esc(f.nomeFornecedor)}</span>
+    </div>`).join('');
+  drop.classList.remove('hidden');
+}
+
+function selecionarFornecedorDropdown(item, nomeFornecedor) {
+  const wrap = item.closest('.prod-search-wrap');
+  wrap.querySelector('.prod-search').value = nomeFornecedor;
+  wrap.querySelector('.prod-dropdown').classList.add('hidden');
 }
 
 // ── Serviços vinculados à Obra ────────────────────────────────────────────────
@@ -3079,12 +3117,12 @@ function _downloadXLSX(nomeArquivo, cabecalhos, linhas) {
 
 function exportarProdutos() {
   if (!cacheProdutos.length) { showToast('Nenhum produto para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Nome', 'Descrição', 'Qtd. Atual', 'Qtd. Mínima', 'Qtd. Máxima', 'Status'];
+  const cabecalhos = ['ID', 'Nome', 'Fornecedor', 'Descrição', 'Qtd. Atual', 'Qtd. Mínima', 'Qtd. Máxima', 'Status'];
   const linhas = cacheProdutos.map(p => {
     const statusTxt = p.qtdProduto <= 0 ? 'Sem estoque'
                     : (p.qtdMinima > 0 && p.qtdProduto < p.qtdMinima) ? 'Atenção'
                     : 'Normal';
-    return [p.idProduto, p.nomeProduto, p.descProduto || '', p.qtdProduto, p.qtdMinima, p.qtdMaxima, statusTxt];
+    return [p.idProduto, p.nomeProduto, p.nomeFornecedor || '', p.descProduto || '', p.qtdProduto, p.qtdMinima, p.qtdMaxima, statusTxt];
   });
   _downloadXLSX(`produtos_${_dataHoje()}.xlsx`, cabecalhos, linhas);
   showToast('Exportação concluída!', 'success');

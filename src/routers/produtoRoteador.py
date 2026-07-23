@@ -29,12 +29,14 @@ def handle_error(e: ErrorResponse):
 
 def _serializar(p) -> dict:
     return {
-        "idProduto":   p._idProduto,
-        "nomeProduto": p._nomeProduto,
-        "qtdProduto":  p._qtdProduto,
-        "descProduto": p._descProduto,
-        "qtdMinima":   p._qtdMinima,
-        "qtdMaxima":   p._qtdMaxima,
+        "idProduto":      p._idProduto,
+        "nomeProduto":    p._nomeProduto,
+        "qtdProduto":     p._qtdProduto,
+        "descProduto":    p._descProduto,
+        "qtdMinima":      p._qtdMinima,
+        "qtdMaxima":      p._qtdMaxima,
+        "idFornecedor":   p._idFornecedor,
+        "nomeFornecedor": p._nomeFornecedor,
     }
 
 
@@ -52,6 +54,7 @@ def cadastrar():
         produto.get("descProduto", ""),
         int(produto.get("qtdMinima") or 0),
         int(produto.get("qtdMaxima") or 9999),
+        produto.get("fornecedor"),
     )
 
     if not sucesso:
@@ -106,6 +109,7 @@ def editar(idProduto: int):
         produto.get("descProduto", ""),
         int(produto.get("qtdMinima") or 0),
         int(produto.get("qtdMaxima") or 9999),
+        produto.get("fornecedor"),
     )
 
     if not sucesso:

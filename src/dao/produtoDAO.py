@@ -21,8 +21,8 @@ class ProdutoDAO:
 
     def inserir(self, produto: Produto) -> bool:
         sql = """
-            INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -36,6 +36,7 @@ class ProdutoDAO:
                 produto._descProduto,
                 produto._qtdMinima,
                 produto._qtdMaxima,
+                produto._idFornecedor,
             ))
             conexao.commit()
             return True
@@ -47,7 +48,12 @@ class ProdutoDAO:
             Conexao.fechar_conexao(conexao, cursor)
 
     def buscar_todos(self) -> list:
-        sql = "SELECT idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima FROM produtos"
+        sql = """
+            SELECT p.idProduto, p.nomeProduto, p.qtdProduto, p.descProduto, p.qtdMinima, p.qtdMaxima,
+                   p.idFornecedor, f.nomeFornecedor
+            FROM produtos p
+            LEFT JOIN fornecedores f ON f.idFornecedor = p.idFornecedor
+        """
         conexao = Conexao.obter_conexao()
         if not conexao:
             return []
@@ -63,8 +69,11 @@ class ProdutoDAO:
 
     def buscar_por_id(self, id_produto: int):
         sql = """
-            SELECT idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima
-            FROM produtos WHERE idProduto = %s
+            SELECT p.idProduto, p.nomeProduto, p.qtdProduto, p.descProduto, p.qtdMinima, p.qtdMaxima,
+                   p.idFornecedor, f.nomeFornecedor
+            FROM produtos p
+            LEFT JOIN fornecedores f ON f.idFornecedor = p.idFornecedor
+            WHERE p.idProduto = %s
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -83,7 +92,7 @@ class ProdutoDAO:
     def atualizar(self, produto: Produto) -> bool:
         sql = """
             UPDATE produtos
-            SET nomeProduto=%s, qtdProduto=%s, descProduto=%s, qtdMinima=%s, qtdMaxima=%s
+            SET nomeProduto=%s, qtdProduto=%s, descProduto=%s, qtdMinima=%s, qtdMaxima=%s, idFornecedor=%s
             WHERE idProduto=%s
         """
         conexao = Conexao.obter_conexao()
@@ -97,6 +106,7 @@ class ProdutoDAO:
                 produto._descProduto,
                 produto._qtdMinima,
                 produto._qtdMaxima,
+                produto._idFornecedor,
                 produto._idProduto,
             ))
             conexao.commit()
@@ -168,10 +178,12 @@ class ProdutoDAO:
 
     def _linha_para_produto(self, linha) -> Produto:
         p = Produto()
-        p._idProduto   = linha[0]
-        p._nomeProduto = linha[1]
-        p._qtdProduto  = linha[2]
-        p._descProduto = linha[3]
-        p._qtdMinima   = linha[4] if linha[4] is not None else 0
-        p._qtdMaxima   = linha[5] if linha[5] is not None else 9999
+        p._idProduto     = linha[0]
+        p._nomeProduto   = linha[1]
+        p._qtdProduto    = linha[2]
+        p._descProduto   = linha[3]
+        p._qtdMinima     = linha[4] if linha[4] is not None else 0
+        p._qtdMaxima     = linha[5] if linha[5] is not None else 9999
+        p._idFornecedor  = linha[6]
+        p._nomeFornecedor = linha[7]
         return p

@@ -778,6 +778,19 @@
               <span class="field-error" id="err-prodDesc"></span>
             </div>
 
+            <div class="form-group">
+              <label>Fornecedor <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+              <div class="prod-search-wrap">
+                <input type="text" id="prodFornecedor" class="prod-search"
+                  placeholder="Buscar ou digitar um novo fornecedor..."
+                  oninput="buscarFornecedorInput(this)"
+                  onfocus="buscarFornecedorInput(this)"
+                  onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
+                  autocomplete="off" />
+                <div class="prod-dropdown hidden"></div>
+              </div>
+            </div>
+
             <!-- ── Fotos e Documentos ── -->
             <div class="form-group foto-section">
               <label>Fotos e Documentos</label>

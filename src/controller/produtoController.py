@@ -1,4 +1,5 @@
 from src.dao.produtoDAO import ProdutoDAO
+from src.controller.fornecedorController import FornecedorController
 from src.modelo.produto import Produto
 
 
@@ -6,6 +7,7 @@ class ProdutoController:
 
     def __init__(self):
         self.dao = ProdutoDAO()
+        self.fornecedor_ctrl = FornecedorController()
 
     def _validar_quantidade(self, qtdProduto, qtd_maxima: int = 9999) -> tuple:
         try:
@@ -29,7 +31,7 @@ class ProdutoController:
         return ""
 
     def cadastrar(self, nomeProduto, qtdProduto, descProduto,
-                  qtdMinima: int = 0, qtdMaxima: int = 9999) -> tuple:
+                  qtdMinima: int = 0, qtdMaxima: int = 9999, nomeFornecedor: str = None) -> tuple:
         if not nomeProduto or not nomeProduto.strip():
             return False, "Nome do produto não pode ser vazio.", None
 
@@ -48,12 +50,13 @@ class ProdutoController:
         idProduto = self.dao.proximo_id()
 
         dadoProduto = Produto()
-        dadoProduto._idProduto   = idProduto
-        dadoProduto._nomeProduto = nomeProduto.strip()
-        dadoProduto._qtdProduto  = qtd
-        dadoProduto._descProduto = descProduto.strip() if descProduto else ""
-        dadoProduto._qtdMinima   = qtdMinima
-        dadoProduto._qtdMaxima   = qtdMaxima
+        dadoProduto._idProduto    = idProduto
+        dadoProduto._nomeProduto  = nomeProduto.strip()
+        dadoProduto._qtdProduto   = qtd
+        dadoProduto._descProduto  = descProduto.strip() if descProduto else ""
+        dadoProduto._qtdMinima    = qtdMinima
+        dadoProduto._qtdMaxima    = qtdMaxima
+        dadoProduto._idFornecedor = self.fornecedor_ctrl.obter_ou_criar_id(nomeFornecedor)
 
         sucesso = self.dao.inserir(dadoProduto)
         if sucesso:
@@ -68,7 +71,7 @@ class ProdutoController:
         return self.dao.buscar_por_id(idProduto)
 
     def editar(self, idProduto, nomeProduto, qtdProduto, descProduto,
-               qtdMinima: int = 0, qtdMaxima: int = 9999) -> tuple:
+               qtdMinima: int = 0, qtdMaxima: int = 9999, nomeFornecedor: str = None) -> tuple:
         if not nomeProduto or not nomeProduto.strip():
             return False, "Nome do produto não pode ser vazio.", None
 
@@ -85,12 +88,13 @@ class ProdutoController:
             return False, "Quantidade mínima não pode ser maior que a máxima.", None
 
         dadoProduto = Produto()
-        dadoProduto._idProduto   = int(idProduto)
-        dadoProduto._nomeProduto = nomeProduto.strip()
-        dadoProduto._qtdProduto  = qtd
-        dadoProduto._descProduto = descProduto.strip() if descProduto else ""
-        dadoProduto._qtdMinima   = qtdMinima
-        dadoProduto._qtdMaxima   = qtdMaxima
+        dadoProduto._idProduto    = int(idProduto)
+        dadoProduto._nomeProduto  = nomeProduto.strip()
+        dadoProduto._qtdProduto   = qtd
+        dadoProduto._descProduto  = descProduto.strip() if descProduto else ""
+        dadoProduto._qtdMinima    = qtdMinima
+        dadoProduto._qtdMaxima    = qtdMaxima
+        dadoProduto._idFornecedor = self.fornecedor_ctrl.obter_ou_criar_id(nomeFornecedor)
 
         sucesso = self.dao.atualizar(dadoProduto)
         if sucesso:

@@ -21,13 +21,20 @@ DROP SCHEMA IF EXISTS tcc;
     --   MODIFY COLUMN senha VARCHAR(60) NOT NULL,
     --   ADD UNIQUE (email);
 
+    create table fornecedores (
+    idFornecedor   int primary key NOT NULL AUTO_INCREMENT,
+    nomeFornecedor VARCHAR(150) NOT NULL UNIQUE
+    );
+
     create table produtos(
-    idProduto   int primary key NOT NULL,
-    nomeProduto VARCHAR(255),
-    qtdProduto  int          DEFAULT 0,
-    descProduto TEXT,
-    qtdMinima   int          DEFAULT 0,
-    qtdMaxima   int          DEFAULT 9999
+    idProduto     int primary key NOT NULL,
+    nomeProduto   VARCHAR(255),
+    qtdProduto    int          DEFAULT 0,
+    descProduto   TEXT,
+    qtdMinima     int          DEFAULT 0,
+    qtdMaxima     int          DEFAULT 9999,
+    idFornecedor  int          DEFAULT NULL,
+    FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
     );
 
     -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
@@ -35,6 +42,15 @@ DROP SCHEMA IF EXISTS tcc;
     --   MODIFY COLUMN descProduto TEXT,
     --   ADD COLUMN qtdMinima int DEFAULT 0,
     --   ADD COLUMN qtdMaxima int DEFAULT 9999;
+
+    -- ── MIGRAÇÃO — fornecedores (rodar se as tabelas já existirem) ────────────
+    -- CREATE TABLE IF NOT EXISTS fornecedores (
+    --   idFornecedor   int primary key NOT NULL AUTO_INCREMENT,
+    --   nomeFornecedor VARCHAR(150) NOT NULL UNIQUE
+    -- );
+    -- ALTER TABLE produtos
+    --   ADD COLUMN idFornecedor int DEFAULT NULL,
+    --   ADD FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor);
 
     create table clientes(
     idCliente      int primary key NOT NULL,
