@@ -4,11 +4,12 @@ import traceback
 import mysql.connector
 
 class Conexao:
-    _host    = os.environ.get("DB_HOST")
+    # Valores padrão para facilitar execução local (XAMPP / MySQL padrão)
+    _host    = os.environ.get("DB_HOST", "127.0.0.1")
     _porta   = int(os.environ.get("DB_PORT", 3306))
-    _usuario = os.environ.get("DB_USER")
-    _senha   = os.environ.get("DB_PASSWORD")
-    _banco   = os.environ.get("DB_NAME")
+    _usuario = os.environ.get("DB_USER", "root")
+    _senha   = os.environ.get("DB_PASSWORD", "")
+    _banco   = os.environ.get("DB_NAME", "tcc")
 
     @staticmethod
     def obter_conexao():
