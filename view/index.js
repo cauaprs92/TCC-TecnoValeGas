@@ -1077,6 +1077,7 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Obra';
   _renderHistoricoObra(o.idObra);
+  carregarHistorico().then(() => _renderHistoricoObra(o.idObra));
   _resetAbasObra();
   abrirModal('modalObra');
 }
@@ -2797,6 +2798,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById(`page-${page}`).classList.add('active');
     const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', servicos: 'Serviços', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
+    if (page === 'historico') carregarHistorico();
   });
 });
 
