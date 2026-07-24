@@ -5,6 +5,7 @@ import mysql.connector
 
 class Conexao:
     _host    = os.environ.get("DB_HOST")
+    _porta   = int(os.environ.get("DB_PORT", 3306))
     _usuario = os.environ.get("DB_USER")
     _senha   = os.environ.get("DB_PASSWORD")
     _banco   = os.environ.get("DB_NAME")
