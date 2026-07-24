@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório de Obra</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      color: #000;
+      background: #525659;
+    }
+
+    /* ── Barra de ações (não sai na impressão) ── */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      padding: 10px;
+      background: #323639;
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    }
+    .toolbar button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 4px;
+      font-size: 10pt;
+      cursor: pointer;
+      background: #f26522;
+      color: #fff;
+    }
+    .toolbar button.sec { background: #666; }
+
+    /* ── Folhas A4 ── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 16px auto;
+      padding: 10mm 12mm;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
+    }
+
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .page {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      .page:last-child { page-break-after: auto; }
+    }
+
+    b, .lbl { font-weight: bold; }
+
+    /* ── Cabeçalho ── */
+    .cabecalho {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 5mm;
+    }
+    .cabecalho img { height: 12mm; }
+    .cabecalho .info { text-align: left; line-height: 1.8; }
+
+    .titulo-linha {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 5mm;
+    }
+    .titulo-linha h1 { font-size: 16pt; }
+
+    /* ── Linhas de dados do cliente ── */
+    .linha {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 3.2mm;
+      white-space: nowrap;
+    }
+    .linha .campo { overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Tabelas ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    td, th {
+      border: 1px solid #000;
+      padding: 1.3mm 2mm;
+      vertical-align: middle;
+      overflow: hidden;
+    }
+    th { text-align: center; }
+
+    .sem-borda-topo   td { border-top: none; }
+    .centro  { text-align: center; }
+    .direita { text-align: right; }
+
+    .desc-lbl {
+      width: 26mm;
+      text-align: center;
+      font-weight: bold;
+    }
+    .desc-txt { height: 16mm; vertical-align: top; }
+
+    /* ── Observações e assinaturas ── */
+    .obs-linha {
+      border-bottom: 1px solid #000;
+      height: 6mm;
+      margin-left: 12mm;
+    }
+    .assinatura {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      margin-top: 5mm;
+      white-space: nowrap;
+    }
+    .assinatura .traco {
+      flex: 1;
+      border-bottom: 1px solid #000;
+      min-height: 4mm;
+      padding: 0 2mm;
+      overflow: hidden;
+    }
+
+    /* ── Página 2: carga horária ── */
+    .titulo-p2 {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8mm;
+    }
+    .titulo-p2 img { height: 12mm; }
+    .titulo-p2 h1  { flex: 1; text-align: center; font-size: 16pt; }
+
+    .bloco-carga { margin-bottom: 7mm; }
+    .bloco-carga td.rotulo {
+      width: 32mm;
+      text-align: right;
+      font-weight: bold;
+    }
+    .bloco-carga td.vazia-alta { height: 9mm; }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+    <button class="sec" onclick="window.close()">Fechar</button>
+  </div>
+
+  <!-- ═══════════════ PÁGINA 1 — RELATÓRIO DE OBRA ═══════════════ -->
+  <div class="page">
+
+    <div class="cabecalho">
+      <img src="/images/tecnovale-removebg-preview.png" alt="Tecnovale Gás" />
+      <div class="info">
+        <div><b>FIELD:</b> <span id="f-field"></span>&nbsp;&nbsp;&nbsp;<b>UNIDADE:</b> <span id="f-unidade"></span></div>
+        <div><b>ID:</b> <span id="f-id"></span></div>
+      </div>
+    </div>
+
+    <div class="titulo-linha">
+      <h1>RELATÓRIO DE OBRA</h1>
+      <div><b>DATA INÍCIO:</b> <span id="f-data-inicio">____/____/____</span>
+        &nbsp;&nbsp;&nbsp;<b>TÉRMINO:</b> <span id="f-data-fim">____/____/____</span></div>
+    </div>
+
+    <div class="linha">
+      <span class="campo"><b>CLIENTE:</b> <span id="f-cliente"></span></span>
+      <span class="campo"><b>CÓD CLIENTE:</b> <span id="f-cod-cliente"></span></span>
+    </div>
+    <div class="linha">
+      <span class="campo"><b>ENDEREÇO:</b> <span id="f-endereco"></span></span>
+      <span class="campo"><b>Nº</b> <span id="f-numero"></span></span>
+      <span class="campo"><b>BAIRRO:</b> <span id="f-bairro"></span></span>
+    </div>
+    <div class="linha">
+      <span class="campo"><b>CIDADE:</b> <span id="f-cidade"></span></span>
+      <span class="campo"><b>CEP:</b> <span id="f-cep"></span></span>
+      <span class="campo"><b>ESTADO:</b> <span id="f-estado"></span></span>
+    </div>
+    <div class="linha">
+      <span class="campo"><b>CNPJ:</b> <span id="f-cnpj"></span></span>
+      <span class="campo"><b>CPF:</b> <span id="f-cpf"></span></span>
+      <span class="campo"></span>
+    </div>
+    <div class="linha" style="margin-bottom:5mm">
+      <span class="campo"><b>CONTATO:</b> <span id="f-contato"></span></span>
+      <span class="campo"><b>TELEFONE:</b> <span id="f-telefone"></span></span>
+    </div>
+
+    <!-- Descrição da obra -->
+    <table>
+      <tr>
+        <td class="desc-lbl">DESCRIÇÃO<br>DA OBRA:</td>
+        <td class="desc-txt" id="f-descricao"></td>
+      </tr>
+    </table>
+
+    <!-- Tanques -->
+    <table class="sem-borda-topo">
+      <tr>
+        <td><b>TANQUES:</b> ____________ &nbsp;<b>P-</b>___________ <b>KGS,&nbsp; TRANSBORDO</b> __________ &nbsp;<b>QUANTIDADE</b> ___________</td>
+      </tr>
+    </table>
+
+    <!-- Tabela de redes -->
+    <table class="sem-borda-topo">
+      <colgroup>
+        <col style="width:17%"><col style="width:18%"><col style="width:18%">
+        <col style="width:23%"><col style="width:24%">
+      </colgroup>
+      <tr>
+        <th>TIPO DE REDE</th><th>EXISTENTE (M)</th><th>REDE NOVA (M)</th><th>TESTE</th><th>PENDÊNCIA</th>
+      </tr>
+      <tr><td class="centro lbl">16MM</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">PINTURA (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">20MM</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">TUBULAÇÃO (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">1/2"SCH40</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">INTERLIGAÇÃO (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">3/4" SCH40</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">TRANSBORDO (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">3/4" SCH80</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">TELEMETRIA (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">1" SCH______</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">____________ (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">COBRE:</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">____________ (&nbsp;&nbsp;&nbsp;)</td></tr>
+      <tr><td class="centro lbl">____________</td><td></td><td></td><td class="centro lbl">:&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;&nbsp;&nbsp;&nbsp;:</td><td class="direita lbl">____________ (&nbsp;&nbsp;&nbsp;)</td></tr>
+    </table>
+
+    <!-- Pinturas / placa / telemetria -->
+    <table class="sem-borda-topo">
+      <tr>
+        <td style="border-right:none"><b>PINTURA DE ABRIGO: SIM (&nbsp;&nbsp;&nbsp;)&nbsp; NÃO (&nbsp;&nbsp;&nbsp;)</b></td>
+        <td style="border-left:none"><b>PINTURA DE TUBULAÇÃO: SIM (&nbsp;&nbsp;&nbsp;)&nbsp; NÃO (&nbsp;&nbsp;&nbsp;)</b></td>
+      </tr>
+      <tr>
+        <td style="border-right:none"><b>PLACA: SIM (&nbsp;&nbsp;&nbsp;)&nbsp; NÃO (&nbsp;&nbsp;&nbsp;)</b></td>
+        <td style="border-left:none"><b>INSTALAÇÃO TELEMETRIA: SIM (&nbsp;&nbsp;&nbsp;)&nbsp; NÃO (&nbsp;&nbsp;&nbsp;)</b></td>
+      </tr>
+    </table>
+
+    <!-- Montagem de ponto de consumo -->
+    <table class="sem-borda-topo">
+      <tr><td style="border-bottom:none"><b>MONTAGEM DE PONTO DE CONSUMO:</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>ALTA PRESSÃO QUANTOS (&nbsp;&nbsp;&nbsp;&nbsp;)</b></td></tr>
+      <tr><td style="border-top:none;border-bottom:none">&nbsp;&nbsp;<b>7KG/H QUANTOS (&nbsp;&nbsp;&nbsp;&nbsp;) &nbsp;&nbsp;&nbsp; 12KG/H QUANTOS (&nbsp;&nbsp;&nbsp;&nbsp;) &nbsp;&nbsp;&nbsp; RF QUANTOS (&nbsp;&nbsp;&nbsp;&nbsp;) &nbsp;&nbsp;&nbsp; PONTO FUT (&nbsp;&nbsp;&nbsp;&nbsp;)</b></td></tr>
+      <tr><td style="border-top:none">&nbsp;&nbsp;<b>15KG/H QUANTOS (&nbsp;&nbsp;&nbsp;&nbsp;) &nbsp;&nbsp;&nbsp; 50KG/H QUANTOS (&nbsp;&nbsp;&nbsp;&nbsp;) &nbsp;&nbsp;&nbsp; TOTAL DE PTS MONTADOS:</b> ______________</td></tr>
+    </table>
+
+    <!-- Pontos existentes / válvula de corte -->
+    <table class="sem-borda-topo">
+      <tr><td><b>PONTOS DE CONSUMO EXISTENTES:</b> ____________________________________________________________</td></tr>
+      <tr><td><b>VÁLVULA DE CORTE: &nbsp; EXISTENTE (&nbsp;&nbsp;&nbsp;&nbsp;) &nbsp;&nbsp; MONTADA (&nbsp;&nbsp;&nbsp;&nbsp;)</b> ___________________________________</td></tr>
+    </table>
+
+    <!-- OBS -->
+    <div style="margin-top:5mm"><b>OBS:</b></div>
+    <div class="obs-linha"></div>
+    <div class="obs-linha"></div>
+    <div class="obs-linha"></div>
+
+    <!-- Assinaturas -->
+    <div class="assinatura">
+      <b>ASS. CLIENTE:</b><span class="traco" style="max-width:62mm"></span>
+      <b>/DOC:</b><span class="traco"></span>
+    </div>
+    <div class="assinatura"><b>NOME COMPLETO:</b><span class="traco"></span></div>
+    <div class="assinatura"><b>TÉCNICO RESPONSÁVEL:</b><span class="traco" id="f-tecnico"></span></div>
+    <div class="assinatura"><b>RESPONSÁVEL PELA LIBERAÇÃO:</b><span class="traco"></span></div>
+
+  </div>
+
+  <!-- ═══════════════ PÁGINA 2 — CARGA HORÁRIA DE OBRA ═══════════════ -->
+  <div class="page">
+
+    <div class="titulo-p2">
+      <img src="/images/tecnovale-removebg-preview.png" alt="Tecnovale Gás" />
+      <h1>CARGA HORÁRIA DE OBRA</h1>
+    </div>
+
+    <table class="bloco-carga">
+      <tr>
+        <td class="rotulo">DATA INÍCIO:</td><td></td>
+        <td class="rotulo">HORA CHEGADA:</td><td></td>
+      </tr>
+      <tr>
+        <td class="rotulo">INÍCIO OBRA:</td><td></td>
+        <td class="rotulo">HORA SAÍDA:</td><td></td>
+      </tr>
+      <tr><td class="rotulo">FUNCIONÁRIOS:</td><td colspan="3"></td></tr>
+      <tr><td class="rotulo">OBSERVAÇÃO:</td><td colspan="3"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+    </table>
+
+    <table class="bloco-carga">
+      <tr>
+        <td class="rotulo">DATA INÍCIO:</td><td></td>
+        <td class="rotulo">HORA CHEGADA:</td><td></td>
+      </tr>
+      <tr>
+        <td class="rotulo">INÍCIO OBRA:</td><td></td>
+        <td class="rotulo">HORA SAÍDA:</td><td></td>
+      </tr>
+      <tr><td class="rotulo">FUNCIONÁRIOS:</td><td colspan="3"></td></tr>
+      <tr><td class="rotulo">OBSERVAÇÃO:</td><td colspan="3"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+    </table>
+
+    <table class="bloco-carga">
+      <tr>
+        <td class="rotulo">DATA INÍCIO:</td><td></td>
+        <td class="rotulo">HORA CHEGADA:</td><td></td>
+      </tr>
+      <tr>
+        <td class="rotulo">INÍCIO OBRA:</td><td></td>
+        <td class="rotulo">HORA SAÍDA:</td><td></td>
+      </tr>
+      <tr><td class="rotulo">FUNCIONÁRIOS:</td><td colspan="3"></td></tr>
+      <tr><td class="rotulo">OBSERVAÇÃO:</td><td colspan="3"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+    </table>
+
+    <table class="bloco-carga">
+      <tr>
+        <td class="rotulo">DATA INÍCIO:</td><td></td>
+        <td class="rotulo">HORA CHEGADA:</td><td></td>
+      </tr>
+      <tr>
+        <td class="rotulo">INÍCIO OBRA:</td><td></td>
+        <td class="rotulo">HORA SAÍDA:</td><td></td>
+      </tr>
+      <tr><td class="rotulo">FUNCIONÁRIOS:</td><td colspan="3"></td></tr>
+      <tr><td class="rotulo">OBSERVAÇÃO:</td><td colspan="3"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+      <tr><td class="vazia-alta" colspan="4"></td></tr>
+    </table>
+
+    <table>
+      <tr><td class="rotulo" style="width:32mm;text-align:right;font-weight:bold">OBSERVAÇÃO:</td><td></td></tr>
+    </table>
+
+  </div>
+
+  <script>
+    function _txt(id, valor) {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        document.getElementById(id).textContent = valor;
+      }
+    }
+
+    // "2026-07-10" ou "2026-07-10 00:00:00" → "10/07/2026"
+    function _fmtData(s) {
+      if (!s) return '';
+      const d = String(s).split(' ')[0].split('T')[0].split('-');
+      return d.length === 3 ? `${d[2]}/${d[1]}/${d[0]}` : s;
+    }
+
+    async function _api(endpoint, token) {
+      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`Erro ${res.status} em ${endpoint}`);
+      return res.json();
+    }
+
+    async function carregar() {
+      const token  = sessionStorage.getItem('token');
+      const idObra = new URLSearchParams(location.search).get('id');
+
+      if (!token)  { document.body.innerHTML = '<p style="color:#fff;padding:20px">Sessão expirada. Faça login novamente.</p>'; return; }
+      if (!idObra) { document.body.innerHTML = '<p style="color:#fff;padding:20px">Obra não informada.</p>'; return; }
+
+      try {
+        const { obra } = await _api(`/obra/${idObra}`, token);
+
+        _txt('f-id',          obra.idObra);
+        _txt('f-field',       obra.fieldObra);
+        _txt('f-unidade',     obra.unidadeObra);
+        _txt('f-data-inicio', _fmtData(obra.dataInicio));
+        _txt('f-data-fim',    _fmtData(obra.dataFim));
+        _txt('f-cod-cliente', obra.codCliente);
+        _txt('f-descricao',   obra.descObra);
+        _txt('f-telefone',    obra.celular1);
+        _txt('f-tecnico',     obra.respObra);
+
+        document.title = `Relatório de Obra ${obra.idObra}`;
+
+        if (obra.codCliente) {
+          const { cliente } = await _api(`/cliente/${obra.codCliente}`, token);
+          _txt('f-cliente',  cliente.nomeCliente);
+          _txt('f-endereco', cliente.rua);
+          _txt('f-numero',   cliente.numero);
+          _txt('f-bairro',   cliente.bairro);
+          _txt('f-cidade',   cliente.cidade);
+          _txt('f-cep',      cliente.cep);
+          _txt('f-estado',   cliente.estado);
+          _txt('f-contato',  cliente.contatoCliente);
+
+          const doc     = cliente.CNPJCPF || '';
+          const digitos = doc.replace(/\D/g, '');
+          _txt(digitos.length > 11 ? 'f-cnpj' : 'f-cpf', doc);
+        }
+      } catch (e) {
+        alert('Erro ao carregar os dados da obra: ' + e.message);
+      }
+    }
+
+    carregar();
+  </script>
+</body>
+</html>

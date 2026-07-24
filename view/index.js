@@ -956,22 +956,13 @@ function _limparCamposObra() {
   document.getElementById('obraClientePrimario').value = '';
 }
 
-async function gerarRelatorioObra() {
+function gerarRelatorioObra() {
   const idObra = document.getElementById('obraIdEdicao').value;
   if (!idObra) {
     showToast('Salve a obra antes de gerar o relatório.', 'warning');
     return;
   }
-  try {
-    const res = await fetch(`${API_BASE_URL}/obra/${idObra}/relatorio`, {
-      headers: { 'Authorization': `Bearer ${getToken()}` },
-    });
-    if (!res.ok) { showToast('Erro ao gerar relatório.', 'error'); return; }
-    const blob = await res.blob();
-    window.open(URL.createObjectURL(blob), '_blank');
-  } catch {
-    showToast('Erro ao gerar relatório.', 'error');
-  }
+  window.open(`/relatorio-obra.html?id=${idObra}`, '_blank');
 }
 
 function trocarAbaObra(e, abaId) {
