@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Produtos Obra Grande</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 7.5pt;
+      color: #000;
+      background: #525659;
+    }
+
+    /* ── Barra de ações (não sai na impressão) ── */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      padding: 10px;
+      background: #323639;
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    }
+    .toolbar button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 4px;
+      font-size: 10pt;
+      cursor: pointer;
+      background: #f26522;
+      color: #fff;
+    }
+    .toolbar button.sec { background: #666; }
+
+    /* ── Folha A4 ── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 16px auto;
+      padding: 8mm 10mm;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
+    }
+
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .page {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+
+    /* dados preenchidos pela API */
+    [id^="f-"] {
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    /* ── Cabeçalho ── */
+    .cabecalho {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3mm;
+    }
+    .cabecalho h1 { font-size: 12pt; }
+    .cabecalho .esq div { margin-top: 3mm; font-weight: bold; font-size: 9.5pt; }
+    .cabecalho .dir { text-align: right; }
+    .cabecalho .dir img { height: 11mm; display: block; margin-left: auto; margin-bottom: 1.5mm; }
+    .cabecalho .dir .data { font-size: 9.5pt; margin-bottom: 1.5mm; }
+    .cabecalho .dir .unidade { color: #808080; font-weight: bold; }
+    .cabecalho .dir .unidade b { color: #000; }
+
+    /* ── Duas colunas independentes de tabelas ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 3mm;
+      align-items: start;
+    }
+    .coluna {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5mm;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    td, th {
+      border: 1px solid #000;
+      padding: 0.3mm 1.2mm;
+      overflow: hidden;
+      white-space: nowrap;
+      height: 3.8mm;
+      line-height: 1;
+    }
+    col.c-cod  { width: 16%; }
+    col.c-item { width: 58%; }
+    col.c-uso  { width: 26%; }
+
+    th {
+      background: #d9d9d9;
+      text-align: center;
+      font-size: 7pt;
+    }
+    th.secao { font-size: 8.5pt; }
+    td.item, td.cod { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+    <button class="sec" onclick="window.close()">Fechar</button>
+  </div>
+
+  <div class="page">
+
+    <div class="cabecalho">
+      <div class="esq">
+        <h1>CONTROLE DE PEÇAS CENTRAL OBRA GRANDE &nbsp;&nbsp; - OBRAS -</h1>
+        <div>CLIENTE: <span id="f-cliente"></span></div>
+        <div>CIDADE: <span id="f-cidade"></span></div>
+      </div>
+      <div class="dir">
+        <img src="/images/tecnovale-removebg-preview.png" alt="Tecnovale Gás" />
+        <div class="data"><b>DATA</b>_____/_____/_____</div>
+        <div class="unidade">SUPERGASBRAS : <b>MAUA</b></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="coluna" id="col-esq"></div>
+      <div class="coluna" id="col-dir"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const SECOES = [
+      {
+        titulo: 'TANQUES',
+        itens: [
+          ['TVG1194', 'APS 1000 KG/H'],
+          ['TVG1245', 'FAMABRÁS'],
+          ['TVG1247', 'GASCAT JUNIOR " A "'],
+          ['TVG1248', 'GASCAT PROTEU 431'],
+          ['TVG1298', 'MULTIVALVULA 3/4"'],
+          ['TVG1142', 'BOCAL DE ENC. 11/4" X 13/4"'],
+          ['TVG1048', 'EXCESSO DE FLUXO 3/4"'],
+          ['TVG1209', 'CHECK-LOOK 3/4"'],
+          ['TVG1193', 'EXPURGO 1/4"'],
+          ['TVG1211', 'VALVULA SEGURANÇA 3/4"'],
+          ['TVG1164', 'VALVULA AGULHA 1/4"'],
+          ['TVG1135', "MAN. 0'21"],
+          ['TVG1136', "MAN. 0'7"],
+          ['TVG1014', 'BUCHA RED. 1/2" X 1/4"'],
+          ['TVG1052', 'PIG-TAIL 7/16" X 7/8" POOL'],
+          ['TVG1084', 'RETENÇÃO 1/2" X 7/16"'],
+          ['TVG1428', 'FILTRO SEPARADOR P-45'],
+          ['TVG1430', 'FILTRO SEPARADOR P-90'],
+          ['TVG1292', 'TAMPÃO 3/4"'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  1/2"',
+        itens: [
+          ['TVG1443', 'TUBO SCH 40'],
+          ['TVG1444', 'TUBO SCH 80'],
+          ['TVG 1038', 'COTOVELO 1/2"'],
+          ['TVG1088', 'TÊE 1/2"'],
+          ['TVG1068', 'NIPLE 1/2"'],
+          ['TVG1127', 'VALVULA ESFERA  1/2"'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'TINTAS',
+        itens: [
+          ['TVG1101', 'TINTA AMARELA'],
+          ['TVG1103', 'TINTA LARANJA'],
+          ['TVG1102', 'TINTA BRANCA'],
+          ['TVG1098', 'TINTA PRETA'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  3/4"',
+        itens: [
+          ['TVG1144', 'TUBO SCH 40'],
+          ['TVG1412', 'TUBO SCH 80'],
+          ['TVG1031', 'COTOVELO 3/4"'],
+          ['TVG1092', 'TÊE 3/4"'],
+          ['TVG1061', 'LUVA 3/4"'],
+          ['TVG1129', 'VALVULA ESFERA 3/4"'],
+          ['TVG1138', 'UNIÃO 3/4"'],
+          ['TVG1069', 'NIPLE 3/4"'],
+          ['TVG1012', 'BUCHA DE REDUÇÃO 3/4" X 1/2"'],
+          ['TVG1139', 'NIPLE 3/4" X 1/2"'],
+          ['TVG1446', 'SUPORTE 3/4"'],
+          ['TVG1447', 'ABRAÇADEIRA 3/4"'],
+          ['TVG1422', 'PARAFUSOS E BUCHAS 10 MM'],
+          ['TVG1426', 'VEDA ROSCA'],
+          ['TVG----', 'ADAP.DE SEG. BOCAL DE ENCHIMENTO'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'PONTOS DE CONSUMO',
+        itens: [
+          ['TVG1079', 'REGISTRO ANGULAR M/F'],
+          ['TVG1080', 'REGISTRO ANGULAR M/M'],
+          ['TVG1198', 'FLEXIVEL 1/2" X 1/2" 1 MT'],
+          ['TVG1007', 'ADAPTADOR DAKO'],
+          ['TVG1431', 'RF 3/4"'],
+          ['TVG1081', 'REG. CLEESE 15 KG/H'],
+          ['TVG1083', 'REG. ALIANÇA 12 KG/H'],
+          ['TVG1180', 'REG. ALIANÇA 50 KG/H - ESTÁG. ÚNI.'],
+          ['TVG1197', 'REG. ALIANÇA 50 KG/H - 1°ESTÁGIO'],
+          ['TVG1179', 'REG. ALIANÇA 50 KG/H - 2°ESTÁGIO'],
+          ['TVG----', 'EXTINTOR 4KG'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  1 "',
+        itens: [
+          ['TVG1448', 'TUBO SCH 40'],
+          ['TVG1449', 'TUBO SCH 80'],
+          ['TVG1037', 'COTOVELO 1"'],
+          ['TVG1087', 'TÊE 1"'],
+          ['TVG1146', 'LUVA 1"'],
+          ['TVG1426', 'VALVULA ESFERA 1"'],
+          ['TVG1450', 'UNIÃO 1"'],
+          ['TVG1067', 'NIPLE 1"'],
+          ['TVG1301', 'BUCHA DE RED. 1" X 1/2"'],
+          ['TVG1010', 'BUCHA DE RED. 1" X 3/4"'],
+          ['TVG1451', 'SUPORTE 1"'],
+          ['TVG1452', 'ABRAÇADEIRA 1"'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  2" ROSCADA',
+        itens: [
+          ['TVG1433', 'TUBO SCH 40'],
+          ['TVG1445', 'TUBO SCH 80'],
+          ['TVG1039', 'COTOVELO 2"'],
+          ['TVG1434', 'TÊE 2"'],
+          ['TVG1150', 'LUVA 2"'],
+          ['TVG1128', 'VALVULA ESFERA 2"'],
+          ['TVG1187', 'UNIÃO 2"'],
+          ['TVG1435', 'NIPLE 2"'],
+          ['TVG1436', 'BUCHA DE RED. 2" X 3/4"'],
+          ['TVG1015', 'BUCHA DE RED. 2" X 1"'],
+          ['TVG1274', 'BUCHA DE RED. 2" X 11/2"'],
+          ['TVG1437', 'SUPORTE 2"'],
+          ['TVG1438', 'ABRAÇADEIRA 2"'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  1 1/2" ROSCADA',
+        itens: [
+          ['TVG1453', 'TUBO SCH 40'],
+          ['TVG1454', 'TUBO SCH 80'],
+          ['TVG1036', 'COTOVELO 11/2"'],
+          ['TVG1086', 'TÊE 11/2"'],
+          ['TVG1307', 'LUVA 11/2"'],
+          ['TVG1125', 'VALVULA ESFERA 11/2"'],
+          ['TVG1122', 'UNIÃO 11/2"'],
+          ['TVG1066', 'NIPLE 11/2"'],
+          ['TVG1013', 'BUCHA DE RED. 11/2" X 1"'],
+          ['TVG1277', 'BUCHA DE RED. 11/2" X 3/4"'],
+          ['TVG1455', 'SUPORTE 11/2"'],
+          ['TVG1456', 'ABRAÇADEIRA 11/2"'],
+        ],
+        vazias: 0,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  2" SOLDADA',
+        itens: [
+          ['TVG1045', 'CURVA  2"'],
+          ['TVG1439', 'TÊE 2" SOLDA'],
+          ['TVG1440', 'R. CONCÊNTRICA . 2" X 3/4"'],
+          ['TVG1441', 'R. CONCÊNTRICA . 2" X 1"'],
+          ['TVG1442', 'R. CONCÊNTRICA . 2" X 11/2"'],
+        ],
+        vazias: 1,
+      },
+      {
+        titulo: 'REDE DE DISTRIBUIÇÃO  1 1/2" SOLDADA',
+        itens: [
+          ['TVG1041', 'CURVA  11/2"'],
+          ['TVG1457', 'TÊE 11/2" SOLDA'],
+          ['TVG1458', 'R. CONCÊNTRICA . 11/2" X 3/4"'],
+          ['TVG1459', 'R. CONCÊNTRICA . 11/2" X 1"'],
+        ],
+        vazias: 2,
+      },
+    ];
+
+    function montarTabela(sec) {
+      const tabela = document.createElement('table');
+      let html = '<colgroup><col class="c-cod"><col class="c-item"><col class="c-uso"></colgroup>';
+
+      html += `<tr><th class="secao" colspan="3">${sec.titulo}</th></tr>`;
+      html += '<tr><th>CÓDIGO</th><th>ITEM</th><th>UTILIZ.OBRA</th></tr>';
+
+      for (const [cod, item] of sec.itens) {
+        html += `<tr><td class="cod">${cod}</td><td class="item">${item}</td><td></td></tr>`;
+      }
+      for (let i = 0; i < sec.vazias; i++) {
+        html += '<tr><td>&nbsp;</td><td></td><td></td></tr>';
+      }
+
+      tabela.innerHTML = html;
+      return tabela;
+    }
+
+    // Seções em índice par vão para a coluna esquerda; ímpar, direita
+    const colEsq = document.getElementById('col-esq');
+    const colDir = document.getElementById('col-dir');
+    SECOES.forEach((sec, i) => (i % 2 === 0 ? colEsq : colDir).appendChild(montarTabela(sec)));
+
+    function _txt(id, valor) {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        document.getElementById(id).textContent = valor;
+      }
+    }
+
+    async function _api(endpoint, token) {
+      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`Erro ${res.status} em ${endpoint}`);
+      return res.json();
+    }
+
+    async function carregar() {
+      const token  = sessionStorage.getItem('token');
+      const idObra = new URLSearchParams(location.search).get('id');
+
+      if (!token)  { document.body.innerHTML = '<p style="color:#fff;padding:20px">Sessão expirada. Faça login novamente.</p>'; return; }
+      if (!idObra) { document.body.innerHTML = '<p style="color:#fff;padding:20px">Obra não informada.</p>'; return; }
+
+      try {
+        const { obra } = await _api(`/obra/${idObra}`, token);
+        document.title = `Produtos Obra Grande ${obra.idObra}`;
+
+        if (obra.codCliente) {
+          const { cliente } = await _api(`/cliente/${obra.codCliente}`, token);
+          _txt('f-cliente', cliente.nomeCliente);
+          _txt('f-cidade',  cliente.cidade);
+        }
+      } catch (e) {
+        alert('Erro ao carregar os dados da obra: ' + e.message);
+      }
+    }
+
+    carregar();
+  </script>
+</body>
+</html>
