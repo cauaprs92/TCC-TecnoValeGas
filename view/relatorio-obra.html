@@ -390,7 +390,7 @@
         const { obra } = await _api(`/obra/${idObra}`, token);
 
         _txt('f-id',          obra.idObra);
-        _txt('f-field',       obra.fieldObra);
+        _txt('f-field',       obra.respObra);
         _txt('f-unidade',     obra.unidadeObra);
         _txt('f-data-inicio', _fmtData(obra.dataInicio));
         _txt('f-data-fim',    _fmtData(obra.dataFim));
