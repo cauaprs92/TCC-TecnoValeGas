@@ -1120,15 +1120,17 @@
             <!-- ── ABA: DOCUMENTOS E FORMULÁRIOS ── -->
             <div id="abaDocumentos" class="obra-tab-content">
               <div class="form-section-title"><i class="fa-solid fa-file-lines"></i> Documentos</div>
-              <button class="btn btn-secondary" onclick="gerarRelatorioObra()">
-                <i class="fa-solid fa-file-pdf"></i> Relatório de Obra
-              </button>
-              <button class="btn btn-secondary" onclick="gerarProdutosObra()">
-                <i class="fa-solid fa-boxes-stacked"></i> Produtos Obra
-              </button>
-              <button class="btn btn-secondary" onclick="gerarProdutosObraGrande()">
-                <i class="fa-solid fa-warehouse"></i> Produtos Obra Grande
-              </button>
+              <div style="display:flex; flex-direction:column; align-items:flex-start; gap:10px;">
+                <button class="btn btn-secondary" onclick="gerarRelatorioObra()">
+                  <i class="fa-solid fa-file-pdf"></i> Relatório de Obra
+                </button>
+                <button class="btn btn-secondary" onclick="gerarProdutosObra()">
+                  <i class="fa-solid fa-boxes-stacked"></i> Produtos Obra
+                </button>
+                <button class="btn btn-secondary" onclick="gerarProdutosObraGrande()">
+                  <i class="fa-solid fa-warehouse"></i> Produtos Obra Grande
+                </button>
+              </div>
             </div>
 
             <!-- ── ABA: HISTÓRICO ── -->
