@@ -965,6 +965,15 @@ function gerarRelatorioObra() {
   window.open(`/relatorio-obra.html?id=${idObra}`, '_blank');
 }
 
+function gerarProdutosObra() {
+  const idObra = document.getElementById('obraIdEdicao').value;
+  if (!idObra) {
+    showToast('Salve a obra antes de gerar o documento.', 'warning');
+    return;
+  }
+  window.open(`/produtos-obra.html?id=${idObra}`, '_blank');
+}
+
 function trocarAbaObra(e, abaId) {
   document.querySelectorAll('.obra-tab').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.obra-tab-content').forEach(div => div.classList.remove('active'));

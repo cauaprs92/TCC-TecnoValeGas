@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Produtos Obra</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 8pt;
+      color: #000;
+      background: #525659;
+    }
+
+    /* ── Barra de ações (não sai na impressão) ── */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      padding: 10px;
+      background: #323639;
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    }
+    .toolbar button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 4px;
+      font-size: 10pt;
+      cursor: pointer;
+      background: #f26522;
+      color: #fff;
+    }
+    .toolbar button.sec { background: #666; }
+
+    /* ── Folha A4 ── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 16px auto;
+      padding: 10mm 12mm;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
+    }
+
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .page {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+
+    /* dados preenchidos pela API */
+    [id^="f-"] {
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    /* ── Cabeçalho ── */
+    .cabecalho {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4mm;
+    }
+    .cabecalho h1 { font-size: 13pt; }
+    .cabecalho .esq div { margin-top: 3.5mm; font-weight: bold; font-size: 10pt; }
+    .cabecalho .dir { text-align: right; }
+    .cabecalho .dir img { height: 12mm; display: block; margin-left: auto; margin-bottom: 2mm; }
+    .cabecalho .dir .data { font-size: 10pt; margin-bottom: 2mm; }
+    .cabecalho .dir .unidade { color: #808080; font-weight: bold; }
+    .cabecalho .dir .unidade b { color: #000; }
+
+    /* ── Grade de tabelas ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 4mm;
+      row-gap: 3mm;
+      align-items: start;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    td, th {
+      border: 1px solid #000;
+      padding: 0.4mm 1.5mm;
+      overflow: hidden;
+      white-space: nowrap;
+      height: 4.1mm;
+      line-height: 1;
+    }
+    col.c-item { width: 66%; }
+    col.c-uso  { width: 34%; }
+
+    th {
+      background: #d9d9d9;
+      text-align: center;
+      font-size: 7.5pt;
+    }
+    th.secao { font-size: 9pt; }
+    td.item  { font-weight: bold; }
+    td.sub-secao {
+      background: #808080;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+    <button class="sec" onclick="window.close()">Fechar</button>
+  </div>
+
+  <div class="page">
+
+    <div class="cabecalho">
+      <div class="esq">
+        <h1>CONTROLE DE PEÇAS EMMETI &nbsp;&nbsp;&nbsp; - OBRAS -</h1>
+        <div>CLIENTE: <span id="f-cliente"></span></div>
+        <div>CIDADE: <span id="f-cidade"></span></div>
+      </div>
+      <div class="dir">
+        <img src="/images/tecnovale-removebg-preview.png" alt="Tecnovale Gás" />
+        <div class="data"><b>DATA</b>_____/_____/_____</div>
+        <div class="unidade">SUPERGASBRAS : <b>MAUA</b></div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+  </div>
+
+  <script>
+    const SECOES = [
+      {
+        cabecalho: ['CENTRAL __________', 'P-190 KGS'],
+        itens: [
+          'KITS  T-7', 'REGULADOR FAMABRAS', 'CONECTOR GIRATÓRIO', 'TÊE 1/2"',
+          'RETENÇÃO 1/2" X 7/16"', 'PIG-TAIL 7/16" X 7/8"POOL', 'SUPORTE',
+          'ABRAÇADEIRA 3/4"', 'B. RED 3/4" X 1/2"', 'PARAFUSO COM BUCHA 10 MM',
+          'VALVULA ESFERA 1/2"', 'UNIÃO 1/2"', 'NIPLE 3/4" X 1/2"',
+          'REGULADOR APS 1000 S/ VITON', 'COTOVELO 1/2"', 'COTOVELO 1/2" MACHO X FEMEA',
+          'FITA TEFLON', 'COLETOR 02 SAÍDAS', 'COLETOR 03 SAÍDAS',
+        ],
+        vazias: 0,
+      },
+      {
+        cabecalho: ['PONTOS DE CONSUMO'],
+        itens: [
+          'REGISTRO ANGULAR  M/F', 'REGISTRO ANGULAR  M/M', 'FLEXÍVEL 1,50M PRATA',
+          'ADAPTADOR DAKO', 'NIPLE 1/2" X 1/8"', 'NIPLE 1/2" X 1/4"',
+          'NIPLE 1/2" X 3/8"', 'RF 1/2"', 'RF 3/4"', 'LUVA RED. 3/4" X 1/2"',
+          'REG.ALIANÇA 7 KG/H', 'REG. ALIANÇA 12 KG/H', 'REG. CLEESE 15 KG/H',
+          'REG. ALIANÇA 50 KG/H', 'NIPLE 1/2"', 'TAMPÃO 1/2"', 'FITA HELLERMAN',
+          'EXTINTOR 4KG',
+        ],
+        vazias: 1,
+      },
+      {
+        cabecalho: ['REDE DE VAPOR 16MM'],
+        itens: [
+          'COTOVELO', 'CONECTOR RETO', 'CONECTOR CURVA', 'CONECTOR PÉ DE GALINHA',
+          'LUVA', 'TÊE RETO', 'TÊE REDUÇÃO  1/2"', 'ABRAÇADEIRAS', 'TUBO',
+          'PARAFUSO COM BUCHA 06 MM',
+        ],
+        vazias: 6,
+      },
+      {
+        cabecalho: ['REDE DE VAPOR 20MM'],
+        itens: [
+          'COTOVELO', 'CONECTOR RETO', 'CONECTOR CURVA', 'CONECTOR PÉ DE GALINHA',
+          'LUVA', 'LUVA DE REDUÇÃO 20MM X 16MM', 'TÊE RETO', 'TÊE REDUÇÃO  1/2"',
+          'ABRAÇADEIRAS', 'TUBO', 'PARAFUSO COM BUCHA 08 MM',
+        ],
+        subSecao: { titulo: 'TINTAS', itens: ['TINTA BRANCA LATEX', 'TINTA LARANJA LATEX'] },
+        vazias: 2,
+      },
+      {
+        cabecalho: ['REDE DE DISTRIBUIÇÃO VAPOR  3/4"'],
+        itens: [
+          'TUBO SCH 40', 'COTOVELO 3/4"', 'TÊE 3/4"', 'LUVA 3/4"',
+          'VALVULA ESFERA 3/4"', 'UNIÃO 3/4"', 'NIPLE 3/4"', 'TUBO SCH80',
+          'TAMPÃO 3/4"',
+        ],
+        vazias: 2,
+      },
+      {
+        cabecalho: ['REDE LIQUIDA 3/4"'],
+        itens: [
+          'VALVULA DE SEGURANÇA 3/4"', 'EXPURGO 1/4"', 'BUCHA DE REDUÇÃO 1/2" X 1/4"',
+          'ADAPT BOCAL DE ENCH 1 3/4" X 3/4"', 'BUCHA DE REDUÇÃO 3/4" X 1/2"',
+          'FLEXIVEL REDE LIQUIDA 30CM', 'BOCAL ENCHIMENTO 1 3/4" X  3/4"',
+          'ADAPT. DE SEG. BOCAL ENCHIMENTO', 'CAIXINHA BOCAL ENCHIMENTO',
+        ],
+        vazias: 2,
+      },
+    ];
+
+    function montarTabela(sec) {
+      const tabela = document.createElement('table');
+      let html = '<colgroup><col class="c-item"><col class="c-uso"></colgroup>';
+
+      if (sec.cabecalho.length === 2) {
+        html += `<tr><th class="secao">${sec.cabecalho[0]}</th><th class="secao">${sec.cabecalho[1]}</th></tr>`;
+      } else {
+        html += `<tr><th class="secao" colspan="2">${sec.cabecalho[0]}</th></tr>`;
+      }
+      html += '<tr><th>ITEM</th><th>UTILIZADO EM OBRA</th></tr>';
+
+      for (const item of sec.itens) {
+        html += `<tr><td class="item">${item}</td><td></td></tr>`;
+      }
+      if (sec.subSecao) {
+        html += `<tr><td class="sub-secao" colspan="2">${sec.subSecao.titulo}</td></tr>`;
+        for (const item of sec.subSecao.itens) {
+          html += `<tr><td class="item">${item}</td><td></td></tr>`;
+        }
+      }
+      for (let i = 0; i < sec.vazias; i++) {
+        html += '<tr><td>&nbsp;</td><td></td></tr>';
+      }
+
+      tabela.innerHTML = html;
+      return tabela;
+    }
+
+    const grid = document.getElementById('grid');
+    SECOES.forEach(sec => grid.appendChild(montarTabela(sec)));
+
+    function _txt(id, valor) {
+      if (valor !== null && valor !== undefined && valor !== '') {
+        document.getElementById(id).textContent = valor;
+      }
+    }
+
+    async function _api(endpoint, token) {
+      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`Erro ${res.status} em ${endpoint}`);
+      return res.json();
+    }
+
+    async function carregar() {
+      const token  = sessionStorage.getItem('token');
+      const idObra = new URLSearchParams(location.search).get('id');
+
+      if (!token)  { document.body.innerHTML = '<p style="color:#fff;padding:20px">Sessão expirada. Faça login novamente.</p>'; return; }
+      if (!idObra) { document.body.innerHTML = '<p style="color:#fff;padding:20px">Obra não informada.</p>'; return; }
+
+      try {
+        const { obra } = await _api(`/obra/${idObra}`, token);
+        document.title = `Produtos Obra ${obra.idObra}`;
+
+        if (obra.codCliente) {
+          const { cliente } = await _api(`/cliente/${obra.codCliente}`, token);
+          _txt('f-cliente', cliente.nomeCliente);
+          _txt('f-cidade',  cliente.cidade);
+        }
+      } catch (e) {
+        alert('Erro ao carregar os dados da obra: ' + e.message);
+      }
+    }
+
+    carregar();
+  </script>
+</body>
+</html>
