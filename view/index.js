@@ -657,7 +657,7 @@ async function _enviarNF(arquivo) {
     _nfNotaAtual = dados.nota;
     _renderConferenciaNF();
     abrirModal('modalConferenciaNF');
-    showToast(dados.msg || 'Nota fiscal importada!', 'success');
+    showToast(dados.msg || 'Nota fiscal importada!', dados.reaberta ? 'info' : 'success');
   } catch (e) {
     showToast(`Erro ao importar a nota: ${e.message}`, 'error');
   } finally {

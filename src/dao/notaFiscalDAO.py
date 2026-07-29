@@ -34,19 +34,54 @@ class NotaFiscalDAO:
 
     # ─── Importação ───────────────────────────────────────────────────────────
 
-    def verificar_chave_existe(self, chaveAcesso: str) -> bool:
-        """True se a chave de acesso já foi importada anteriormente."""
+    def buscar_id_por_chave(self, chaveAcesso: str):
+        """Retorna o idNotaFiscal de uma chave já importada, ou None."""
         sql = "SELECT idNotaFiscal FROM notasFiscais WHERE chaveAcesso = %s"
         conexao = Conexao.obter_conexao()
         if not conexao:
-            return False
+            return None
         cursor = conexao.cursor()
         try:
             cursor.execute(sql, (chaveAcesso,))
-            return cursor.fetchone() is not None
+            linha = cursor.fetchone()
+            return linha[0] if linha else None
         except Exception as e:
             print(f"Erro ao verificar chave da nota fiscal: {e}")
-            return False
+            return None
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
+    def verificar_chave_existe(self, chaveAcesso: str) -> bool:
+        """True se a chave de acesso já foi importada anteriormente."""
+        return self.buscar_id_por_chave(chaveAcesso) is not None
+
+    def reabrir_itens(self, idNotaFiscal: int) -> int:
+        """Devolve para 'pendente' os itens da nota que não afetam mais o estoque.
+
+        Um item sem idProduto ou é ignorado, ou teve o produto excluído depois
+        (a exclusão desfaz o vínculo) — nos dois casos ele pode ser conferido de
+        novo. Itens que ainda apontam para um produto vivo continuam confirmados,
+        para que a mesma nota não some estoque duas vezes.
+
+        Retorna quantos itens voltaram para a conferência.
+        """
+        sql = """
+            UPDATE notaFiscalItens
+            SET statusItem = 'pendente'
+            WHERE idNotaFiscal = %s AND statusItem <> 'pendente' AND idProduto IS NULL
+        """
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return 0
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, (idNotaFiscal,))
+            conexao.commit()
+            return cursor.rowcount
+        except Exception as e:
+            conexao.rollback()
+            print(f"Erro ao reabrir itens da nota fiscal: {e}")
+            return 0
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 

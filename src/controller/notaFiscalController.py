@@ -14,30 +14,57 @@ class NotaFiscalController:
     def importar_xml(self, conteudoXml, nomeArquivo: str = None) -> tuple:
         """Lê o XML, grava a nota e seus itens e devolve a nota pronta para conferência.
 
-        Retorna (sucesso, mensagem, nota).
+        Se a chave já existe, reabre a nota em vez de recusar o arquivo — um
+        produto excluído por engano precisa poder ser conferido de novo.
+
+        Retorna (sucesso, mensagem, nota, reaberta).
         """
         try:
             dadosNota = parse_nfe(conteudoXml)
         except NFeParserError as e:
-            return False, str(e), None
+            return False, str(e), None, False
 
-        if self.dao.verificar_chave_existe(dadosNota["chaveAcesso"]):
-            return False, "Esta nota já foi importada anteriormente.", None
+        idExistente = self.dao.buscar_id_por_chave(dadosNota["chaveAcesso"])
+        if idExistente:
+            return self._reabrir(idExistente)
 
         dadosNota["nomeArquivo"] = (nomeArquivo or "").strip() or None
 
         idNotaFiscal = self.dao.inserir_nota(dadosNota)
         if not idNotaFiscal:
-            return False, "Erro ao salvar a nota fiscal.", None
+            return False, "Erro ao salvar a nota fiscal.", None, False
 
         if not self.dao.inserir_itens(idNotaFiscal, dadosNota["itens"]):
-            return False, "Erro ao salvar os itens da nota fiscal.", None
+            return False, "Erro ao salvar os itens da nota fiscal.", None, False
 
         nota = self.dao.buscar_nota_com_itens(idNotaFiscal)
         if not nota:
-            return False, "Erro ao carregar a nota fiscal importada.", None
+            return False, "Erro ao carregar a nota fiscal importada.", None, False
 
-        return True, "Nota fiscal importada com sucesso!", nota
+        return True, "Nota fiscal importada com sucesso!", nota, False
+
+    def _reabrir(self, idNotaFiscal: int) -> tuple:
+        """Reabre uma nota já importada, trazendo de volta os itens conferíveis."""
+        reabertos = self.dao.reabrir_itens(idNotaFiscal)
+
+        nota = self.dao.buscar_nota_com_itens(idNotaFiscal)
+        if not nota:
+            return False, "Erro ao carregar a nota fiscal.", None, False
+
+        pendentes = sum(1 for i in nota._itens if i._statusItem == 'pendente')
+        if not pendentes:
+            return False, ("Esta nota já foi importada e todos os itens já estão no estoque."), None, False
+
+        if reabertos:
+            mensagem = (f"Nota reaberta — {reabertos} item voltou para a conferência."
+                        if reabertos == 1 else
+                        f"Nota reaberta — {reabertos} itens voltaram para a conferência.")
+        else:
+            mensagem = (f"Esta nota já foi importada — {pendentes} item ainda pendente."
+                        if pendentes == 1 else
+                        f"Esta nota já foi importada — {pendentes} itens ainda pendentes.")
+
+        return True, mensagem, nota, True
 
     # ─── Conferência ──────────────────────────────────────────────────────────
 

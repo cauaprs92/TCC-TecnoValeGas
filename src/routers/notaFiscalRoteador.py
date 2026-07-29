@@ -67,19 +67,32 @@ def importar():
 
     conteudo = arquivo.read()
 
-    sucesso, mensagem, nota = controller.importar_xml(conteudo, arquivo.filename)
+    sucesso, mensagem, nota, reaberta = controller.importar_xml(conteudo, arquivo.filename)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
-    historico_ctrl.registrar(
-        g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Importou", "Nota Fiscal",
-        f"Importou a nota fiscal nº {nota._numero} de '{nota._nomeFornecedor}' "
-        f"({len(nota._itens)} itens)",
-    )
+    if reaberta:
+        historico_ctrl.registrar(
+            g.admin_id, g.jwt_payload.get("nomeLogin"),
+            "Reabriu", "Nota Fiscal",
+            f"Reabriu a conferência da nota fiscal nº {nota._numero} "
+            f"de '{nota._nomeFornecedor}'",
+        )
+    else:
+        historico_ctrl.registrar(
+            g.admin_id, g.jwt_payload.get("nomeLogin"),
+            "Importou", "Nota Fiscal",
+            f"Importou a nota fiscal nº {nota._numero} de '{nota._nomeFornecedor}' "
+            f"({len(nota._itens)} itens)",
+        )
 
-    return jsonify({"status": True, "msg": mensagem, "nota": _serializar(nota)}), 201
+    return jsonify({
+        "status":   True,
+        "msg":      mensagem,
+        "reaberta": reaberta,
+        "nota":     _serializar(nota),
+    }), 200 if reaberta else 201
 
 
 # ─── GET /nota-fiscal/<idNotaFiscal>/itens ────────────────────────────────────

@@ -522,6 +522,8 @@ body {
 .toast.success i { color: #2D8A4E; }
 .toast.error   i { color: #C0392B; }
 .toast.warning i { color: #916A00; }
+.toast.info    { border-left-color: #2F5EC4; }
+.toast.info    i { color: #2F5EC4; }
 
 /* ── CHART ── */
 .chart-container { padding: 16px 20px; height: 280px; position: relative; }
