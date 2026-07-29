@@ -109,7 +109,7 @@ class ProdutoController:
         sucesso = self.dao.deletar(idProduto)
         if sucesso:
             return True, "Produto deletado com sucesso!", None
-        return False, "Erro ao deletar produto. Verifique se ele não está vinculado a uma obra.", None
+        return False, "Erro ao deletar produto. Verifique se ele não está vinculado a uma obra ou serviço.", None
 
     def verificar_estoque(self, idProduto: int, quantidadeNecessaria: int) -> tuple:
         dadoProduto = self.dao.buscar_por_id(idProduto)

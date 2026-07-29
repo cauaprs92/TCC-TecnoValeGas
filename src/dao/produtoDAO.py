@@ -160,12 +160,17 @@ class ProdutoDAO:
             Conexao.fechar_conexao(conexao, cursor)
 
     def deletar(self, idProduto: int) -> bool:
+        # O item da nota fiscal só aponta para o produto; a nota continua íntegra
+        # sem esse vínculo (guarda nomeProdutoNota e statusItem próprios), então
+        # desfaz a referência antes de excluir — senão a FK bloqueia o DELETE.
+        sql_desvincular = "UPDATE notaFiscalItens SET idProduto = NULL WHERE idProduto = %s"
         sql = "DELETE FROM produtos WHERE idProduto = %s"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return False
         cursor = conexao.cursor()
         try:
+            cursor.execute(sql_desvincular, (idProduto,))
             cursor.execute(sql, (idProduto,))
             conexao.commit()
             return True

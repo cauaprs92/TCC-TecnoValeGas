@@ -741,7 +741,7 @@ function _nfItemHTML(item) {
       ${cabecalho}
       <div class="nf-item-status">
         ${confirmado
-          ? `<i class="fa-solid fa-boxes-stacked"></i> Estoque atualizado — produto ID ${item.idProduto}`
+          ? `<i class="fa-solid fa-boxes-stacked"></i> Estoque atualizado${item.idProduto ? ` — produto ID ${item.idProduto}` : ' — produto excluído depois'}`
           : `<i class="fa-solid fa-ban"></i> Item ignorado — estoque não alterado`}
       </div>
     </div>`;
