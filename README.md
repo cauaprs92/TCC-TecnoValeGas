@@ -147,6 +147,9 @@ clientes       -- cadastro de clientes (CPF/CNPJ + endereço completo)
 produtos       -- estoque com qtdMinima e qtdMaxima por produto
 obras          -- obras com dataInicio, dataFim, responsável e status
 produtosObras  -- relação N:N entre obras e produtos (quantidade utilizada)
+fornecedores    -- fornecedores (nome + CNPJ, usado na importação de NF-e)
+notasFiscais    -- NF-e importadas por XML (chave de acesso única)
+notaFiscalItens -- itens da nota aguardando conferência (pendente/confirmado/ignorado)
 ```
 
 ---

@@ -927,6 +927,75 @@ body {
 }
 @keyframes foto-pulse { from { opacity: 0 } to { opacity: 1 } }
 
+/* ── IMPORTAÇÃO / CONFERÊNCIA DE NOTA FISCAL ── */
+.nf-intro { font-size: .84rem; color: var(--gray-700); line-height: 1.5; margin-bottom: 16px; }
+.nf-loading {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  margin-top: 14px; font-size: .84rem; font-weight: 500; color: var(--orange);
+}
+.nf-loading.hidden { display: none; }
+
+.nf-cabecalho {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px; padding: 14px 16px; margin-bottom: 18px;
+  background: var(--gray-50); border-radius: 10px; border-left: 3px solid var(--orange);
+}
+.nf-cab-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.nf-cab-label {
+  font-size: .68rem; font-weight: 700; color: var(--gray-500);
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.nf-cab-item strong {
+  font-size: .87rem; font-weight: 600; color: var(--dark);
+  overflow: hidden; text-overflow: ellipsis;
+}
+.nf-cab-valor { color: #2D8A4E !important; }
+
+.nf-itens { display: flex; flex-direction: column; gap: 12px; }
+.nf-item {
+  border: 1.5px solid var(--gray-200); border-radius: 10px; padding: 14px;
+  background: #fff; transition: all var(--transition);
+}
+.nf-item.confirmado { background: #F2FBF5; border-color: #A7E0BC; }
+.nf-item.ignorado   { background: var(--gray-50); border-color: var(--gray-200); opacity: .8; }
+
+.nf-item-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.nf-item-nome {
+  flex: 1; min-width: 0; font-size: .89rem; font-weight: 600; color: var(--dark);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+}
+.nf-item-check { color: #2D8A4E; }
+.nf-item-cod {
+  font-size: .68rem; font-weight: 600; color: var(--gray-500);
+  background: var(--gray-100); padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+}
+.nf-item-numeros { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+.nf-item-qtd   { font-size: .85rem; font-weight: 700; color: var(--dark); white-space: nowrap; }
+.nf-item-valor { font-size: .75rem; color: var(--gray-500); white-space: nowrap; }
+
+.nf-item-busca { margin-top: 12px; margin-bottom: 0; }
+.nf-item-busca .prod-estoque-input { max-width: 130px; }
+
+.nf-item-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.nf-btn-repor:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.nf-btn-repor:disabled:hover { background: var(--orange); box-shadow: none; transform: none; }
+
+.nf-item-status {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  font-size: .8rem; font-weight: 500; color: #2D8A4E;
+}
+.nf-item.ignorado .nf-item-status { color: var(--gray-500); }
+
+.nf-novo-produto {
+  margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--gray-200);
+}
+.nf-novo-produto.hidden { display: none; }
+.nf-np-info {
+  font-size: .78rem; color: var(--gray-700); background: var(--orange-pale);
+  border-radius: 6px; padding: 8px 12px;
+}
+.nf-rodape-info { flex: 1; font-size: .78rem; color: var(--gray-500); align-self: center; }
+
 /* ── TABLE COLUMN SIZES ── */
 .col-id      { width: 44px; color: var(--gray-400); }
 .col-actions { width: auto; white-space: nowrap; text-align: right; padding-right: 20px !important; }

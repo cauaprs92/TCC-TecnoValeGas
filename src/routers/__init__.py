@@ -8,6 +8,7 @@ from .relatorioRoteador   import relatorio_bp
 from .historicoRoteador   import historico_bp
 from .servicoRoteador     import servico_bp
 from .fornecedorRoteador  import fornecedor_bp
+from .notaFiscalRoteador  import nota_fiscal_bp
 
 __all__ = [
     "cliente_bp",
@@ -20,4 +21,5 @@ __all__ = [
     "historico_bp",
     "servico_bp",
     "fornecedor_bp",
+    "nota_fiscal_bp",
 ]

@@ -280,6 +280,9 @@
           <button class="btn btn-secondary" onclick="exportarProdutos()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
+          <button class="btn btn-secondary" onclick="abrirModalImportarNF()">
+            <i class="fa-solid fa-file-arrow-up"></i> Importar Nota Fiscal
+          </button>
           <button class="btn btn-primary" onclick="abrirModalNovoProduto()">
             <i class="fa-solid fa-plus"></i> Novo Produto
           </button>
@@ -824,6 +827,60 @@
             <button class="btn btn-primary" id="btnSalvarProduto" onclick="salvarProduto()">
               <i class="fa-solid fa-floppy-disk"></i> Salvar
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: IMPORTAR NOTA FISCAL ===== -->
+      <div class="modal-overlay hidden" id="modalImportarNF">
+        <div class="modal">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-file-arrow-up"></i> Importar Nota Fiscal</h2>
+            <button class="modal-close" onclick="fecharModal('modalImportarNF')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <p class="nf-intro">
+              Envie o arquivo <strong>XML</strong> da NF-e para dar entrada nos produtos em massa.
+              Depois do envio você confere item por item antes de mexer no estoque.
+            </p>
+
+            <div class="foto-dropzone" id="nfDropzone"
+                 onclick="document.getElementById('nfInput').click()"
+                 ondragover="event.preventDefault();this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="_onDropNF(event)">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Clique ou arraste o XML aqui</span>
+              <span class="foto-hint">Apenas arquivos .xml de NF-e — máx. 10 MB</span>
+            </div>
+            <input type="file" id="nfInput" accept=".xml,text/xml,application/xml"
+                   style="display:none" onchange="_onSelecionarNF(this.files)" />
+
+            <div class="nf-loading hidden" id="nfLoading">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <span>Lendo a nota fiscal...</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalImportarNF')">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: CONFERÊNCIA DA NOTA FISCAL ===== -->
+      <div class="modal-overlay hidden" id="modalConferenciaNF">
+        <div class="modal modal-large">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-clipboard-check"></i> Conferência da Nota Fiscal</h2>
+            <button class="modal-close" onclick="fecharModalConferenciaNF()"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="nf-cabecalho" id="nfCabecalho"></div>
+            <div class="nf-itens" id="nfItens"></div>
+          </div>
+          <div class="modal-footer">
+            <span class="nf-rodape-info" id="nfResumo"></span>
+            <button class="btn btn-primary" onclick="fecharModalConferenciaNF()">Fechar</button>
           </div>
         </div>
       </div>

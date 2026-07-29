@@ -23,8 +23,15 @@ DROP SCHEMA IF EXISTS tcc;
 
     create table fornecedores (
     idFornecedor   int primary key NOT NULL AUTO_INCREMENT,
-    nomeFornecedor VARCHAR(150) NOT NULL UNIQUE
+    nomeFornecedor VARCHAR(150) NOT NULL UNIQUE,
+    cnpjFornecedor VARCHAR(18)  DEFAULT NULL UNIQUE
     );
+
+    -- ── MIGRAÇÃO — cnpjFornecedor (rodar se a tabela já existir) ──────────────
+    -- Usado pela importação de NF-e: o fornecedor da nota é identificado pelo
+    -- CNPJ do <emit>, evitando duplicar fornecedores com grafias diferentes.
+    -- ALTER TABLE fornecedores
+    --   ADD COLUMN cnpjFornecedor VARCHAR(18) DEFAULT NULL UNIQUE;
 
     create table produtos(
     idProduto     int primary key NOT NULL,
@@ -280,6 +287,62 @@ DROP SCHEMA IF EXISTS tcc;
     --   FOREIGN KEY (idServico) REFERENCES servicos(idServico)
     -- );
 
+    create table notasFiscais(
+        idNotaFiscal   int          primary key NOT NULL AUTO_INCREMENT,
+        chaveAcesso    VARCHAR(44)  NOT NULL UNIQUE,
+        numero         VARCHAR(20)  NOT NULL,
+        serie          VARCHAR(10),
+        idFornecedor   int          NOT NULL,
+        dataEmissao    DATETIME,
+        valorTotal     DECIMAL(10,2) NOT NULL,
+        nomeArquivo    VARCHAR(255),
+        dataImportacao DATETIME     DEFAULT CURRENT_TIMESTAMP,
+
+        FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
+    );
+
+    create table notaFiscalItens(
+        idItem               int          primary key NOT NULL AUTO_INCREMENT,
+        idNotaFiscal         int          NOT NULL,
+        idProduto            int          DEFAULT NULL,
+        codProdutoFornecedor VARCHAR(60),
+        nomeProdutoNota      VARCHAR(255) NOT NULL,
+        quantidade           DECIMAL(10,3) NOT NULL,
+        valorUnitario        DECIMAL(10,4),
+        valorTotal           DECIMAL(10,2),
+        statusItem           VARCHAR(20)  NOT NULL DEFAULT 'pendente',
+
+        FOREIGN KEY (idNotaFiscal) REFERENCES notasFiscais(idNotaFiscal),
+        FOREIGN KEY (idProduto)    REFERENCES produtos(idProduto)
+    );
+
+    -- ── MIGRAÇÃO (rodar se as tabelas já existirem) ───────────────────────────
+    -- CREATE TABLE IF NOT EXISTS notasFiscais (
+    --   idNotaFiscal   int primary key NOT NULL AUTO_INCREMENT,
+    --   chaveAcesso    VARCHAR(44) NOT NULL UNIQUE,
+    --   numero         VARCHAR(20) NOT NULL,
+    --   serie          VARCHAR(10),
+    --   idFornecedor   int NOT NULL,
+    --   dataEmissao    DATETIME,
+    --   valorTotal     DECIMAL(10,2) NOT NULL,
+    --   nomeArquivo    VARCHAR(255),
+    --   dataImportacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    --   FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
+    -- );
+    -- CREATE TABLE IF NOT EXISTS notaFiscalItens (
+    --   idItem                int primary key NOT NULL AUTO_INCREMENT,
+    --   idNotaFiscal          int NOT NULL,
+    --   idProduto             int DEFAULT NULL,
+    --   codProdutoFornecedor  VARCHAR(60),
+    --   nomeProdutoNota       VARCHAR(255) NOT NULL,
+    --   quantidade            DECIMAL(10,3) NOT NULL,
+    --   valorUnitario         DECIMAL(10,4),
+    --   valorTotal            DECIMAL(10,2),
+    --   statusItem            VARCHAR(20) NOT NULL DEFAULT 'pendente',
+    --   FOREIGN KEY (idNotaFiscal) REFERENCES notasFiscais(idNotaFiscal),
+    --   FOREIGN KEY (idProduto)    REFERENCES produtos(idProduto)
+    -- );
+
 
     SELECT * FROM produtos;
     SELECT * FROM clientes;
@@ -289,11 +352,15 @@ DROP SCHEMA IF EXISTS tcc;
     SELECT * FROM servicos;
     SELECT * FROM servicoProdutos;
     SELECT * FROM obraServicos;
+    SELECT * FROM notasFiscais;
+    SELECT * FROM notaFiscalItens;
 
 
     ## para reiniciar o banco
     SET FOREIGN_KEY_CHECKS = 0;
 
+    TRUNCATE TABLE notaFiscalItens;
+    TRUNCATE TABLE notasFiscais;
     TRUNCATE TABLE obraServicos;
     TRUNCATE TABLE servicoProdutos;
     TRUNCATE TABLE servicos;

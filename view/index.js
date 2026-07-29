@@ -592,6 +592,315 @@ async function salvarProduto() {
 
 
 // ══════════════════════════════════════════════════
+// NOTA FISCAL (NF-e)  →  POST/GET/PATCH /nota-fiscal
+// ══════════════════════════════════════════════════
+
+let _nfNotaAtual = null;
+
+// ── Importação do XML ─────────────────────────────────────────────────────────
+
+function abrirModalImportarNF() {
+  const inp = document.getElementById('nfInput');
+  if (inp) inp.value = '';
+  document.getElementById('nfLoading').classList.add('hidden');
+  document.getElementById('nfDropzone').classList.remove('drag-over');
+  abrirModal('modalImportarNF');
+}
+
+function _onDropNF(e) {
+  e.preventDefault();
+  document.getElementById('nfDropzone').classList.remove('drag-over');
+  _onSelecionarNF(e.dataTransfer.files);
+}
+
+function _onSelecionarNF(files) {
+  const arquivo = files && files[0];
+  if (!arquivo) return;
+
+  if (!arquivo.name.toLowerCase().endsWith('.xml')) {
+    showToast('Envie o arquivo XML da NF-e.', 'warning');
+    return;
+  }
+  if (arquivo.size > 10 * 1024 * 1024) {
+    showToast(`${arquivo.name} excede 10 MB.`, 'warning');
+    return;
+  }
+  _enviarNF(arquivo);
+}
+
+async function _enviarNF(arquivo) {
+  const token   = getToken();
+  const loading = document.getElementById('nfLoading');
+  loading.classList.remove('hidden');
+
+  try {
+    const fd = new FormData();
+    fd.append('arquivo', arquivo);
+
+    const res = await fetch(`${API_BASE_URL}/nota-fiscal/importar`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: fd,
+    });
+
+    if (res.status === 401) { sessionStorage.clear(); window.location.href = '/'; return; }
+
+    const dados = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg  = dados.msg || `Erro HTTP ${res.status}`;
+      const tipo = msg.includes('já foi importada') ? 'warning' : 'error';
+      showToast(msg, tipo);
+      return;
+    }
+
+    fecharModal('modalImportarNF');
+    _nfNotaAtual = dados.nota;
+    _renderConferenciaNF();
+    abrirModal('modalConferenciaNF');
+    showToast(dados.msg || 'Nota fiscal importada!', 'success');
+  } catch (e) {
+    showToast(`Erro ao importar a nota: ${e.message}`, 'error');
+  } finally {
+    loading.classList.add('hidden');
+    const inp = document.getElementById('nfInput');
+    if (inp) inp.value = '';
+  }
+}
+
+// ── Tela de conferência ───────────────────────────────────────────────────────
+
+function fecharModalConferenciaNF() {
+  fecharModal('modalConferenciaNF');
+  _nfNotaAtual = null;
+}
+
+function _nfFmtQtd(v) {
+  const n = Number(v) || 0;
+  return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+}
+
+function _nfFmtDataEmissao(d) {
+  if (!d) return '—';
+  const [data, hora] = d.split(' ');
+  const [y, m, dia]  = data.split('-');
+  return `${dia}/${m}/${y}${hora ? ' ' + hora.slice(0, 5) : ''}`;
+}
+
+function _renderConferenciaNF() {
+  const nota = _nfNotaAtual;
+  if (!nota) return;
+
+  document.getElementById('nfCabecalho').innerHTML = `
+    <div class="nf-cab-item">
+      <span class="nf-cab-label">Fornecedor</span>
+      <strong>${_esc(nota.nomeFornecedor || '—')}</strong>
+    </div>
+    <div class="nf-cab-item">
+      <span class="nf-cab-label">Nota</span>
+      <strong>nº ${_esc(nota.numero || '—')}${nota.serie ? ' / série ' + _esc(nota.serie) : ''}</strong>
+    </div>
+    <div class="nf-cab-item">
+      <span class="nf-cab-label">Emissão</span>
+      <strong>${_nfFmtDataEmissao(nota.dataEmissao)}</strong>
+    </div>
+    <div class="nf-cab-item">
+      <span class="nf-cab-label">Valor total</span>
+      <strong class="nf-cab-valor">${_fmtMoeda(nota.valorTotal)}</strong>
+    </div>`;
+
+  document.getElementById('nfItens').innerHTML =
+    (nota.itens || []).map(_nfItemHTML).join('');
+
+  _nfAtualizarResumo();
+}
+
+function _nfItemHTML(item) {
+  const confirmado = item.statusItem === 'confirmado';
+  const ignorado   = item.statusItem === 'ignorado';
+  const resolvido  = confirmado || ignorado;
+
+  const sugestao = item.sugestao;
+  const buscaVal = sugestao ? `${sugestao.idProduto} — ${sugestao.nomeProduto}` : '';
+  const estoque  = sugestao ? `${sugestao.qtdProduto} em estoque` : '';
+
+  const cabecalho = `
+    <div class="nf-item-topo">
+      <div class="nf-item-nome">
+        ${resolvido ? `<i class="fa-solid fa-circle-check nf-item-check"></i>` : ''}
+        ${_esc(item.nomeProdutoNota)}
+        ${item.codProdutoFornecedor ? `<span class="nf-item-cod">cód. ${_esc(item.codProdutoFornecedor)}</span>` : ''}
+      </div>
+      <div class="nf-item-numeros">
+        <span class="nf-item-qtd">${_nfFmtQtd(item.quantidade)} un</span>
+        <span class="nf-item-valor">${_fmtMoeda(item.valorTotal)}</span>
+      </div>
+    </div>`;
+
+  if (resolvido) {
+    return `<div class="nf-item ${confirmado ? 'confirmado' : 'ignorado'}" data-id-item="${item.idItem}">
+      ${cabecalho}
+      <div class="nf-item-status">
+        ${confirmado
+          ? `<i class="fa-solid fa-boxes-stacked"></i> Estoque atualizado — produto ID ${item.idProduto}`
+          : `<i class="fa-solid fa-ban"></i> Item ignorado — estoque não alterado`}
+      </div>
+    </div>`;
+  }
+
+  return `<div class="nf-item" data-id-item="${item.idItem}">
+    ${cabecalho}
+    <div class="produto-obra-row nf-item-busca">
+      <div class="prod-search-wrap">
+        <input type="text" class="prod-search" placeholder="Buscar produto no sistema (nome ou ID)..."
+          value="${_esc(buscaVal)}"
+          oninput="buscarProdutoInput(this);_nfOnBuscaInput(this)"
+          onfocus="buscarProdutoInput(this)"
+          onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
+          autocomplete="off" />
+        <input type="hidden" class="prod-select" value="${sugestao ? sugestao.idProduto : ''}" />
+        <div class="prod-dropdown hidden"></div>
+      </div>
+      <input type="text" class="prod-estoque-input" value="${estoque}" placeholder="Estoque" readonly />
+    </div>
+    <div class="nf-item-acoes">
+      <button class="btn btn-primary btn-sm nf-btn-repor" ${sugestao ? '' : 'disabled'}
+              onclick="_nfRepor(${item.idItem})">
+        <i class="fa-solid fa-arrow-up-from-bracket"></i> Repor estoque
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="_nfToggleNovoProduto(${item.idItem})">
+        <i class="fa-solid fa-plus"></i> Cadastrar novo produto
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="_nfIgnorar(${item.idItem})">
+        <i class="fa-solid fa-ban"></i> Ignorar
+      </button>
+    </div>
+    <div class="nf-novo-produto hidden">
+      <div class="form-row" style="grid-template-columns:1fr;margin-bottom:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Nome do Produto<span class="required">*</span></label>
+          <input type="text" class="nf-np-nome" value="${_esc(item.nomeProdutoNota)}" />
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Qtd. Mínima</label>
+          <input type="number" class="nf-np-min" min="0" placeholder="0" />
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Qtd. Máxima</label>
+          <input type="number" class="nf-np-max" min="0" placeholder="9999" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Descrição</label>
+        <textarea class="nf-np-desc" rows="2" placeholder="Ex: Saco 50kg, uso em fundações..."></textarea>
+      </div>
+      <div class="nf-np-info">
+        Entrada de <strong>${_nfFmtQtd(item.quantidade)}</strong> unidade(s) como estoque inicial,
+        já vinculado ao fornecedor da nota.
+      </div>
+      <div class="nf-item-acoes">
+        <button class="btn btn-primary btn-sm" onclick="_nfCriarProduto(${item.idItem})">
+          <i class="fa-solid fa-floppy-disk"></i> Cadastrar e dar entrada
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="_nfToggleNovoProduto(${item.idItem})">Cancelar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function _nfLinha(idItem) {
+  return document.querySelector(`#nfItens .nf-item[data-id-item="${idItem}"]`);
+}
+
+// Chamado pelo dropdown de produto compartilhado — libera o botão "Repor estoque".
+function _nfAtualizarBotaoRepor(row) {
+  const item = row && row.closest('.nf-item');
+  if (!item) return;
+  const idProduto = item.querySelector('.prod-select')?.value;
+  const btn       = item.querySelector('.nf-btn-repor');
+  if (btn) btn.disabled = !idProduto;
+}
+
+// Se o usuário editar o texto da busca, a seleção anterior deixa de valer.
+function _nfOnBuscaInput(input) {
+  const row = input.closest('.produto-obra-row');
+  if (!row || !row.closest('.nf-item')) return;
+  row.querySelector('.prod-select').value = '';
+  row.querySelector('.prod-estoque-input').value = '';
+  _nfAtualizarBotaoRepor(row);
+}
+
+function _nfToggleNovoProduto(idItem) {
+  const form = _nfLinha(idItem)?.querySelector('.nf-novo-produto');
+  if (form) form.classList.toggle('hidden');
+}
+
+function _nfAtualizarResumo() {
+  const itens      = _nfNotaAtual?.itens || [];
+  const pendentes  = itens.filter(i => i.statusItem === 'pendente').length;
+  const resumoEl   = document.getElementById('nfResumo');
+  if (!resumoEl) return;
+  resumoEl.textContent = pendentes
+    ? `${pendentes} de ${itens.length} item(ns) ainda pendente(s) — você pode voltar depois.`
+    : `Todos os ${itens.length} item(ns) foram conferidos.`;
+}
+
+// ── Ações de conferência ──────────────────────────────────────────────────────
+
+function _nfRepor(idItem) {
+  const idProduto = _nfLinha(idItem)?.querySelector('.prod-select')?.value;
+  if (!idProduto) { showToast('Selecione um produto para repor o estoque.', 'warning'); return; }
+  _nfConfirmarItem(idItem, { acao: 'repor', idProduto: parseInt(idProduto) });
+}
+
+function _nfCriarProduto(idItem) {
+  const linha = _nfLinha(idItem);
+  if (!linha) return;
+
+  const nome = linha.querySelector('.nf-np-nome').value.trim();
+  if (nome.length < 3) { showToast('Nome deve ter pelo menos 3 caracteres.', 'warning'); return; }
+
+  const min  = linha.querySelector('.nf-np-min').value;
+  const max  = linha.querySelector('.nf-np-max').value;
+  const desc = linha.querySelector('.nf-np-desc').value.trim();
+
+  _nfConfirmarItem(idItem, {
+    acao:      'criar',
+    qtdMinima: min !== '' ? parseInt(min) : null,
+    qtdMaxima: max !== '' ? parseInt(max) : null,
+    produto:   { nomeProduto: nome, descProduto: desc },
+  });
+}
+
+function _nfIgnorar(idItem) {
+  _nfConfirmarItem(idItem, { acao: 'ignorar' });
+}
+
+async function _nfConfirmarItem(idItem, payload) {
+  try {
+    const res = await apiFetch(`/nota-fiscal/item/${idItem}/confirmar`, 'PATCH', payload);
+
+    const item = (_nfNotaAtual?.itens || []).find(i => i.idItem === idItem);
+    if (item) {
+      item.statusItem = payload.acao === 'ignorar' ? 'ignorado' : 'confirmado';
+      item.idProduto  = res.idProduto ?? item.idProduto;
+      const linha = _nfLinha(idItem);
+      if (linha) linha.outerHTML = _nfItemHTML(item);
+    }
+    _nfAtualizarResumo();
+
+    // reflete o novo estoque na aba Estoque em tempo real
+    await Promise.all([carregarProdutos(), carregarFornecedores(), carregarHistorico()]);
+
+    showToast(res.msg || 'Item confirmado!', 'success');
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+
+// ══════════════════════════════════════════════════
 // OBRAS  →  GET/POST/PATCH/DELETE /obra
 // ══════════════════════════════════════════════════
 
@@ -748,6 +1057,9 @@ function selecionarProdutoDropdown(item, idProduto) {
   const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
   estoqueEl.value = `${p.qtdProduto} em estoque`;
   estoqueEl.style.color = cor;
+
+  // na conferência da NF o botão "Repor estoque" só libera com um produto escolhido
+  _nfAtualizarBotaoRepor(row);
 }
 
 function fecharDropdownProduto(input) {
