@@ -1212,3 +1212,54 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
 
   body.sidebar-open { overflow: hidden; }
 }
+
+/* ── Ações do cabeçalho de página ── */
+.page-header-actions {
+  display: flex; align-items: center; gap: 10px;
+  margin-left: auto;
+}
+
+/* ══ ≤ 700px — cabeçalhos e barras de filtro empilhados ══ */
+@media (max-width: 700px) {
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-header h1 { font-size: 1.35rem; }
+  .page-subtitle { font-size: .8rem; }
+  .page-header-info { flex: 1 1 auto; min-width: 0; }
+  .page-header-actions {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+  .page-header-actions .btn { flex: 1; justify-content: center; }
+
+  .toolbar { flex-wrap: wrap; }
+  .toolbar-spacer { display: none; }
+  .search-inline { flex: 1 1 100%; }
+  .toolbar > .btn { flex: 1 1 calc(50% - 5px); justify-content: center; }
+  .select-filter { flex: 1 1 100%; }
+
+  .filtro-periodo { flex: 1 1 100%; }
+  .filtro-periodo input { flex: 1; width: auto; min-width: 0; }
+  .filtro-group { flex: 1 1 100%; min-width: 0; }
+}
+
+/* ══ ≤ 600px — topbar e área de conteúdo compactas ══ */
+@media (max-width: 600px) {
+  .topbar { height: 56px; padding: 0 12px; }
+  .topbar-left { gap: 6px; }
+  .btn-sidebar-toggle { font-size: 1.1rem; padding: 10px; }
+  .breadcrumb {
+    font-size: .95rem;
+    max-width: 55vw;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .btn-notif { width: 40px; height: 40px; }
+  .page-content { padding: 8px 12px 24px; }
+  .toolbar-title { margin-bottom: 8px; }
+}
+
+/* ══ ≤ 420px — botões de ação em coluna ══ */
+@media (max-width: 420px) {
+  .toolbar > .btn { flex: 1 1 100%; }
+  .page-header-actions { flex-wrap: wrap; }
+  .page-header-actions .btn { flex: 1 1 100%; }
+}
