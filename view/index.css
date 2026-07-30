@@ -1366,6 +1366,87 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .kpi-grid > .kpi-card:last-child:nth-child(odd) { grid-column: auto; }
 }
 
+/* ══ ≤ 600px — MODAIS EM TELA CHEIA ══ */
+@media (max-width: 600px) {
+  .modal-overlay { padding: 0; align-items: stretch; }
+  .modal,
+  .modal-large,
+  #modalObra .modal {
+    width: 100%; max-width: 100%;
+    height: 100%; max-height: 100%;
+    border-radius: 0;
+  }
+  /* diálogos curtos (confirmação, editar quantidade) seguem centralizados */
+  .modal-small {
+    align-self: center;
+    width: calc(100% - 24px);
+    height: auto; max-height: calc(100% - 32px);
+    margin: 0 auto;
+    border-radius: 12px;
+  }
+
+  .modal-header { padding: 14px 16px; }
+  .modal-header h2 { font-size: .95rem; }
+  .modal-close { width: 38px; height: 38px; font-size: 1.1rem; }
+  .modal-body { padding: 16px; }
+  .modal-footer {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .modal-footer .btn { width: 100%; justify-content: center; padding: 12px 20px; }
+  .nf-rodape-info { text-align: center; }
+
+  /* formulários em coluna única — !important vence os grid-template inline do HTML */
+  .form-row { grid-template-columns: 1fr !important; gap: 0; }
+  /* 16px evita o zoom automático do iOS ao focar o campo */
+  .form-group input,
+  .form-group select,
+  .form-group textarea { font-size: 16px; padding: 11px 12px; }
+  .input-pwd-wrap input { width: 100%; }
+  .obra-edit-context { flex-wrap: wrap; gap: 6px; }
+
+  /* linhas de produto / serviço empilhadas */
+  .produto-obra-row { flex-wrap: wrap; gap: 8px; }
+  .produto-obra-row input,
+  .produto-obra-row select { font-size: 16px; }
+  .produto-obra-row .prod-search-wrap { flex: 1 1 100%; min-width: 0; }
+  .prod-nome-input    { order: -1; flex: 1 1 100%; }
+  .prod-id-input      { flex: 0 0 68px; }
+  .prod-estoque-input { flex: 1 1 110px; }
+  .prod-qtd-input     { flex: 1 1 80px; }
+  .produto-obra-header,
+  .servico-obra-header { display: none; }
+  #obraProdutosVerList .prod-estoque-input,
+  #obraServicosVerList .prod-estoque-input { flex: 1 1 110px; }
+  #obraProdutosVerList .btn-icon,
+  #obraServicosVerList .btn-icon { flex: 0 0 38px; width: 38px; height: 38px; font-size: .8rem; }
+
+  /* abas da obra com rolagem horizontal */
+  .obra-tabs {
+    gap: 20px; padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .obra-tabs::-webkit-scrollbar { display: none; }
+  .obra-tab { white-space: nowrap; padding: 14px 0; scroll-snap-align: start; }
+  .obra-tab-content { padding-top: 18px; }
+
+  /* conferência da nota fiscal */
+  .nf-cabecalho { grid-template-columns: 1fr 1fr; padding: 12px; gap: 10px; }
+  .nf-item-topo { flex-direction: column; }
+  .nf-item-numeros { flex-direction: row; align-items: baseline; gap: 10px; }
+  .nf-item-acoes .btn { flex: 1 1 100%; justify-content: center; }
+  .nf-item-busca .prod-estoque-input { max-width: none; }
+
+  /* fotos e documentos */
+  .foto-grid { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+  .foto-dropzone { padding: 18px 12px; }
+  .foto-tabs { flex-wrap: wrap; }
+  .foto-remove { width: 26px; height: 26px; font-size: .72rem; }
+}
+
 /* ══ ≤ 420px — botões de ação em coluna ══ */
 @media (max-width: 420px) {
   .toolbar > .btn { flex: 1 1 100%; }
