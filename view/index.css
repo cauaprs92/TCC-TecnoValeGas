@@ -1356,8 +1356,12 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
 }
 
 @media (max-width: 460px) {
-  .kpi-grid { grid-template-columns: 1fr; }
+  /* KPIs em coluna única, mais compactos para reduzir a rolagem */
+  .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
   .kpi-grid > .kpi-card:last-child:nth-child(odd) { grid-column: auto; }
+  .kpi-card { padding: 12px 14px; gap: 12px; }
+  .kpi-icon { width: 34px; height: 34px; font-size: .95rem; }
+  .kpi-value { font-size: 1.3rem; }
 }
 
 /* ══ Dashboard e gráficos ══ */
@@ -1380,6 +1384,10 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .card-full .card-header { flex-wrap: wrap; }
   .card-full .card-header > div:last-child { flex-wrap: wrap; width: 100%; }
   .card-full .card-header > div:last-child .btn { flex: 1; justify-content: center; }
+  .card-full .card-header > div:last-child .chart-period-wrap {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
   .chart-footer-info { margin: 4px 14px 14px; font-size: .74rem; }
   .bar-label { width: 96px; }
 }
@@ -1500,6 +1508,6 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
 /* ══ ≤ 420px — botões de ação em coluna ══ */
 @media (max-width: 420px) {
   .toolbar > .btn { flex: 1 1 100%; }
-  .page-header-actions { flex-wrap: wrap; }
-  .page-header-actions .btn { flex: 1 1 100%; }
+  /* o botão de recarregar continua ao lado do botão de ação, não numa linha só sua */
+  .page-header-actions .btn { flex: 1 1 auto; min-width: 0; }
 }
