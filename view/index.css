@@ -1106,12 +1106,6 @@ body {
   .consumo-chart-wrap { height: 120px; }
 }
 
-@media (max-width: 600px) {
-  .obras-status-wrap { flex-direction: column; align-items: center; }
-  .obras-status-legend { width: 100%; }
-  .consumo-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .chart-container { height: 220px; }
-}
 .obra-tabs {
     display: flex;
     gap: 35px;
@@ -1364,6 +1358,37 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
 @media (max-width: 460px) {
   .kpi-grid { grid-template-columns: 1fr; }
   .kpi-grid > .kpi-card:last-child:nth-child(odd) { grid-column: auto; }
+}
+
+/* ══ Dashboard e gráficos ══ */
+@media (max-width: 768px) {
+  .card-header { padding: 12px 14px; }
+  .card-header h2 { font-size: .84rem; }
+
+  /* cabeçalho do card "Consumo de Produtos" */
+  .consumo-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .chart-period-wrap { justify-content: space-between; }
+  .chart-period-wrap select { flex: 1; }
+  .consumo-total { font-size: 1.6rem; }
+  .consumo-total-wrap { padding: 10px 14px 6px; }
+
+  /* status das obras: rosca em cima, legenda embaixo */
+  .obras-status-wrap { flex-direction: column; align-items: center; gap: 16px; padding: 14px; }
+  .obras-status-legend { width: 100%; }
+
+  /* cabeçalho do card "Produtos mais utilizados" */
+  .card-full .card-header { flex-wrap: wrap; }
+  .card-full .card-header > div:last-child { flex-wrap: wrap; width: 100%; }
+  .card-full .card-header > div:last-child .btn { flex: 1; justify-content: center; }
+  .chart-footer-info { margin: 4px 14px 14px; font-size: .74rem; }
+  .bar-label { width: 96px; }
+}
+
+@media (max-width: 600px) {
+  /* barras horizontais do Top 10 precisam de altura, não de menos */
+  .chart-container { height: 340px; padding: 12px 4px; }
+  .chart-card-title { font-size: .9rem; }
+  .chart-card-sub { font-size: .74rem; }
 }
 
 /* ══ ≤ 600px — MODAIS EM TELA CHEIA ══ */
