@@ -1346,6 +1346,7 @@ function _renderHistoricoObra(idObra) {
           </tr>`).join('')}
       </tbody>
     </table>`;
+  _marcarCelulasTabela(el.querySelector('table'));
 }
 
 function _resetAbasObra() {

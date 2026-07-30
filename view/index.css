@@ -1431,10 +1431,12 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .input-pwd-wrap input { width: 100%; }
   .obra-edit-context { flex-wrap: wrap; gap: 6px; }
 
-  /* linhas de produto / serviço empilhadas */
+  /* linhas de produto / serviço empilhadas
+     (min-width:0 é obrigatório: input tem largura mínima intrínseca de ~20
+     caracteres e sem isso cada campo quebra para uma linha só sua) */
   .produto-obra-row { flex-wrap: wrap; gap: 8px; }
   .produto-obra-row input,
-  .produto-obra-row select { font-size: 16px; }
+  .produto-obra-row select { font-size: 16px; min-width: 0; }
   .produto-obra-row .prod-search-wrap { flex: 1 1 100%; min-width: 0; }
   .prod-nome-input    { order: -1; flex: 1 1 100%; }
   .prod-id-input      { flex: 0 0 68px; }
@@ -1449,13 +1451,17 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
 
   /* abas da obra com rolagem horizontal */
   .obra-tabs {
-    gap: 20px; padding: 0 16px;
+    gap: 14px; padding: 0 14px;
     overflow-x: auto;
     scrollbar-width: none;
     scroll-snap-type: x proximity;
   }
   .obra-tabs::-webkit-scrollbar { display: none; }
-  .obra-tab { white-space: nowrap; padding: 14px 0; scroll-snap-align: start; }
+  .obra-tab {
+    white-space: nowrap; padding: 14px 0;
+    font-size: .72rem; letter-spacing: .2px;
+    scroll-snap-align: start;
+  }
   .obra-tab-content { padding-top: 18px; }
 
   /* conferência da nota fiscal */
