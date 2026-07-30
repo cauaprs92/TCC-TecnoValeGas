@@ -3169,12 +3169,42 @@ document.querySelectorAll('.nav-item').forEach(item => {
     const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', servicos: 'Serviços', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
     if (page === 'historico') carregarHistorico();
+    fecharSidebarMobile();
   });
 });
 
-document.getElementById('sidebarToggle').addEventListener('click', () => {
+// ── Menu lateral: gaveta no celular, colapso no desktop ──
+const SIDEBAR_BP = 900;
+const _sidebarModoGaveta = () => window.innerWidth <= SIDEBAR_BP;
+
+function abrirSidebarMobile() {
+  document.getElementById('sidebar').classList.add('open');
+  document.body.classList.add('sidebar-open');
+}
+
+function fecharSidebarMobile() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+}
+
+function alternarSidebar() {
+  if (_sidebarModoGaveta()) {
+    document.body.classList.contains('sidebar-open') ? fecharSidebarMobile() : abrirSidebarMobile();
+    return;
+  }
   document.getElementById('sidebar').classList.toggle('collapsed');
   document.querySelector('.main-content').classList.toggle('expanded');
+}
+
+document.getElementById('sidebarToggle').addEventListener('click', alternarSidebar);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') fecharSidebarMobile();
+});
+
+// ao voltar para o desktop a gaveta é descartada
+window.addEventListener('resize', () => {
+  if (!_sidebarModoGaveta()) fecharSidebarMobile();
 });
 
 document.getElementById('btnNotif').addEventListener('click', e => {

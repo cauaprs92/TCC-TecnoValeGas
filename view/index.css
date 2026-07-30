@@ -1152,3 +1152,63 @@ body {
 #modalObra .modal-body {
     min-height: 0;
 }
+
+/* ════════════════════════════════════════════
+   RESPONSIVO — TABLET E CELULAR
+   Breakpoints: 1200px / 900px / 600px / 400px
+   ════════════════════════════════════════════ */
+
+/* ── Fundação ── */
+@supports (min-height: 100dvh) {
+  body { min-height: 100dvh; }
+  .main-content { min-height: 100dvh; }
+}
+img, canvas { max-width: 100%; }
+button, a, .nav-item, .stat-item, .kpi-card { -webkit-tap-highlight-color: rgba(217,107,43,.16); }
+
+/* ── Fundo escuro do menu lateral no celular ── */
+.sidebar-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(15,17,26,.5);
+  z-index: 199;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s ease;
+}
+body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+@media (min-width: 901px) { .sidebar-backdrop { display: none; } }
+
+/* ══ ≤ 1200px — telas médias ══ */
+@media (max-width: 1200px) {
+  .page-content { padding: 8px 20px 24px; }
+  .topbar { padding: 0 20px; }
+  .search-box input { width: 130px; }
+}
+
+/* ══ ≤ 900px — menu lateral vira gaveta ══ */
+@media (max-width: 900px) {
+  .sidebar {
+    width: 268px;
+    transform: translateX(-100%);
+    transition: transform .24s ease;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 0 0 44px rgba(0,0,0,.4);
+  }
+  /* o colapso do desktop não se aplica à gaveta */
+  .sidebar.collapsed { width: 268px; }
+  .sidebar.collapsed .logo-text     { display: flex; }
+  .sidebar.collapsed .nav-item span { display: inline; }
+  .sidebar.collapsed .user-details  { display: block; }
+  .sidebar.collapsed .nav-item      { justify-content: flex-start; }
+
+  .main-content,
+  .main-content.expanded { margin-left: 0; }
+
+  /* alvos de toque maiores no menu */
+  .nav-item { padding: 13px 14px; font-size: .92rem; }
+  .nav-item.active { padding-left: 11px; }
+  .sidebar-nav { padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); }
+
+  body.sidebar-open { overflow: hidden; }
+}
