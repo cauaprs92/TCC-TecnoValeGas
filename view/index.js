@@ -1755,6 +1755,7 @@ async function verProdutosObra(idObra) {
             </tr>`).join('')}
         </tbody>
       </table>`;
+    _marcarCelulasTabela(body.querySelector('table'));
   } catch (e) {
     body.innerHTML = `<div class="empty-row">Erro ao carregar produtos: ${e.message}</div>`;
   }
@@ -3097,6 +3098,55 @@ function _actionMenu(items) {
   }).join('');
   return `<div class="actions" onclick="event.stopPropagation()">${btns}</div>`;
 }
+
+// ══════════════════════════════════════════════════
+// TABELAS RESPONSIVAS — rótulos do modo cartão
+// ══════════════════════════════════════════════════
+
+const _TABELAS_CARTAO = [
+  'tabelaProdutos', 'tabelaObras', 'tabelaClientes', 'tabelaServicos',
+  'tabelaAdmins', 'tabelaResponsaveis', 'tabelaHistorico',
+];
+
+// No celular cada <tr> vira um cartão — o rótulo de cada célula vem do <thead>.
+function _marcarCelulasTabela(tabela) {
+  if (!tabela) return;
+  const cabecalho = tabela.tHead && tabela.tHead.rows[0];
+  if (!cabecalho) return;
+  const titulos = [...cabecalho.cells].map(th => th.textContent.trim());
+
+  [...tabela.tBodies].forEach(tbody => {
+    [...tbody.rows].forEach(tr => {
+      const celulas = [...tr.cells];
+      // linhas de carregamento / estado vazio usam colspan e ficam fora do modo cartão
+      if (celulas.length !== titulos.length) { tr.classList.add('row-plain'); return; }
+      tr.classList.remove('row-plain');
+      celulas.forEach((td, i) => {
+        td.dataset.col   = i;
+        td.dataset.label = titulos[i] || '';
+        td.classList.toggle('td-actions',
+          td.classList.contains('actions') || !!td.querySelector('.actions'));
+      });
+    });
+  });
+}
+
+function _iniciarTabelasResponsivas() {
+  _TABELAS_CARTAO.forEach(id => {
+    const tabela = document.getElementById(id);
+    if (!tabela) return;
+    _marcarCelulasTabela(tabela);
+    [...tabela.tBodies].forEach(tbody => {
+      new MutationObserver(() => _marcarCelulasTabela(tabela))
+        .observe(tbody, { childList: true });
+    });
+  });
+}
+
+if (document.readyState === 'loading')
+  document.addEventListener('DOMContentLoaded', _iniciarTabelasResponsivas);
+else
+  _iniciarTabelasResponsivas();
 
 // ── Empty state helper ──
 function _emptyState(icon, title, desc, btnLabel, btnOnclick, colspan) {
