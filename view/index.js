@@ -188,6 +188,7 @@ async function carregarTodos() {
     carregarResponsaveis(),
     carregarHistorico(),
     carregarFornecedores(),
+    carregarFuncionariosObra(),
   ]);
   renderGraficoProdutos();
 }
@@ -206,7 +207,7 @@ function carregarAdministrador() {
 
 let cacheProdutos = [];
 let cacheFornecedores = [];
-const _cacheReady = { produtos: false, obras: false, clientes: false, servicos: false, admins: false, responsaveis: false, historico: false, fornecedores: false };
+const _cacheReady = { produtos: false, obras: false, clientes: false, servicos: false, admins: false, responsaveis: false, historico: false, fornecedores: false, funcionariosObra: false };
 
 async function carregarFornecedores() {
   try {
@@ -961,6 +962,10 @@ function renderTabelaObras(obras) {
       const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '—');
       const descEsc = _esc(o.descObra);
       const tags = [o.tipoObra, o.respObra].filter(Boolean);
+      const equipe = o.funcionarios || [];
+      const equipeHtml = equipe.length
+        ? `<span class="cell-tag" title="Equipe: ${_esc(equipe.map(f => f.nomeLogin).join(', '))}"><i class="fa-solid fa-users"></i>${equipe.length} na equipe</span>`
+        : '';
       const valorHtml = (o.statusObra === 'Concluida' && o.valorObra != null)
         ? `<span style="color:#2D8A4E;font-weight:700">${_fmtMoeda(o.valorObra)}</span>`
         : `<span class="cell-secondary">—</span>`;
@@ -976,7 +981,7 @@ function renderTabelaObras(obras) {
           <td>
             <div class="cell-stack">
               <span class="cell-primary">${o.descObra || '—'}</span>
-              ${tags.length ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${tags.map(t=>`<span class="cell-tag"><i class="fa-solid fa-tag"></i>${t}</span>`).join('')}</div>` : ''}
+              ${(tags.length || equipeHtml) ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${tags.map(t=>`<span class="cell-tag"><i class="fa-solid fa-tag"></i>${t}</span>`).join('')}${equipeHtml}</div>` : ''}
             </div>
           </td>
           <td><span class="cell-secondary">${fmtData(o.dataInicio)}</span></td>
@@ -1192,6 +1197,102 @@ function _coletarServicosObra(containerId) {
 // Serviços já vinculados à obra em edição (somente leitura) — usados no cálculo do total
 let _obraServicosExistentes = [];
 
+
+// ══════════════════════════════════════════════════
+// EQUIPE DA OBRA — seleção múltipla de funcionários
+// ══════════════════════════════════════════════════
+// Os candidatos são os usuários de cargo "Obra": quem estiver na equipe passa
+// a enxergar essa obra no sistema. É diferente do Field (obraResp), que é o
+// técnico responsável e vem da tabela de responsáveis.
+
+let cacheFuncionariosObra = [];
+let _obraEquipe           = new Set();   // idLogin dos selecionados no modal
+
+async function carregarFuncionariosObra() {
+  try {
+    const res = await apiFetch('/obra/funcionarios');
+    cacheFuncionariosObra = res.funcionarios || [];
+    _cacheReady.funcionariosObra = true;
+    _renderEquipeDropdown();
+  } catch (e) {
+    console.error('carregarFuncionariosObra:', e);
+  }
+}
+
+function _renderEquipeDropdown() {
+  const box = document.getElementById('obraEquipeDropdown');
+  if (!box) return;
+  if (!cacheFuncionariosObra.length) {
+    box.innerHTML = '<div class="equipe-vazio">Nenhum usuário com cargo Obra cadastrado ainda.</div>';
+    return;
+  }
+  box.innerHTML = cacheFuncionariosObra.map(f => `
+    <label class="equipe-option">
+      <input type="checkbox" value="${f.idLogin}"
+             ${_obraEquipe.has(f.idLogin) ? 'checked' : ''}
+             onchange="alternarFuncionarioEquipe(${f.idLogin}, this.checked)" />
+      <span class="eq-nome">${f.nomeLogin}</span>
+      <span class="eq-email">${f.email || ''}</span>
+    </label>`).join('');
+}
+
+function _renderEquipeChips() {
+  const chips  = document.getElementById('obraEquipeChips');
+  const resumo = document.getElementById('obraEquipeResumo');
+  const toggle = document.getElementById('obraEquipeToggle');
+  if (!chips || !resumo) return;
+
+  const escolhidos = cacheFuncionariosObra.filter(f => _obraEquipe.has(f.idLogin));
+  chips.innerHTML = escolhidos.map(f => `
+    <span class="equipe-chip">
+      <span>${f.nomeLogin}</span>
+      <button type="button" title="Remover da equipe"
+              onclick="alternarFuncionarioEquipe(${f.idLogin}, false)">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </span>`).join('');
+
+  const n = escolhidos.length;
+  resumo.textContent = n === 0 ? 'Selecione os funcionários...'
+                     : n === 1 ? '1 funcionário selecionado'
+                     : `${n} funcionários selecionados`;
+  if (toggle) toggle.classList.toggle('vazio', n === 0);
+}
+
+function alternarFuncionarioEquipe(idLogin, marcado) {
+  if (marcado) _obraEquipe.add(idLogin);
+  else         _obraEquipe.delete(idLogin);
+  _renderEquipeDropdown();
+  _renderEquipeChips();
+}
+
+function alternarDropdownEquipe() {
+  const wrap = document.getElementById('obraEquipeWrap');
+  const box  = document.getElementById('obraEquipeDropdown');
+  if (!wrap || !box) return;
+  const abrindo = box.classList.contains('hidden');
+  box.classList.toggle('hidden', !abrindo);
+  wrap.classList.toggle('open', abrindo);
+}
+
+function fecharDropdownEquipe() {
+  document.getElementById('obraEquipeDropdown')?.classList.add('hidden');
+  document.getElementById('obraEquipeWrap')?.classList.remove('open');
+}
+
+function _definirEquipeObra(funcionarios) {
+  _obraEquipe = new Set((funcionarios || []).map(f => f.idLogin));
+  fecharDropdownEquipe();
+  _renderEquipeDropdown();
+  _renderEquipeChips();
+}
+
+// Clique fora fecha a lista — o dropdown fica sobre o formulário do modal.
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('obraEquipeWrap');
+  if (wrap && !wrap.contains(e.target)) fecharDropdownEquipe();
+});
+
 function _atualizarValorTotalObra() {
   let total = _obraServicosExistentes.reduce((acc, s) => acc + Number(s.precoServico || 0), 0);
   document.querySelectorAll('#servicosObraList .servico-select, #servicosObraEdList .servico-select').forEach(hidden => {
@@ -1212,6 +1313,7 @@ const _OBRA_CAMPO_MAP = {
   dataFim:        'obraDataFim',
   statusObra:     'obraStatus',
   respObra:       'obraResp',
+  funcionarios:       'obraEquipe',
   produtosUsados:     'produtosUsados',
   produtosNovos:      'produtosUsados',
   servicosVinculados: 'produtosUsados',
@@ -1233,7 +1335,7 @@ function _obraClearError(fieldId) {
 }
 
 function _obraLimparErros() {
-  ['obraResp', 'obraCodCliente', 'obraDataInicio', 'obraDataFim',
+  ['obraResp', 'obraEquipe', 'obraCodCliente', 'obraDataInicio', 'obraDataFim',
    'obraDesc', 'obraStatus', 'obraUnidade', 'obraTipo', 'obraClientePrimario', 'obraSetor',
    'obraClienteCNPJ', 'obraClienteNome', 'obraClienteRua',
    'obraClienteNumero', 'obraClienteComplemento', 'obraClienteBairro',
@@ -1266,6 +1368,7 @@ function _limparCamposObra() {
   document.getElementById('obraResp').value            = '';
   document.getElementById('obraUnidade').value         = '';
   document.getElementById('obraClientePrimario').value = '';
+  _definirEquipeObra([]);
 }
 
 function gerarRelatorioObra() {
@@ -1425,6 +1528,7 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraDesc').value              = o.descObra || '';
   document.getElementById('obraObs').value               = o.obsObra || '';
   document.getElementById('obraOrientacao').value        = o.orientacaoObra || '';
+  _definirEquipeObra(o.funcionarios);
   buscarClienteObra(document.getElementById('obraCodCliente'));
   document.getElementById('obraSecaoProdutos').classList.add('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.remove('hidden');
@@ -1685,7 +1789,9 @@ async function salvarObra() {
     const servicosNovos = _coletarServicosObra('servicosObraEdList');
 
     try {
-      await apiFetch(`/obra/${idEdicao}`, 'PUT', { obra, produtosNovos, servicosNovos });
+      await apiFetch(`/obra/${idEdicao}`, 'PUT', {
+        obra, produtosNovos, servicosNovos, funcionarios: [..._obraEquipe],
+      });
       fecharModal('modalObra');
       await Promise.all([carregarObras(), carregarProdutos(), carregarServicos()]);
       showToast('Obra atualizada!', 'success');
@@ -1711,7 +1817,9 @@ async function salvarObra() {
   }
 
   try {
-    await apiFetch('/obra', 'POST', { obra, produtosUsados, servicosVinculados });
+    await apiFetch('/obra', 'POST', {
+      obra, produtosUsados, servicosVinculados, funcionarios: [..._obraEquipe],
+    });
     fecharModal('modalObra');
     await Promise.all([carregarObras(), carregarProdutos(), carregarServicos()]);
     showToast(`Obra "${desc}" cadastrada!`, 'success');
@@ -2602,7 +2710,7 @@ async function confirmarExclusao(tipo, id) {
     if (tipo === 'produto')  await carregarProdutos();
     if (tipo === 'obra')     await carregarObras();
     if (tipo === 'cliente')  await carregarClientes();
-    if (tipo === 'admin')    await carregarAdmins();
+    if (tipo === 'admin')    await Promise.all([carregarAdmins(), carregarFuncionariosObra()]);
   } catch (e) {
     showToast(`Erro ao excluir: ${e.message}`, 'error');
   }
@@ -3560,7 +3668,8 @@ async function salvarAdmin() {
       fecharModal('modalAdmin');
       // Editar o próprio cargo muda o que a sessão pode ver.
       if (proprio) sessionStorage.setItem('cargo', cargo);
-      await carregarAdmins();
+      // Trocar o cargo de alguem muda quem pode entrar na equipe da obra.
+      await Promise.all([carregarAdmins(), carregarFuncionariosObra()]);
     } catch (e) { showToast(`Erro: ${e.message}`, 'error'); }
   } else {
     if (!senha) { _erroCampo('adminSenha', 'Senha é obrigatória.'); temErro = true; }
@@ -3570,7 +3679,8 @@ async function salvarAdmin() {
       await apiFetch('/admin', 'POST', payload);
       showToast(`Usuário "${nome}" criado!`, 'success');
       fecharModal('modalAdmin');
-      await carregarAdmins();
+      // Trocar o cargo de alguem muda quem pode entrar na equipe da obra.
+      await Promise.all([carregarAdmins(), carregarFuncionariosObra()]);
     } catch (e) { showToast(`Erro: ${e.message}`, 'error'); }
   }
 }
@@ -3610,12 +3720,14 @@ function exportarProdutos() {
 
 function exportarObras() {
   if (!cacheObras.length) { showToast('Nenhuma obra para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Descrição', 'Field', 'ID Cliente', 'Cliente', 'Setor', 'Data Início', 'Data Fim', 'Status', 'Valor da Obra', 'Observações', 'Orientações'];
+  const cabecalhos = ['ID', 'Descrição', 'Field', 'Equipe', 'ID Cliente', 'Cliente', 'Setor', 'Data Início', 'Data Fim', 'Status', 'Valor da Obra', 'Observações', 'Orientações'];
   const fmtData    = d => { if (!d) return ''; const [y,m,dia] = d.split('-'); return `${dia}/${m}/${y}`; };
   const linhas = cacheObras.map(o => {
     const cliente = cacheClientes.find(c => c.idCliente === o.codCliente);
     return [
-      o.idObra, o.descObra, o.respObra || '', o.codCliente,
+      o.idObra, o.descObra, o.respObra || '',
+      (o.funcionarios || []).map(f => f.nomeLogin).join(', '),
+      o.codCliente,
       cliente ? cliente.nomeCliente : '', o.setorObra || '',
       fmtData(o.dataInicio), fmtData(o.dataFim), o.statusObra,
       (o.statusObra === 'Concluida' && o.valorObra != null) ? o.valorObra : '',

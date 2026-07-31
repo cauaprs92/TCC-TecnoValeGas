@@ -509,6 +509,56 @@ body {
 .prod-dropdown-item .prod-id { color: var(--gray-400); font-size: .75rem; margin-right: 0; white-space: nowrap; }
 .prod-dropdown-item .prod-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prod-dropdown-item .prod-stock { flex-shrink: 0; font-size: .75rem; white-space: nowrap; }
+
+/* ── Equipe da obra: seleção múltipla com checkboxes + chips ──
+   Um <select multiple> nativo exige Ctrl+click e é inviável no celular, então
+   o campo é um botão que abre a lista e mostra os escolhidos como chips. */
+.equipe-wrap { position: relative; }
+.equipe-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px;
+  background: #fff; color: var(--gray-700); font-family: var(--font); font-size: .85rem;
+  cursor: pointer; text-align: left; transition: border var(--transition);
+}
+.equipe-toggle:hover  { border-color: var(--gray-300); }
+.equipe-toggle:focus  { outline: none; border-color: var(--gray-300); }
+.equipe-toggle i      { flex-shrink: 0; font-size: .7rem; color: var(--gray-400); transition: transform var(--transition); }
+.equipe-wrap.open .equipe-toggle i { transform: rotate(180deg); }
+.equipe-toggle span   { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipe-toggle.vazio span { color: var(--gray-400); }
+
+.equipe-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff;
+  border: 1.5px solid var(--gray-200); border-radius: 8px; max-height: 220px;
+  overflow-y: auto; z-index: 999; box-shadow: 0 6px 18px rgba(0,0,0,.1);
+}
+/* É um <label> dentro de .form-group, cuja regra deixa rótulos em caixa alta.
+   Precisa das duas classes para ganhar em especificidade: as opções são nomes
+   de pessoas e e-mails, que devem sair com o texto como foi digitado. */
+.equipe-wrap .equipe-option {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer;
+  font-size: .84rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100);
+  text-transform: none; letter-spacing: normal; font-weight: 400;
+}
+.equipe-option:last-child { border-bottom: none; }
+.equipe-option:hover      { background: var(--gray-50); }
+.equipe-option input      { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; accent-color: var(--orange); }
+.equipe-option .eq-nome   { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipe-option .eq-email  { flex-shrink: 0; font-size: .74rem; color: var(--gray-400); }
+.equipe-vazio             { padding: 12px; font-size: .8rem; color: var(--gray-500); text-align: center; }
+
+.equipe-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.equipe-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px;
+  background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 999px;
+  font-size: .76rem; color: var(--gray-700); max-width: 100%;
+}
+.equipe-chip span   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipe-chip button {
+  border: none; background: none; padding: 0; line-height: 1; cursor: pointer;
+  color: var(--gray-400); font-size: .8rem; flex-shrink: 0;
+}
+.equipe-chip button:hover { color: #DC2626; }
 .form-group input[readonly] { background: var(--gray-50); color: var(--gray-500); cursor: default; }
 .obra-edit-context { font-size: .88rem; color: var(--gray-700); background: var(--gray-50); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; border-left: 3px solid var(--gray-300); }
 .obra-edit-context strong { font-size: 1rem; }
@@ -1530,6 +1580,7 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   }
   /* sugestões de produto/serviço: espaço menor por causa do teclado virtual */
   .prod-dropdown { max-height: 40vh; }
+  .equipe-dropdown { max-height: 40vh; }
 }
 
 /* ══ ≤ 420px — botões de ação em coluna ══ */

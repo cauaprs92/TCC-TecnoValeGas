@@ -995,6 +995,20 @@
               </div>
             </div>
 
+            <div class="form-group">
+              <label>Equipe da Obra <span style="font-weight:400;opacity:.6">(funcionários designados)</span></label>
+              <div class="equipe-wrap" id="obraEquipeWrap">
+                <button type="button" class="equipe-toggle" id="obraEquipeToggle" onclick="alternarDropdownEquipe()">
+                  <span id="obraEquipeResumo">Selecione os funcionários...</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                <div class="equipe-dropdown hidden" id="obraEquipeDropdown"></div>
+              </div>
+              <div class="equipe-chips" id="obraEquipeChips"></div>
+              <span class="field-hint">Só aparecem aqui os usuários com cargo Obra. Eles verão apenas as obras em que estiverem nesta lista.</span>
+              <span class="field-error" id="err-obraEquipe"></span>
+            </div>
+
             <!-- ── Cliente ── -->
             <div class="form-section-title"><i class="fa-solid fa-user"></i> Cliente</div>
 
