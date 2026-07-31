@@ -28,13 +28,14 @@ def autenticar():
     if not sucesso:
         raise ErrorResponse(401, resultado, {"message": resultado})
 
-    # resultado é (idLogin, nomeLogin) quando sucesso=True
-    id_login, nome_login = resultado
+    # resultado é (idLogin, nomeLogin, cargoLogin) quando sucesso=True
+    id_login, nome_login, cargo_login = resultado
     jwt_instance = MeuTokenJWT()
     token = jwt_instance.gerar_token({
         "nomeLogin": nome_login,
         "email":     email,
         "idAdmin":   id_login,
+        "cargo":     cargo_login,
     })
 
     return jsonify({
@@ -42,5 +43,6 @@ def autenticar():
         "msg":       "Login realizado com sucesso!",
         "nomeLogin": nome_login,
         "idAdmin":   id_login,
+        "cargo":     cargo_login,
         "token":     token,
     }), 200

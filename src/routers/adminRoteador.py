@@ -32,19 +32,21 @@ def listar():
 def criar():
     admin = request.get_json()["admin"]
     nome  = admin.get("nomeLogin")
+    cargo = admin.get("cargo")
 
     sucesso, mensagem = controller.criar(
         admin.get("email"),
         admin.get("senha"),
         nome,
+        cargo,
     )
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Cadastrou", "Administrador",
-        f"Cadastrou o administrador '{nome}'",
+        "Cadastrou", "Usuário",
+        f"Cadastrou o usuário '{nome}' com o cargo {cargo}",
     )
 
     return jsonify({"status": True, "msg": mensagem}), 201
@@ -56,27 +58,43 @@ def criar():
 @middleware.validate_id_param
 @middleware.validate_update_body
 def atualizar(idLogin: int):
-    logged_id = g.get("admin_id")
-    if logged_id and int(logged_id) != idLogin:
+    logged_id   = g.get("admin_id")
+    proprio     = bool(logged_id) and int(logged_id) == idLogin
+    e_admin     = g.get("cargo") == AdminController.CARGO_ADMIN
+
+    # Administração gerencia qualquer usuário; os demais cargos só o próprio perfil.
+    if not proprio and not e_admin:
         raise ErrorResponse(403, "Você só pode editar seu próprio perfil.", {"message": "Edição cruzada não permitida."})
 
     admin = request.get_json()["admin"]
     nome  = admin.get("nomeLogin")
+    cargo = admin.get("cargo")
+
+    # Só Administração troca cargo. Quem edita o próprio perfil sem esse cargo
+    # mantém o que já está gravado, mesmo que mande outra coisa no corpo.
+    if not e_admin:
+        atual = controller.dao.buscar_por_id(idLogin)
+        cargo = atual[3] if atual else cargo
+
+    # A senha atual confirma a identidade de quem mexe no próprio perfil.
+    # Administração editando outra pessoa não tem como saber a senha dela.
+    senha_atual = (admin.get("senhaAtual") or None) if proprio else None
 
     sucesso, mensagem = controller.atualizar(
         idLogin,
         admin.get("email"),
         nome,
-        admin.get("novaSenha")  or None,
-        admin.get("senhaAtual") or None,
+        cargo,
+        admin.get("novaSenha") or None,
+        senha_atual,
     )
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Editou", "Administrador",
-        f"Editou o administrador '{nome}' (ID: {idLogin})",
+        "Editou", "Usuário",
+        f"Editou o usuário '{nome}' (ID: {idLogin}) — cargo {cargo}",
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200
@@ -101,8 +119,8 @@ def deletar(idLogin: int):
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Deletou", "Administrador",
-        f"Deletou o administrador '{nome}' (ID: {idLogin})",
+        "Deletou", "Usuário",
+        f"Deletou o usuário '{nome}' (ID: {idLogin})",
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200

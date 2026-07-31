@@ -3,16 +3,28 @@ DROP SCHEMA IF EXISTS tcc;
     use tcc;
 
     create table login(
-    idLogin   int primary key NOT NULL AUTO_INCREMENT,
-    email     VARCHAR(45)  NOT NULL UNIQUE,
-    senha     VARCHAR(60)  NOT NULL,
-    nomeLogin VARCHAR(45)
+    idLogin    int primary key NOT NULL AUTO_INCREMENT,
+    email      VARCHAR(45)  NOT NULL UNIQUE,
+    senha      VARCHAR(60)  NOT NULL,
+    nomeLogin  VARCHAR(45),
+    cargoLogin VARCHAR(20)  NOT NULL DEFAULT 'Administracao'
     );
 
     -- senha: adm123 (bcrypt hash)
-    insert into login (email, senha, nomeLogin) values(
-    "adm123@gmail.com", "$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO", "adm"
+    insert into login (email, senha, nomeLogin, cargoLogin) values(
+    "adm123@gmail.com", "$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO", "adm", "Administracao"
     );
+
+    -- ── MIGRAÇÃO — cargoLogin (rodar se a tabela já existir) ──────────────────
+    -- Define o que cada usuário pode acessar. Três valores fechados, gravados
+    -- sem acento e exibidos com acento no front:
+    --   'Administracao' → acesso total
+    --   'Almoxarifado'  → estoque, produtos, notas fiscais e fornecedores
+    --   'Obra'          → apenas as obras em que o usuário está na equipe
+    -- O DEFAULT garante que todos os logins já existentes continuem como
+    -- Administração, sem perder acesso ao aplicar a migração.
+    -- ALTER TABLE login
+    --   ADD COLUMN cargoLogin VARCHAR(20) NOT NULL DEFAULT 'Administracao';
 
     -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
     -- ALTER TABLE login

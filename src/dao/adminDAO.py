@@ -4,7 +4,7 @@ from src.dao.conexao import Conexao
 class AdminDAO:
 
     def listar(self) -> list:
-        sql = "SELECT idLogin, email, nomeLogin FROM login ORDER BY idLogin"
+        sql = "SELECT idLogin, email, nomeLogin, cargoLogin FROM login ORDER BY idLogin"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return []
@@ -19,7 +19,7 @@ class AdminDAO:
             Conexao.fechar_conexao(conexao, cursor)
 
     def buscar_por_id(self, id_login: int):
-        sql = "SELECT idLogin, email, nomeLogin FROM login WHERE idLogin = %s"
+        sql = "SELECT idLogin, email, nomeLogin, cargoLogin FROM login WHERE idLogin = %s"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return None
@@ -52,14 +52,14 @@ class AdminDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def criar(self, email: str, hash_senha: str, nome: str) -> bool:
-        sql = "INSERT INTO login (email, senha, nomeLogin) VALUES (%s, %s, %s)"
+    def criar(self, email: str, hash_senha: str, nome: str, cargo: str) -> bool:
+        sql = "INSERT INTO login (email, senha, nomeLogin, cargoLogin) VALUES (%s, %s, %s, %s)"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return False
         cursor = conexao.cursor()
         try:
-            cursor.execute(sql, (email, hash_senha, nome))
+            cursor.execute(sql, (email, hash_senha, nome, cargo))
             conexao.commit()
             return True
         except Exception as e:
@@ -69,13 +69,14 @@ class AdminDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def atualizar(self, id_login: int, email: str, nome: str, hash_senha: str = None) -> bool:
+    def atualizar(self, id_login: int, email: str, nome: str, cargo: str,
+                  hash_senha: str = None) -> bool:
         if hash_senha:
-            sql = "UPDATE login SET email = %s, nomeLogin = %s, senha = %s WHERE idLogin = %s"
-            params = (email, nome, hash_senha, id_login)
+            sql = "UPDATE login SET email = %s, nomeLogin = %s, cargoLogin = %s, senha = %s WHERE idLogin = %s"
+            params = (email, nome, cargo, hash_senha, id_login)
         else:
-            sql = "UPDATE login SET email = %s, nomeLogin = %s WHERE idLogin = %s"
-            params = (email, nome, id_login)
+            sql = "UPDATE login SET email = %s, nomeLogin = %s, cargoLogin = %s WHERE idLogin = %s"
+            params = (email, nome, cargo, id_login)
 
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -136,6 +137,23 @@ class AdminDAO:
             return resultado[0] if resultado else 0
         except Exception as e:
             print(f"Erro ao contar admins: {e}")
+            return 0
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
+    def contar_por_cargo(self, cargo: str) -> int:
+        """Usado para impedir que o último usuário de Administração seja excluído
+        ou rebaixado, o que deixaria o sistema sem ninguém capaz de gerenciá-lo."""
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return 0
+        cursor = conexao.cursor()
+        try:
+            cursor.execute("SELECT COUNT(*) FROM login WHERE cargoLogin = %s", (cargo,))
+            resultado = cursor.fetchone()
+            return resultado[0] if resultado else 0
+        except Exception as e:
+            print(f"Erro ao contar usuários por cargo: {e}")
             return 0
         finally:
             Conexao.fechar_conexao(conexao, cursor)

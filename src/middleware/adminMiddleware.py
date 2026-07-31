@@ -18,6 +18,8 @@ class AdminMiddleware:
                 raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'nomeLogin' é obrigatório."})
             if not admin.get("senha", "").strip():
                 raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'senha' é obrigatório."})
+            if not admin.get("cargo", "").strip():
+                raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'cargo' é obrigatório."})
             return f(*args, **kwargs)
         return decorated
 
@@ -32,6 +34,8 @@ class AdminMiddleware:
                 raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'email' é obrigatório."})
             if not admin.get("nomeLogin", "").strip():
                 raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'nomeLogin' é obrigatório."})
+            if not admin.get("cargo", "").strip():
+                raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'cargo' é obrigatório."})
             return f(*args, **kwargs)
         return decorated
 

@@ -53,6 +53,11 @@ class MeuTokenJWT:
         return False
 
 
+CARGO_ADMINISTRACAO = "Administracao"
+CARGO_ALMOXARIFADO  = "Almoxarifado"
+CARGO_OBRA          = "Obra"
+
+
 class JwtMiddleware:
     """Middleware Flask para validação de tokens JWT"""
 
@@ -66,8 +71,29 @@ class JwtMiddleware:
             if jwt_instance.validar_token(authorization):
                 g.jwt_payload = jwt_instance.payload or {}
                 g.admin_id    = g.jwt_payload.get("idAdmin")
+                # Tokens emitidos antes do cargo existir não trazem o claim.
+                # Como todos os usuários da época eram administradores, tratamos
+                # a ausência como Administração e ninguém é deslogado à força.
+                g.cargo       = g.jwt_payload.get("cargo") or CARGO_ADMINISTRACAO
                 return f(*args, **kwargs)
             else:
                 return jsonify({"status": False, "msg": "token inválido"}), 401
 
         return decorated_function
+
+    def require_cargo(self, *cargos_permitidos):
+        """Restringe a rota aos cargos informados. Deve vir depois de
+        @jwt.validate_token, que é quem preenche g.cargo."""
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                cargo = g.get("cargo")
+                if cargo not in cargos_permitidos:
+                    return jsonify({
+                        "status": False,
+                        "msg":    "Você não tem permissão para acessar este recurso.",
+                        "error":  {"message": f"Cargo '{cargo}' sem acesso a esta rota."},
+                    }), 403
+                return f(*args, **kwargs)
+            return decorated_function
+        return decorator
