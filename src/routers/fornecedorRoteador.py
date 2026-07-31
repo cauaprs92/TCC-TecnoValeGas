@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from src.controller.fornecedorController import FornecedorController
-from src.middleware.jwtMiddleware import JwtMiddleware
+from src.middleware.jwtMiddleware import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
 from src.error_response import ErrorResponse
 
 fornecedor_bp = Blueprint("fornecedor", __name__, url_prefix="/fornecedor")
@@ -16,5 +16,6 @@ def handle_error(e: ErrorResponse):
 # ─── GET /fornecedor ───────────────────────────────────────────────────────────
 @fornecedor_bp.route("", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def listar():
     return jsonify({"status": True, "fornecedores": controller.listar()}), 200

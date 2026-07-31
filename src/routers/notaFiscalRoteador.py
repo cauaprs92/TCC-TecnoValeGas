@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, g
 from src.controller.notaFiscalController import NotaFiscalController
 from src.controller.historicoController  import HistoricoController
-from src.middleware.jwtMiddleware        import JwtMiddleware
+from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
 from src.error_response                  import ErrorResponse
 
 nota_fiscal_bp = Blueprint("nota_fiscal", __name__, url_prefix="/nota-fiscal")
@@ -54,6 +54,7 @@ def _serializar(n) -> dict:
 # ─── POST /nota-fiscal/importar ───────────────────────────────────────────────
 @nota_fiscal_bp.route("/importar", methods=["POST"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def importar():
     if 'arquivo' not in request.files:
         raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
@@ -98,6 +99,7 @@ def importar():
 # ─── GET /nota-fiscal/<idNotaFiscal>/itens ────────────────────────────────────
 @nota_fiscal_bp.route("/<int:idNotaFiscal>/itens", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def listar_itens(idNotaFiscal: int):
     nota = controller.buscar_nota(idNotaFiscal)
 
@@ -118,6 +120,7 @@ def listar_itens(idNotaFiscal: int):
 # ─── PATCH /nota-fiscal/item/<idItem>/confirmar ───────────────────────────────
 @nota_fiscal_bp.route("/item/<int:idItem>/confirmar", methods=["PATCH"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def confirmar_item(idItem: int):
     corpo = request.get_json(silent=True) or {}
     acao  = corpo.get("acao")

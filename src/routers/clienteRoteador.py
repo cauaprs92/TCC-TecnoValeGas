@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from src.controller.clienteController   import ClienteController
 from src.controller.historicoController import HistoricoController
 from src.middleware.clienteMiddleware   import ClienteMiddleware
-from src.middleware.jwtMiddleware       import JwtMiddleware
+from src.middleware.jwtMiddleware       import JwtMiddleware, CARGO_ADMINISTRACAO
 from src.error_response                 import ErrorResponse
 
 cliente_bp     = Blueprint("cliente", __name__, url_prefix="/cliente")
@@ -38,6 +38,7 @@ def _serializar(c) -> dict:
 # ─── POST /cliente ────────────────────────────────────────────────────────────
 @cliente_bp.route("", methods=["POST"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 @middleware.validate_body
 def cadastrar():
     cliente = request.get_json()["cliente"]
@@ -73,6 +74,7 @@ def cadastrar():
 # ─── GET /cliente ─────────────────────────────────────────────────────────────
 @cliente_bp.route("", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def listar():
     clientes = controller.listar()
     return jsonify({"status": True, "clientes": [_serializar(c) for c in clientes]}), 200
@@ -81,6 +83,7 @@ def listar():
 # ─── GET /cliente/<idCliente> ─────────────────────────────────────────────────
 @cliente_bp.route("/<int:idCliente>", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 @middleware.validate_id_param
 def buscar_por_id(idCliente: int):
     cliente = controller.buscar_por_id(idCliente)
@@ -94,6 +97,7 @@ def buscar_por_id(idCliente: int):
 # ─── PUT /cliente/<idCliente> ─────────────────────────────────────────────────
 @cliente_bp.route("/<int:idCliente>", methods=["PUT"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 @middleware.validate_id_param
 @middleware.validate_body
 def editar(idCliente: int):
@@ -131,6 +135,7 @@ def editar(idCliente: int):
 # ─── DELETE /cliente/<idCliente> ──────────────────────────────────────────────
 @cliente_bp.route("/<int:idCliente>", methods=["DELETE"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 @middleware.validate_id_param
 def deletar(idCliente: int):
     cliente = controller.buscar_por_id(idCliente)

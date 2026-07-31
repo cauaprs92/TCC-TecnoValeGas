@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from src.controller.adminController     import AdminController
 from src.controller.historicoController import HistoricoController
 from src.middleware.adminMiddleware     import AdminMiddleware
-from src.middleware.jwtMiddleware       import JwtMiddleware
+from src.middleware.jwtMiddleware       import JwtMiddleware, CARGO_ADMINISTRACAO
 from src.error_response                 import ErrorResponse
 
 admin_bp       = Blueprint("admin", __name__, url_prefix="/admin")
@@ -20,6 +20,7 @@ def handle_error(e: ErrorResponse):
 # ─── GET /admin ───────────────────────────────────────────────────────────────
 @admin_bp.route("", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def listar():
     admins = controller.listar()
     return jsonify({"status": True, "admins": admins}), 200
@@ -28,6 +29,7 @@ def listar():
 # ─── POST /admin ──────────────────────────────────────────────────────────────
 @admin_bp.route("", methods=["POST"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 @middleware.validate_body
 def criar():
     admin = request.get_json()["admin"]
@@ -103,6 +105,7 @@ def atualizar(idLogin: int):
 # ─── DELETE /admin/<idLogin> ──────────────────────────────────────────────────
 @admin_bp.route("/<int:idLogin>", methods=["DELETE"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 @middleware.validate_id_param
 def deletar(idLogin: int):
     logged_id = g.get("admin_id")

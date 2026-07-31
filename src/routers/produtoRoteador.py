@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify, g
 from src.controller.produtoController    import ProdutoController
 from src.controller.historicoController  import HistoricoController
 from src.middleware.produtoMiddleware    import ProdutoMiddleware
-from src.middleware.jwtMiddleware        import JwtMiddleware
+from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
 from src.dao.fotoProdutoDAO              import FotoProdutoDAO
 from src.error_response                  import ErrorResponse
 
@@ -43,6 +43,7 @@ def _serializar(p) -> dict:
 # ─── POST /produto ────────────────────────────────────────────────────────────
 @produto_bp.route("", methods=["POST"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 @middleware.validate_body
 def cadastrar():
     produto = request.get_json()["produto"]
@@ -75,6 +76,7 @@ def cadastrar():
 # ─── GET /produto ─────────────────────────────────────────────────────────────
 @produto_bp.route("", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def listar():
     produtos = controller.listar()
     return jsonify({"status": True, "produtos": [_serializar(p) for p in produtos]}), 200
@@ -83,6 +85,7 @@ def listar():
 # ─── GET /produto/<idProduto> ─────────────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 @middleware.validate_id_param
 def buscar_por_id(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
@@ -96,6 +99,7 @@ def buscar_por_id(idProduto: int):
 # ─── PUT /produto/<idProduto> ─────────────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>", methods=["PUT"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 @middleware.validate_id_param
 @middleware.validate_body
 def editar(idProduto: int):
@@ -130,6 +134,7 @@ def editar(idProduto: int):
 # ─── DELETE /produto/<idProduto> ──────────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>", methods=["DELETE"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 @middleware.validate_id_param
 def deletar(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
@@ -152,6 +157,7 @@ def deletar(idProduto: int):
 # ─── GET /produto/<idProduto>/fotos ──────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>/fotos", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def listar_fotos(idProduto: int):
     fotos = foto_dao.buscar_por_produto(idProduto)
     return jsonify({"status": True, "fotos": fotos}), 200
@@ -160,6 +166,7 @@ def listar_fotos(idProduto: int):
 # ─── POST /produto/<idProduto>/fotos ─────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>/fotos", methods=["POST"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def upload_foto(idProduto: int):
     if 'arquivo' not in request.files:
         raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
@@ -200,6 +207,7 @@ def upload_foto(idProduto: int):
 # ─── DELETE /produto/<idProduto>/fotos/<idFoto> ───────────────────────────────
 @produto_bp.route("/<int:idProduto>/fotos/<int:idFoto>", methods=["DELETE"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def deletar_foto(idProduto: int, idFoto: int):
     nome = foto_dao.deletar(idFoto)
     if not nome:
@@ -215,6 +223,7 @@ def deletar_foto(idProduto: int, idFoto: int):
 # ─── GET /produto/<idProduto>/estoque ─────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>/estoque", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 @middleware.validate_id_param
 def verificar_estoque(idProduto: int):
     quantidade = request.args.get("quantidade", 1)

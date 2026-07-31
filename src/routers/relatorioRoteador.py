@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from src.middleware.jwtMiddleware import JwtMiddleware
+from src.middleware.jwtMiddleware import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
 from src.dao.conexao              import Conexao
 from src.error_response           import ErrorResponse
 
@@ -16,6 +16,7 @@ def handle_error(e: ErrorResponse):
 # Retorna as últimas obras com total de produtos consumidos (para o gráfico)
 @relatorio_bp.route("/obras-produtos", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def obras_produtos():
     sql = """
         SELECT o.idObra, o.descObra,
@@ -54,6 +55,7 @@ def obras_produtos():
 # Retorna total consumido por produto (para exportação)
 @relatorio_bp.route("/produtos-consumidos", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def produtos_consumidos():
     sql = """
         SELECT p.idProduto, p.nomeProduto,
@@ -92,6 +94,7 @@ def produtos_consumidos():
 # ─── GET /relatorio/grafico-produtos ─────────────────────────────────────────
 @relatorio_bp.route("/grafico-produtos", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def grafico_produtos():
     sql = """
         SELECT p.idProduto, p.nomeProduto,

@@ -185,6 +185,20 @@ class ObraController:
     def listar(self) -> list:
         return self.dao.buscar_todas()
 
+    def listar_para_usuario(self, cargo: str, id_login) -> list:
+        """Funcionário de obra enxerga só as obras em que está na equipe.
+        Os demais cargos recebem a lista inteira."""
+        obras = self.dao.buscar_todas()
+        if cargo != CARGO_OBRA:
+            return obras
+        permitidas = set(self.daoEquipe.listar_ids_obras_do_funcionario(id_login))
+        return [o for o in obras if o[0] in permitidas]
+
+    def usuario_pode_ver_obra(self, cargo: str, id_login, id_obra: int) -> bool:
+        if cargo != CARGO_OBRA:
+            return True
+        return self.daoEquipe.pertence_a_obra(id_obra, id_login)
+
     def buscar_por_id(self, idObra: int):
         return self.dao.buscar_por_id(idObra)
 

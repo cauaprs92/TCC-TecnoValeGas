@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, g
 from src.controller.responsavelController import ResponsavelController
 from src.controller.historicoController   import HistoricoController
-from src.middleware.jwtMiddleware         import JwtMiddleware
+from src.middleware.jwtMiddleware         import JwtMiddleware, CARGO_ADMINISTRACAO
 from src.error_response                   import ErrorResponse
 
 responsavel_bp = Blueprint("responsavel", __name__, url_prefix="/responsavel")
@@ -18,6 +18,7 @@ def handle_error(e: ErrorResponse):
 # ─── GET /responsavel ──────────────────────────────────────────────────────────
 @responsavel_bp.route("", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def listar():
     return jsonify({"status": True, "responsaveis": controller.listar()}), 200
 
@@ -25,6 +26,7 @@ def listar():
 # ─── POST /responsavel ─────────────────────────────────────────────────────────
 @responsavel_bp.route("", methods=["POST"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def criar():
     body = request.get_json() or {}
     nome = (body.get("nomeResponsavel") or "").strip()
@@ -44,6 +46,7 @@ def criar():
 # ─── PUT /responsavel/<id> ─────────────────────────────────────────────────────
 @responsavel_bp.route("/<int:idResponsavel>", methods=["PUT"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def atualizar(idResponsavel: int):
     body = request.get_json() or {}
     nome = (body.get("nomeResponsavel") or "").strip()
@@ -63,6 +66,7 @@ def atualizar(idResponsavel: int):
 # ─── DELETE /responsavel/<id> ──────────────────────────────────────────────────
 @responsavel_bp.route("/<int:idResponsavel>", methods=["DELETE"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def deletar(idResponsavel: int):
     todos = controller.listar()
     alvo  = next((r for r in todos if r.get("idResponsavel") == idResponsavel), None)

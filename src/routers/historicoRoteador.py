@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from src.controller.historicoController import HistoricoController
-from src.middleware.jwtMiddleware import JwtMiddleware
+from src.middleware.jwtMiddleware import JwtMiddleware, CARGO_ADMINISTRACAO
 from src.error_response import ErrorResponse
 
 historico_bp = Blueprint("historico", __name__, url_prefix="/historico")
@@ -28,6 +28,7 @@ def _serializar(h) -> dict:
 # ─── GET /historico ───────────────────────────────────────────────────────────
 @historico_bp.route("", methods=["GET"])
 @jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
 def listar():
     registros = controller.listar()
     return jsonify({"status": True, "historico": [_serializar(h) for h in registros]}), 200
