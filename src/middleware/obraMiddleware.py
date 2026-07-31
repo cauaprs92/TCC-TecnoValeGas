@@ -9,6 +9,31 @@ class ObraMiddleware:
     STATUS_VALIDOS = ["À iniciar", "Em andamento", "Concluida", "Cancelada", "Pausada"]
     FORMATO_DATA = "%Y-%m-%d"
 
+    def _validar_funcionarios(self, body):
+        """A equipe é opcional; quando vem, precisa ser lista de IDs positivos.
+        Ausente no PUT significa 'não mexa na equipe' — quem trata isso é a rota."""
+        if 'funcionarios' not in body:
+            return
+
+        funcionarios = body.get('funcionarios')
+        if funcionarios is None:
+            return
+        if not isinstance(funcionarios, list):
+            raise ErrorResponse(
+                400, "Erro na validação de dados",
+                {"campo": "funcionarios", "message": "O campo 'funcionarios' deve ser uma lista!"}
+            )
+        for i, id_f in enumerate(funcionarios):
+            try:
+                val = int(id_f)
+                if val <= 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                raise ErrorResponse(
+                    400, "Erro na validação de dados",
+                    {"campo": "funcionarios", "message": f"funcionarios[{i}]: deve ser um inteiro positivo!"}
+                )
+
     def _validar_data(self, valor, campo):
         if not isinstance(valor, str) or not valor.strip():
             raise ErrorResponse(
@@ -136,6 +161,8 @@ class ObraMiddleware:
                     {"message": "Informe ao menos um produto ou serviço para a obra!"}
                 )
 
+            self._validar_funcionarios(body)
+
             return f(*args, **kwargs)
         return decorated_function
 
@@ -233,6 +260,8 @@ class ObraMiddleware:
                             400, "Erro na validação de dados",
                             {"campo": "servicosNovos", "message": f"servicosNovos[{i}]: deve ser um inteiro positivo!"}
                         )
+
+            self._validar_funcionarios(body)
 
             return f(*args, **kwargs)
         return decorated_function

@@ -146,6 +146,32 @@ DROP SCHEMA IF EXISTS tcc;
         FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
     );
 
+    -- Equipe da obra: quais usuários de cargo 'Obra' trabalham em cada obra.
+    -- É por essa tabela que o sistema decide quais obras cada funcionário vê.
+    -- Não confundir com obras.respObra, que é o Field (técnico responsável) e
+    -- vem da tabela responsavel — são pessoas de origens diferentes.
+    create table obraFuncionarios (
+    idObraFuncionario int primary key NOT NULL AUTO_INCREMENT,
+    idObra            int NOT NULL,
+    idLogin           int NOT NULL,
+    UNIQUE KEY uq_obra_login (idObra, idLogin),
+    FOREIGN KEY (idObra)  REFERENCES obras(idObra) ON DELETE CASCADE,
+    FOREIGN KEY (idLogin) REFERENCES login(idLogin)
+    );
+
+    -- ── MIGRAÇÃO — obraFuncionarios (rodar se as tabelas já existirem) ────────
+    -- ON DELETE CASCADE só no idObra: excluir uma obra leva junto a equipe dela,
+    -- mas excluir um usuário é barrado pelo banco enquanto ele estiver vinculado
+    -- a alguma obra — o vínculo é registro de quem trabalhou onde.
+    -- CREATE TABLE IF NOT EXISTS obraFuncionarios (
+    --   idObraFuncionario int primary key NOT NULL AUTO_INCREMENT,
+    --   idObra            int NOT NULL,
+    --   idLogin           int NOT NULL,
+    --   UNIQUE KEY uq_obra_login (idObra, idLogin),
+    --   FOREIGN KEY (idObra)  REFERENCES obras(idObra) ON DELETE CASCADE,
+    --   FOREIGN KEY (idLogin) REFERENCES login(idLogin)
+    -- );
+
      create table responsavel (
     idResponsavel   int primary key NOT NULL AUTO_INCREMENT,
     nomeResponsavel VARCHAR(100) NOT NULL UNIQUE
@@ -360,6 +386,7 @@ DROP SCHEMA IF EXISTS tcc;
     SELECT * FROM clientes;
     SELECT * FROM produtosObras;
     SELECT * FROM obras;
+    SELECT * FROM obraFuncionarios;
     SELECT * FROM responsavel;
     SELECT * FROM servicos;
     SELECT * FROM servicoProdutos;
@@ -377,6 +404,7 @@ DROP SCHEMA IF EXISTS tcc;
     TRUNCATE TABLE servicoProdutos;
     TRUNCATE TABLE servicos;
     TRUNCATE TABLE produtosObras;
+    TRUNCATE TABLE obraFuncionarios;
     TRUNCATE TABLE obras;
     TRUNCATE TABLE produtos;
     TRUNCATE TABLE clientes;

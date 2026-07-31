@@ -3,7 +3,8 @@ from src.dao.conexao import Conexao
 class ProdutosObrasDAO:
 
     def cadastrar_obra_com_produtos(self, obra: dict, produtos_usados: list,
-                                    servicos_vinculados: list = None):
+                                    servicos_vinculados: list = None,
+                                    funcionarios: list = None):
         """Retorna o idObra gerado em caso de sucesso, ou False em caso de erro."""
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -36,6 +37,15 @@ class ProdutosObrasDAO:
             ))
 
             id_obra_gerado = cursor.lastrowid
+
+            # ── Equipe da obra ────────────────────────────────────────────────
+            # Entra na mesma transação: se o estoque não fechar mais adiante, a
+            # obra não é criada e a equipe não fica órfã.
+            for id_login in dict.fromkeys(funcionarios or []):
+                cursor.execute(
+                    "INSERT INTO obraFuncionarios (idObra, idLogin) VALUES (%s, %s)",
+                    (id_obra_gerado, id_login)
+                )
 
             # ── Produtos avulsos ──────────────────────────────────────────────
             for item in produtos_usados:
@@ -291,6 +301,7 @@ class ProdutosObrasDAO:
 
             cursor.execute("DELETE FROM produtosObras WHERE idObra = %s", (id_obra,))
             cursor.execute("DELETE FROM obraServicos WHERE idObra = %s", (id_obra,))
+            cursor.execute("DELETE FROM obraFuncionarios WHERE idObra = %s", (id_obra,))
             cursor.execute("DELETE FROM obras WHERE idObra = %s", (id_obra,))
             conexao.commit()
             return True

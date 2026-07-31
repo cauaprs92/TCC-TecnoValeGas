@@ -1,8 +1,12 @@
-from src.dao.obraDAO          import ObraDAO
-from src.dao.produtosObrasDAO import ProdutosObrasDAO
-from src.dao.clienteDAO       import ClienteDAO
-from src.dao.servicoDAO       import ServicoDAO
+from src.dao.obraDAO            import ObraDAO
+from src.dao.produtosObrasDAO   import ProdutosObrasDAO
+from src.dao.clienteDAO         import ClienteDAO
+from src.dao.servicoDAO         import ServicoDAO
+from src.dao.obraFuncionarioDAO import ObraFuncionarioDAO
+from src.dao.adminDAO           import AdminDAO
 from src.controller.produtoController import ProdutoController
+
+CARGO_OBRA = "Obra"
 
 class ObraController:
 
@@ -13,6 +17,8 @@ class ObraController:
         self.daoProdObras = ProdutosObrasDAO()
         self.daoCliente   = ClienteDAO()
         self.daoServico   = ServicoDAO()
+        self.daoEquipe    = ObraFuncionarioDAO()
+        self.daoAdmin     = AdminDAO()
         self.ctrlProduto  = ProdutoController()
 
     def _validar_status(self, status: str) -> tuple:
@@ -21,8 +27,32 @@ class ObraController:
             return False, f"Status invalido. Use: {opcoes}."
         return True, ""
 
+    def _validar_equipe(self, funcionarios: list) -> tuple:
+        """Cada id da equipe precisa existir e ter cargo 'Obra' — é esse cargo
+        que dá ao usuário acesso às obras em que ele está vinculado."""
+        for id_login in (funcionarios or []):
+            usuario = self.daoAdmin.buscar_por_id(id_login)
+            if not usuario:
+                return False, f"Funcionario ID {id_login} nao encontrado."
+            if usuario[3] != CARGO_OBRA:
+                return False, f"'{usuario[2]}' nao tem cargo de Obra e nao pode entrar na equipe."
+        return True, ""
+
+    def listar_funcionarios_disponiveis(self) -> list:
+        rows = self.daoAdmin.listar()
+        return [
+            {"idLogin": r[0], "email": r[1], "nomeLogin": r[2]}
+            for r in rows if r[3] == CARGO_OBRA
+        ]
+
+    def buscar_equipe_da_obra(self, id_obra: int) -> list:
+        return self.daoEquipe.listar_por_obra(id_obra)
+
+    def buscar_equipes_das_obras(self, ids_obras: list) -> dict:
+        return self.daoEquipe.listar_por_obras(ids_obras)
+
     def cadastrar(self, dadosObra: dict, produtosUsados: list,
-                  servicosVinculados: list = None) -> tuple:
+                  servicosVinculados: list = None, funcionarios: list = None) -> tuple:
         clienteExistente = self.daoCliente.buscar_por_id(dadosObra["codCliente"])
         if not clienteExistente:
             return False, "Cliente nao encontrado. Cadastre o cliente antes de criar a obra."
@@ -37,6 +67,10 @@ class ObraController:
             return False, "Responsavel pela obra e obrigatorio."
 
         valido, mensagem = self._validar_status(dadosObra.get("statusObra", ""))
+        if not valido:
+            return False, mensagem
+
+        valido, mensagem = self._validar_equipe(funcionarios)
         if not valido:
             return False, mensagem
 
@@ -68,7 +102,7 @@ class ObraController:
                     avisos.append(mensagem)
 
         idObraGerado = self.daoProdObras.cadastrar_obra_com_produtos(
-            dadosObra, produtosUsados, servicosVinculados
+            dadosObra, produtosUsados, servicosVinculados, funcionarios
         )
         if idObraGerado:
             if dadosObra.get("statusObra") == "Concluida":
@@ -79,7 +113,8 @@ class ObraController:
         return False, "Erro ao cadastrar obra."
 
     def atualizar(self, idObra: int, dadosObra: dict,
-                  produtosNovos: list = None, servicosNovos: list = None) -> tuple:
+                  produtosNovos: list = None, servicosNovos: list = None,
+                  funcionarios: list = None) -> tuple:
         obraExistente = self.dao.buscar_por_id(idObra)
         if not obraExistente:
             return False, "Obra nao encontrada."
@@ -95,9 +130,20 @@ class ObraController:
         if not valido:
             return False, mensagem
 
+        if funcionarios is not None:
+            valido, mensagem = self._validar_equipe(funcionarios)
+            if not valido:
+                return False, mensagem
+
         sucesso = self.dao.atualizar(idObra, dadosObra)
         if not sucesso:
             return False, "Erro ao atualizar obra."
+
+        # None = o formulário não mandou equipe, então não mexemos nela.
+        # Lista vazia = o usuário removeu todo mundo de propósito.
+        if funcionarios is not None:
+            if not self.daoEquipe.substituir_equipe(idObra, funcionarios):
+                return False, "Erro ao salvar a equipe da obra."
 
         avisos = []
 

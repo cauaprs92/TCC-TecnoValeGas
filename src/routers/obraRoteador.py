@@ -36,8 +36,8 @@ def handle_error(e: ErrorResponse):
     return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
-def _serializar(o):
-    return {
+def _serializar(o, equipe=None):
+    dados = {
         "idObra":         o[0],
         "codCliente":     o[1],
         "descObra":       o[2],
@@ -57,6 +57,17 @@ def _serializar(o):
         "valorObra":        float(o[16]) if len(o) > 16 and o[16] is not None else None,
         "setorObra":        o[17] if len(o) > 17 else None,
     }
+    dados["funcionarios"] = equipe or []
+    return dados
+
+
+def _descrever_equipe(ids_funcionarios) -> str:
+    """Trecho com os nomes da equipe para a linha do histórico."""
+    if not ids_funcionarios:
+        return ""
+    disponiveis = {u["idLogin"]: u["nomeLogin"] for u in controller.listar_funcionarios_disponiveis()}
+    nomes = [disponiveis.get(i, f"ID {i}") for i in ids_funcionarios]
+    return f" — equipe: {', '.join(nomes)}"
 
 
 # ─── POST /obra ───────────────────────────────────────────────────────────────
@@ -68,9 +79,12 @@ def cadastrar():
     dados_obra          = body["obra"]
     produtos_usados     = body.get("produtosUsados", [])
     servicos_vinculados = body.get("servicosVinculados", [])
+    funcionarios        = body.get("funcionarios", [])
     desc                = dados_obra.get("descObra", "")
 
-    sucesso, mensagem = controller.cadastrar(dados_obra, produtos_usados, servicos_vinculados)
+    sucesso, mensagem = controller.cadastrar(
+        dados_obra, produtos_usados, servicos_vinculados, funcionarios
+    )
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
@@ -78,7 +92,7 @@ def cadastrar():
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Cadastrou", "Obra",
-        f"Cadastrou a obra '{desc}'",
+        f"Cadastrou a obra '{desc}'{_descrever_equipe(funcionarios)}",
     )
 
     return jsonify({"status": True, "msg": mensagem}), 201
@@ -88,8 +102,20 @@ def cadastrar():
 @obra_bp.route("", methods=["GET"])
 @jwt.validate_token
 def listar():
-    obras = controller.listar()
-    return jsonify({"status": True, "obras": [_serializar(o) for o in obras]}), 200
+    obras   = controller.listar()
+    equipes = controller.buscar_equipes_das_obras([o[0] for o in obras])
+    return jsonify({
+        "status": True,
+        "obras":  [_serializar(o, equipes.get(o[0])) for o in obras],
+    }), 200
+
+
+# ─── GET /obra/funcionarios ───────────────────────────────────────────────────
+# Usuários de cargo 'Obra' — é a lista que alimenta o seletor de equipe.
+@obra_bp.route("/funcionarios", methods=["GET"])
+@jwt.validate_token
+def listar_funcionarios():
+    return jsonify({"status": True, "funcionarios": controller.listar_funcionarios_disponiveis()}), 200
 
 
 # ─── GET /obra/<idObra> ───────────────────────────────────────────────────────
@@ -102,7 +128,8 @@ def buscar_por_id(idObra: int):
     if not obra:
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
-    return jsonify({"status": True, "obra": _serializar(obra)}), 200
+    equipe = controller.buscar_equipe_da_obra(idObra)
+    return jsonify({"status": True, "obra": _serializar(obra, equipe)}), 200
 
 
 # ─── GET /obra/cliente/<idCliente> ────────────────────────────────────────────
@@ -114,7 +141,12 @@ def listar_por_cliente(idCliente: int):
     if not sucesso:
         raise ErrorResponse(404, mensagem, {"message": mensagem})
 
-    return jsonify({"status": True, "msg": mensagem, "obras": [_serializar(o) for o in obras]}), 200
+    equipes = controller.buscar_equipes_das_obras([o[0] for o in obras])
+    return jsonify({
+        "status": True,
+        "msg":    mensagem,
+        "obras":  [_serializar(o, equipes.get(o[0])) for o in obras],
+    }), 200
 
 
 # ─── GET /obra/<idObra>/produtos ──────────────────────────────────────────────
@@ -219,16 +251,21 @@ def atualizar(idObra: int):
     produtos_novos = body.get("produtosNovos") or []
     servicos_novos = body.get("servicosNovos") or []
     desc           = dados_obra.get("descObra", "")
+    # Ausente = não mexe na equipe; lista vazia = esvazia a equipe de propósito.
+    funcionarios   = body.get("funcionarios") if "funcionarios" in body else None
 
-    sucesso, mensagem = controller.atualizar(idObra, dados_obra, produtos_novos, servicos_novos)
+    sucesso, mensagem = controller.atualizar(
+        idObra, dados_obra, produtos_novos, servicos_novos, funcionarios
+    )
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
+    equipe_txt = _descrever_equipe(funcionarios) if funcionarios is not None else ""
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Obra",
-        f"Editou a obra '{desc}' (ID: {idObra})",
+        f"Editou a obra '{desc}' (ID: {idObra}){equipe_txt}",
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200
