@@ -38,7 +38,7 @@
         <i class="fa-solid fa-screwdriver-wrench"></i><span>Serviços</span>
       </a>
       <a href="#" class="nav-item" data-page="admins">
-        <i class="fa-solid fa-user-shield"></i><span>Administradores</span>
+        <i class="fa-solid fa-user-shield"></i><span>Usuários</span>
       </a>
       <a href="#" class="nav-item" data-page="responsaveis">
         <i class="fa-solid fa-id-badge"></i><span>Field</span>
@@ -511,8 +511,8 @@
 
         <div class="page-header">
           <div class="page-header-info">
-            <h1>Administradores</h1>
-            <span class="page-subtitle">Gerencie os usuários administradores do sistema</span>
+            <h1>Usuários</h1>
+            <span class="page-subtitle">Gerencie os usuários do sistema e o cargo de acesso de cada um</span>
           </div>
           <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
@@ -521,7 +521,7 @@
         <div class="page-stats" id="statsAdmins">
           <div class="stat-item">
             <span class="stat-num" id="stat-admin-total">—</span>
-            <span class="stat-label">Administradores</span>
+            <span class="stat-label">Usuários</span>
           </div>
         </div>
 
@@ -531,17 +531,23 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input
               type="text"
-              placeholder="Buscar administrador..."
+              placeholder="Buscar usuário..."
               id="searchAdmin"
               oninput="filtrarAdmins(this.value)"
             />
           </div>
+          <select class="select-filter" id="filtroCargo" onchange="filtrarAdminsCargo(this.value)" title="Filtrar por cargo">
+            <option value="">Todos os cargos</option>
+            <option value="Administracao">Administração</option>
+            <option value="Almoxarifado">Almoxarifado</option>
+            <option value="Obra">Obra</option>
+          </select>
           <div class="toolbar-spacer"></div>
           <button class="btn btn-secondary" onclick="exportarAdmins()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
           <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
-            <i class="fa-solid fa-plus"></i> Novo Administrador
+            <i class="fa-solid fa-plus"></i> Novo Usuário
           </button>
         </div>
 
@@ -552,15 +558,17 @@
                 <th class="col-id sortable" data-sort-key="id"
                   onclick="ordenarTabela('admins','id')">ID <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="nome"
-                  onclick="ordenarTabela('admins','nome')">Administrador <span class="sort-arrow"></span></th>
+                  onclick="ordenarTabela('admins','nome')">Usuário <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="acesso"
                   onclick="ordenarTabela('admins','acesso')">Acesso <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="cargo"
+                  onclick="ordenarTabela('admins','cargo')">Cargo <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody id="bodyAdmins">
               <tr>
-                <td colspan="4" class="loading-cell">
+                <td colspan="5" class="loading-cell">
                   <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
                 </td>
               </tr>
@@ -664,9 +672,9 @@
             <span class="stat-num" id="stat-hist-cliente">—</span>
             <span class="stat-label">Cliente</span>
           </div>
-          <div class="stat-item s-danger clickable" data-filter-group="historico" data-filter-value="Administrador" onclick="filtrarEntidadeHistorico('Administrador')" title="Filtrar por Administrador">
+          <div class="stat-item s-danger clickable" data-filter-group="historico" data-filter-value="Usuário" onclick="filtrarEntidadeHistorico('Usuário')" title="Filtrar por Usuário">
             <span class="stat-num" id="stat-hist-admin">—</span>
-            <span class="stat-label">Administrador</span>
+            <span class="stat-label">Usuário</span>
           </div>
           <div class="stat-item clickable" data-filter-group="historico" data-filter-value="Field" onclick="filtrarEntidadeHistorico('Field')" title="Filtrar por Field">
             <span class="stat-num" id="stat-hist-field">—</span>
@@ -1396,11 +1404,11 @@
         </div>
       </div>
 
-      <!-- ===== MODAL: ADMINISTRADOR ===== -->
+      <!-- ===== MODAL: USUÁRIO ===== -->
       <div class="modal-overlay hidden" id="modalAdmin">
         <div class="modal">
           <div class="modal-header">
-            <h2 id="modalAdminTitle"><i class="fa-solid fa-user-shield"></i> Novo Administrador</h2>
+            <h2 id="modalAdminTitle"><i class="fa-solid fa-user-shield"></i> Novo Usuário</h2>
             <button class="modal-close" onclick="fecharModal('modalAdmin')"><i class="fa-solid fa-xmark"></i></button>
           </div>
           <div class="modal-body">
@@ -1419,6 +1427,18 @@
               <label>Email <span class="required">*</span></label>
               <input type="email" id="adminEmail" placeholder="joao@empresa.com" />
               <span class="field-error" id="err-adminEmail"></span>
+            </div>
+
+            <div class="form-group" id="adminCargoGroup">
+              <label>Cargo <span class="required">*</span></label>
+              <select id="adminCargo" onchange="_descreverCargoAdmin()">
+                <option value="">- Selecione -</option>
+                <option value="Administracao">Administração</option>
+                <option value="Almoxarifado">Almoxarifado</option>
+                <option value="Obra">Obra</option>
+              </select>
+              <span class="field-hint" id="adminCargoHint"></span>
+              <span class="field-error" id="err-adminCargo"></span>
             </div>
 
             <div class="form-group" id="adminSenhaGroup">

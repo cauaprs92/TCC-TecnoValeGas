@@ -1068,6 +1068,8 @@ body {
 .campo-obrigatorio { color: #DC2626; margin-left: 2px; font-weight: 700; }
 .field-error { font-size: .74rem; color: #DC2626; display: none; margin-top: 1px; }
 .field-error.visible { display: block; }
+/* Texto de apoio abaixo do campo — explica a escolha, não sinaliza erro. */
+.field-hint { font-size: .74rem; color: var(--gray-500); display: block; margin-top: 3px; line-height: 1.35; }
 .required { color: #DC2626; margin-left: 2px; }
 .form-group input.input-error,
 .form-group select.input-error,

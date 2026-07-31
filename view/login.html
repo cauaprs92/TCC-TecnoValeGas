@@ -413,6 +413,7 @@
         sessionStorage.setItem('token',     data.token);
         sessionStorage.setItem('nomeLogin', data.nomeLogin || 'Administrador');
         sessionStorage.setItem('idAdmin',   data.idAdmin   || '');
+        sessionStorage.setItem('cargo',     data.cargo     || 'Administracao');
         window.location.href = '/dashboard';
 
       } catch {

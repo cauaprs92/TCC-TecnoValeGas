@@ -1953,6 +1953,7 @@ const PER_PAGE  = 10;
 const filtros   = {
   produtos: '', produtosStatus: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '', clientesStatus: '',
   servicos: '',
+  admins: '', adminCargo: '',
   historicoEntidade: '', historicoQ: '', historicoAdmin: '', historicoAcao: '', historicoDe: '', historicoAte: ''
 };
 const ORDER_STATE = {
@@ -2015,6 +2016,7 @@ function _getSortValue(item, table, key) {
       if (key === 'id') return item.idLogin;
       if (key === 'nome') return item.nomeLogin || '';
       if (key === 'acesso') return item.email || '';
+      if (key === 'cargo') return cargoLabel(item.cargoLogin);
       return '';
     case 'responsaveis':
       if (key === 'id') return item.idResponsavel;
@@ -3217,7 +3219,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     document.getElementById(`page-${page}`).classList.add('active');
-    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', servicos: 'Serviços', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
+    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', servicos: 'Serviços', admins: 'Usuários', responsaveis: 'Field', historico: 'Histórico' };
     document.getElementById('breadcrumb').textContent = labels[page] || page;
     if (page === 'historico') carregarHistorico();
     fecharSidebarMobile();
@@ -3388,6 +3390,30 @@ function showToast(msg, type = 'success') {
 
 let cacheAdmins = [];
 
+// ── Cargos de acesso ──
+// Gravados sem acento no banco; aqui ficam o rótulo e a explicação de cada um.
+const CARGOS = {
+  Administracao: { label: 'Administração', badge: 'badge-blue',  desc: 'Acesso total ao sistema.' },
+  Almoxarifado:  { label: 'Almoxarifado',  badge: 'badge-green', desc: 'Acesso ao estoque, produtos, notas fiscais e fornecedores.' },
+  Obra:          { label: 'Obra',          badge: 'badge-gray',  desc: 'Vê apenas as obras em que faz parte da equipe.' },
+};
+
+function cargoLabel(cargo) {
+  return CARGOS[cargo]?.label || cargo || '—';
+}
+
+function badgeCargo(cargo) {
+  const c = CARGOS[cargo];
+  if (!c) return `<span class="badge badge-gray">${cargo || '—'}</span>`;
+  return `<span class="badge ${c.badge}">${c.label}</span>`;
+}
+
+function _descreverCargoAdmin() {
+  const hint = document.getElementById('adminCargoHint');
+  if (!hint) return;
+  hint.textContent = CARGOS[document.getElementById('adminCargo').value]?.desc || '';
+}
+
 async function carregarAdmins() {
   try {
     const res = await apiFetch('/admin');
@@ -3397,19 +3423,31 @@ async function carregarAdmins() {
     atualizarStats();
   } catch (e) {
     document.getElementById('bodyAdmins').innerHTML =
-      `<tr><td colspan="4" class="empty-row">Erro ao carregar administradores: ${e.message}</td></tr>`;
+      `<tr><td colspan="5" class="empty-row">Erro ao carregar usuários: ${e.message}</td></tr>`;
   }
 }
 
 function renderTabelaAdmins(admins) {
   const tbody = document.getElementById('bodyAdmins');
-  const ordenado = ordenarLista(admins, 'admins');
+  const busca = filtros.admins;
+  let filtrado = admins;
+  if (filtros.adminCargo) filtrado = filtrado.filter(a => a.cargoLogin === filtros.adminCargo);
+  if (busca) filtrado = filtrado.filter(a =>
+    `${a.idLogin} ${a.nomeLogin} ${a.email} ${cargoLabel(a.cargoLogin)}`.toLowerCase().includes(busca)
+  );
+  const ordenado = ordenarLista(filtrado, 'admins');
   if (!ordenado.length) {
-    tbody.innerHTML = _emptyState(
-      'user-shield', 'Nenhum administrador cadastrado',
-      'Cadastre um administrador para gerenciar o sistema.',
-      'Novo Administrador', 'abrirModalNovoAdmin()', 4
-    );
+    tbody.innerHTML = (filtros.adminCargo || busca)
+      ? _emptyState(
+          'user-shield', 'Nenhum usuário encontrado',
+          'Tente ajustar a busca ou o filtro de cargo.',
+          '', '', 5
+        )
+      : _emptyState(
+          'user-shield', 'Nenhum usuário cadastrado',
+          'Cadastre um usuário para acessar o sistema.',
+          'Novo Usuário', 'abrirModalNovoAdmin()', 5
+        );
     return;
   }
   tbody.innerHTML = ordenado.map(a => {
@@ -3423,6 +3461,7 @@ function renderTabelaAdmins(admins) {
           </div>
         </td>
         <td><span class="cell-secondary">${a.email}</span></td>
+        <td>${badgeCargo(a.cargoLogin)}</td>
         <td>${_actionMenu([
           { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarAdmin(${a.idLogin})` },
           { divider: true },
@@ -3437,42 +3476,62 @@ function abrirModalNovoAdmin() {
   document.getElementById('adminIdEdicao').value = '';
   document.getElementById('adminNome').value     = '';
   document.getElementById('adminEmail').value    = '';
+  document.getElementById('adminCargo').value    = '';
   document.getElementById('adminSenha').value      = '';
   document.getElementById('adminSenhaAtual').value = '';
   document.getElementById('adminNovaSenha').value  = '';
   document.getElementById('adminSenhaGroup').classList.remove('hidden');
   document.getElementById('adminSenhaAtualGroup').classList.add('hidden');
   document.getElementById('adminNovaSenhaGroup').classList.add('hidden');
+  ['adminNome','adminEmail','adminCargo','adminSenha','adminSenhaAtual'].forEach(_limparErroCampo);
+  _ocultarBanner('banner-modalAdmin');
+  _descreverCargoAdmin();
+  document.getElementById('adminCargo').disabled = false;
   document.getElementById('modalAdminTitle').innerHTML =
-    '<i class="fa-solid fa-user-shield"></i> Novo Administrador';
+    '<i class="fa-solid fa-user-shield"></i> Novo Usuário';
   abrirModal('modalAdmin');
 }
 
 function abrirModalEditarAdmin(idLogin) {
   const a = cacheAdmins.find(x => x.idLogin == idLogin);
-  if (!a) { showToast('Administrador não encontrado.', 'error'); return; }
+  if (!a) { showToast('Usuário não encontrado.', 'error'); return; }
+  const proprio = parseInt(sessionStorage.getItem('idAdmin') || '0') === a.idLogin;
+
   document.getElementById('adminIdEdicao').value  = a.idLogin;
   document.getElementById('adminNome').value      = a.nomeLogin;
   document.getElementById('adminEmail').value     = a.email;
+  document.getElementById('adminCargo').value     = a.cargoLogin || '';
   document.getElementById('adminSenha').value      = '';
   document.getElementById('adminSenhaAtual').value = '';
   document.getElementById('adminNovaSenha').value  = '';
   document.getElementById('adminSenhaGroup').classList.add('hidden');
-  document.getElementById('adminSenhaAtualGroup').classList.remove('hidden');
-  document.getElementById('adminNovaSenhaGroup').classList.remove('hidden');
+  // A senha atual só é pedida (e só serve) quando a pessoa edita o próprio
+  // perfil — quem é de Administração não sabe a senha de terceiros.
+  document.getElementById('adminSenhaAtualGroup').classList.toggle('hidden', !proprio);
+  document.getElementById('adminNovaSenhaGroup').classList.toggle('hidden', !proprio);
+  // Só Administração troca cargo; o backend ignora a troca vinda dos demais.
+  document.getElementById('adminCargo').disabled = !_ehAdministracao();
+  ['adminNome','adminEmail','adminCargo','adminSenha','adminSenhaAtual'].forEach(_limparErroCampo);
+  _ocultarBanner('banner-modalAdmin');
+  _descreverCargoAdmin();
   document.getElementById('modalAdminTitle').innerHTML =
-    '<i class="fa-solid fa-pen"></i> Editar Administrador';
+    '<i class="fa-solid fa-pen"></i> Editar Usuário';
   abrirModal('modalAdmin');
+}
+
+function _ehAdministracao() {
+  return (sessionStorage.getItem('cargo') || 'Administracao') === 'Administracao';
 }
 
 async function salvarAdmin() {
   const idEdicao  = document.getElementById('adminIdEdicao').value;
   const nome      = document.getElementById('adminNome').value.trim();
   const email     = document.getElementById('adminEmail').value.trim();
+  const cargo     = document.getElementById('adminCargo').value;
   const senha     = document.getElementById('adminSenha').value;
   const novaSenha = document.getElementById('adminNovaSenha').value;
 
-  ['adminNome','adminEmail','adminSenha','adminSenhaAtual'].forEach(_limparErroCampo);
+  ['adminNome','adminEmail','adminCargo','adminSenha','adminSenhaAtual'].forEach(_limparErroCampo);
   _ocultarBanner('banner-modalAdmin');
 
   const loggedId = parseInt(sessionStorage.getItem('idAdmin') || '0');
@@ -3480,28 +3539,36 @@ async function salvarAdmin() {
   let temErro = false;
   if (!nome)  { _erroCampo('adminNome',  'Nome é obrigatório.');  temErro = true; }
   if (!email) { _erroCampo('adminEmail', 'Email é obrigatório.'); temErro = true; }
+  if (!cargo) { _erroCampo('adminCargo', 'Selecione o cargo de acesso.'); temErro = true; }
 
   if (idEdicao) {
-    if (loggedId && loggedId !== parseInt(idEdicao)) {
+    const proprio = loggedId === parseInt(idEdicao);
+    if (!proprio && !_ehAdministracao()) {
       showToast('Você só pode editar seu próprio perfil.', 'error'); return;
     }
     const senhaAtual = document.getElementById('adminSenhaAtual').value;
-    if (!senhaAtual) { _erroCampo('adminSenhaAtual', 'Informe sua senha atual para confirmar.'); temErro = true; }
+    if (proprio && !senhaAtual) { _erroCampo('adminSenhaAtual', 'Informe sua senha atual para confirmar.'); temErro = true; }
     if (temErro) { _mostrarBanner('banner-modalAdmin'); _scrollPrimeiroErro('modalAdmin'); return; }
-    const payload = { admin: { email, nomeLogin: nome, novaSenha: novaSenha || undefined, senhaAtual } };
+    const payload = { admin: {
+      email, nomeLogin: nome, cargo,
+      novaSenha:  proprio ? (novaSenha || undefined) : undefined,
+      senhaAtual: proprio ? senhaAtual : undefined,
+    } };
     try {
       await apiFetch(`/admin/${idEdicao}`, 'PUT', payload);
-      showToast('Administrador atualizado!', 'success');
+      showToast('Usuário atualizado!', 'success');
       fecharModal('modalAdmin');
+      // Editar o próprio cargo muda o que a sessão pode ver.
+      if (proprio) sessionStorage.setItem('cargo', cargo);
       await carregarAdmins();
     } catch (e) { showToast(`Erro: ${e.message}`, 'error'); }
   } else {
     if (!senha) { _erroCampo('adminSenha', 'Senha é obrigatória.'); temErro = true; }
     if (temErro) { _mostrarBanner('banner-modalAdmin'); _scrollPrimeiroErro('modalAdmin'); return; }
-    const payload = { admin: { email, nomeLogin: nome, senha } };
+    const payload = { admin: { email, nomeLogin: nome, cargo, senha } };
     try {
       await apiFetch('/admin', 'POST', payload);
-      showToast(`Administrador "${nome}" criado!`, 'success');
+      showToast(`Usuário "${nome}" criado!`, 'success');
       fecharModal('modalAdmin');
       await carregarAdmins();
     } catch (e) { showToast(`Erro: ${e.message}`, 'error'); }
@@ -3625,7 +3692,7 @@ function navegarPara(page) {
   const pageEl  = document.getElementById(`page-${page}`);
   if (navItem) navItem.classList.add('active');
   if (pageEl)  pageEl.classList.add('active');
-  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Administradores', responsaveis: 'Field', historico: 'Histórico' };
+  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Usuários', responsaveis: 'Field', historico: 'Histórico' };
   document.getElementById('breadcrumb').textContent = labels[page] || page;
 }
 
@@ -3724,15 +3791,16 @@ function toggleAdminSenha(inputId, btn) {
 // FILTRO DE ADMINS
 // ══════════════════════════════════════════════════
 
+// Busca e filtro de cargo re-renderizam a tabela em vez de esconder linhas por
+// índice — assim continuam corretos depois de ordenar por qualquer coluna.
 function filtrarAdmins(q) {
-  const lower = q.toLowerCase();
-  const tbody = document.getElementById('bodyAdmins');
-  cacheAdmins.forEach((a, i) => {
-    const row = tbody.rows[i];
-    if (!row) return;
-    const match = `${a.idLogin} ${a.nomeLogin} ${a.email}`.toLowerCase().includes(lower);
-    row.style.display = match ? '' : 'none';
-  });
+  filtros.admins = q.toLowerCase();
+  renderTabelaAdmins(cacheAdmins);
+}
+
+function filtrarAdminsCargo(cargo) {
+  filtros.adminCargo = cargo;
+  renderTabelaAdmins(cacheAdmins);
 }
 
 
@@ -3741,10 +3809,10 @@ function filtrarAdmins(q) {
 // ══════════════════════════════════════════════════
 
 function exportarAdmins() {
-  if (!cacheAdmins.length) { showToast('Nenhum administrador para exportar.', 'warning'); return; }
-  const cabecalhos = ['ID', 'Nome', 'Email'];
-  const linhas = cacheAdmins.map(a => [a.idLogin, a.nomeLogin, a.email]);
-  _downloadXLSX(`admins_${_dataHoje()}.xlsx`, cabecalhos, linhas);
+  if (!cacheAdmins.length) { showToast('Nenhum usuário para exportar.', 'warning'); return; }
+  const cabecalhos = ['ID', 'Nome', 'Email', 'Cargo'];
+  const linhas = cacheAdmins.map(a => [a.idLogin, a.nomeLogin, a.email, cargoLabel(a.cargoLogin)]);
+  _downloadXLSX(`usuarios_${_dataHoje()}.xlsx`, cabecalhos, linhas);
   showToast('Exportação concluída!', 'success');
 }
 
@@ -4095,14 +4163,20 @@ async function carregarHistorico() {
   }
 }
 
+// Registros antigos gravaram a entidade como "Administrador"; hoje ela se chama
+// "Usuário". Normalizando na leitura, o histórico anterior continua no filtro.
+function _entidadeHistorico(entidade) {
+  return entidade === 'Administrador' ? 'Usuário' : entidade;
+}
+
 function _atualizarStatsHistorico(lista) {
-  const cnt = (ent) => lista.filter(h => !ent || h.entidade === ent).length;
+  const cnt = (ent) => lista.filter(h => !ent || _entidadeHistorico(h.entidade) === ent).length;
   const set = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
   set('stat-hist-total',    cnt(''));
   set('stat-hist-produto',  cnt('Produto'));
   set('stat-hist-obra',     cnt('Obra'));
   set('stat-hist-cliente',  cnt('Cliente'));
-  set('stat-hist-admin',    cnt('Administrador'));
+  set('stat-hist-admin',    cnt('Usuário'));
   set('stat-hist-field',    cnt('Field'));
   _preencherSelectAdminsHistorico(lista);
 }
@@ -4124,7 +4198,7 @@ function _badgeAcao(acao) {
 }
 
 function _badgeEntidade(entidade) {
-  return `<span class="badge badge-gray">${entidade}</span>`;
+  return `<span class="badge badge-gray">${_entidadeHistorico(entidade)}</span>`;
 }
 
 function renderTabelaHistorico(lista) {
@@ -4136,7 +4210,7 @@ function renderTabelaHistorico(lista) {
   const ate   = filtros.historicoAte;
 
   let filtrado = lista;
-  if (ent)   filtrado = filtrado.filter(h => h.entidade === ent);
+  if (ent)   filtrado = filtrado.filter(h => _entidadeHistorico(h.entidade) === ent);
   if (admin) filtrado = filtrado.filter(h => h.nomeAdmin === admin);
   if (acao)  filtrado = filtrado.filter(h => h.acao === acao);
   if (de)    filtrado = filtrado.filter(h => h.dataHora && _brParaIso(h.dataHora.split(' ')[0]) >= de);
