@@ -75,6 +75,29 @@ class ClienteDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
+    def buscar_nomes_por_ids(self, ids_clientes: list) -> dict:
+        """Só os nomes, no formato {idCliente: nomeCliente}. A listagem de obras
+        usa isto para mostrar o cliente sem depender da lista completa, que nem
+        todo cargo pode acessar."""
+        ids = [i for i in dict.fromkeys(ids_clientes or []) if i]
+        if not ids:
+            return {}
+
+        marcadores = ", ".join(["%s"] * len(ids))
+        sql = f"SELECT idCliente, nomeCliente FROM clientes WHERE idCliente IN ({marcadores})"
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return {}
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, tuple(ids))
+            return {linha[0]: linha[1] for linha in cursor.fetchall()}
+        except Exception as e:
+            print(f"Erro ao buscar nomes de clientes: {e}")
+            return {}
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
     def buscar_por_id(self, id_cliente: int):
         sql = """
             SELECT idCliente, nomeCliente, CNPJCPF, contatoCliente,

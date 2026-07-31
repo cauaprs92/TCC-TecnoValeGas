@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from src.controller.servicoController   import ServicoController
 from src.controller.historicoController import HistoricoController
 from src.middleware.servicoMiddleware   import ServicoMiddleware
-from src.middleware.jwtMiddleware       import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
+from src.middleware.jwtMiddleware       import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA
 from src.error_response                 import ErrorResponse
 
 servico_bp     = Blueprint("servico", __name__, url_prefix="/servico")
@@ -58,7 +58,7 @@ def cadastrar():
 # ─── GET /servico ─────────────────────────────────────────────────────────────
 @servico_bp.route("", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 def listar():
     servicos = controller.listar()
     return jsonify({"status": True, "servicos": [_serializar(s) for s in servicos]}), 200
@@ -67,7 +67,7 @@ def listar():
 # ─── GET /servico/<idServico> ─────────────────────────────────────────────────
 @servico_bp.route("/<int:idServico>", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @middleware.validate_id_param
 def buscar_por_id(idServico: int):
     servico = controller.buscar_por_id(idServico)
@@ -134,7 +134,7 @@ def deletar(idServico: int):
 # ─── GET /servico/<idServico>/produtos ────────────────────────────────────────
 @servico_bp.route("/<int:idServico>/produtos", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @middleware.validate_id_param
 def buscar_produtos(idServico: int):
     servico = controller.buscar_por_id(idServico)

@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify, g
 from src.controller.produtoController    import ProdutoController
 from src.controller.historicoController  import HistoricoController
 from src.middleware.produtoMiddleware    import ProdutoMiddleware
-from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
+from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA
 from src.dao.fotoProdutoDAO              import FotoProdutoDAO
 from src.error_response                  import ErrorResponse
 
@@ -76,7 +76,7 @@ def cadastrar():
 # ─── GET /produto ─────────────────────────────────────────────────────────────
 @produto_bp.route("", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 def listar():
     produtos = controller.listar()
     return jsonify({"status": True, "produtos": [_serializar(p) for p in produtos]}), 200
@@ -85,7 +85,7 @@ def listar():
 # ─── GET /produto/<idProduto> ─────────────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @middleware.validate_id_param
 def buscar_por_id(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
@@ -157,7 +157,7 @@ def deletar(idProduto: int):
 # ─── GET /produto/<idProduto>/fotos ──────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>/fotos", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 def listar_fotos(idProduto: int):
     fotos = foto_dao.buscar_por_produto(idProduto)
     return jsonify({"status": True, "fotos": fotos}), 200
@@ -223,7 +223,7 @@ def deletar_foto(idProduto: int, idFoto: int):
 # ─── GET /produto/<idProduto>/estoque ─────────────────────────────────────────
 @produto_bp.route("/<int:idProduto>/estoque", methods=["GET"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @middleware.validate_id_param
 def verificar_estoque(idProduto: int):
     quantidade = request.args.get("quantidade", 1)

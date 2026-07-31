@@ -181,15 +181,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function carregarTodos() {
   // Só busca o que o cargo pode ver — pedir o resto só renderiza erro 403.
+  // O catálogo de produtos e serviços também é carregado para quem edita obra
+  // sem ter as abas: é dele que sai a lista de material lançado na obra.
+  const precisaCatalogo = podeVerPagina('estoque') || podeEscrever('obras');
+
   const cargas = [];
-  if (podeVerPagina('estoque'))      cargas.push(carregarProdutos(), carregarFornecedores());
+  if (precisaCatalogo)               cargas.push(carregarProdutos());
+  if (precisaCatalogo || podeVerPagina('servicos')) cargas.push(carregarServicos());
+  if (podeVerPagina('estoque'))      cargas.push(carregarFornecedores());
   if (podeVerPagina('obras'))        cargas.push(carregarObras());
   if (podeVerPagina('clientes'))     cargas.push(carregarClientes());
-  if (podeVerPagina('servicos'))     cargas.push(carregarServicos());
   if (podeVerPagina('admins'))       cargas.push(carregarAdmins());
   if (podeVerPagina('responsaveis')) cargas.push(carregarResponsaveis());
   if (podeVerPagina('historico'))    cargas.push(carregarHistorico());
-  if (podeEscrever('obras'))         cargas.push(carregarFuncionariosObra());
+  if (_ehAdministracao())            cargas.push(carregarFuncionariosObra());
 
   await Promise.allSettled(cargas);
   if (podeVerPagina('estoque')) renderGraficoProdutos();
@@ -212,18 +217,24 @@ function carregarAdministrador() {
 // de erro 403. Quem realmente bloqueia é o backend — mexer no sessionStorage
 // daqui não dá acesso a nada.
 
+// `escrita` = pode alterar registros já existentes. `criacao` = pode abrir
+// registros novos. O funcionário de obra faz tudo nas obras designadas a ele,
+// mas não cria obra nova: uma obra recém-criada não está designada a ninguém.
 const PERMISSOES = {
   Administracao: {
     paginas: ['dashboard','estoque','obras','clientes','servicos','admins','responsaveis','historico'],
     escrita: ['estoque','obras','clientes','servicos','admins','responsaveis'],
+    criacao: ['estoque','obras','clientes','servicos','admins','responsaveis'],
   },
   Almoxarifado: {
     paginas: ['dashboard','estoque','obras','servicos'],
     escrita: ['estoque'],
+    criacao: ['estoque'],
   },
   Obra: {
     paginas: ['obras'],
-    escrita: [],
+    escrita: ['obras'],
+    criacao: [],
   },
 };
 
@@ -237,6 +248,7 @@ function permissoes() {
 
 function podeVerPagina(pagina) { return permissoes().paginas.includes(pagina); }
 function podeEscrever(recurso) { return permissoes().escrita.includes(recurso); }
+function podeCriar(recurso)    { return permissoes().criacao.includes(recurso); }
 
 function aplicarPermissoesUI() {
   const perm = permissoes();
@@ -249,6 +261,9 @@ function aplicarPermissoesUI() {
   });
   document.querySelectorAll('[data-escrita]').forEach(el => {
     el.classList.toggle('hidden', !perm.escrita.includes(el.dataset.escrita));
+  });
+  document.querySelectorAll('[data-criar]').forEach(el => {
+    el.classList.toggle('hidden', !perm.criacao.includes(el.dataset.criar));
   });
 
   // O relatório de consumo lê o estoque inteiro.
@@ -285,6 +300,9 @@ async function carregarProdutos() {
     const res = await apiFetch('/produto');
     cacheProdutos = res.produtos || [];
     _cacheReady.produtos = true;
+    // Quem só carrega o catálogo para lançar material na obra não acompanha
+    // estoque — a tabela, os alertas e o sino ficariam fora do contexto dele.
+    if (!podeVerPagina('estoque')) return;
     renderTabelaProdutos(cacheProdutos);
     renderAlertas(cacheProdutos);
     renderNotificacoes(cacheProdutos);
@@ -1023,8 +1041,11 @@ function renderTabelaObras(obras) {
   } else {
     tbody.innerHTML = pagina.map(o => {
       const badge       = badgeStatus(o.statusObra);
+      // A obra já traz o nome do cliente; o cache é só um reforço para quem tem
+      // a aba Clientes e pode ter dados mais frescos em memória.
       const cliente     = cacheClientes.find(c => c.idCliente === o.codCliente);
-      const nomeCliente = cliente ? cliente.nomeCliente : (o.codCliente ? `Cliente ${o.codCliente}` : '—');
+      const nomeCliente = cliente?.nomeCliente || o.nomeCliente
+                          || (o.codCliente ? `Cliente ${o.codCliente}` : '—');
       const descEsc = _esc(o.descObra);
       const tags = [o.tipoObra, o.respObra].filter(Boolean);
       const equipe = o.funcionarios || [];
@@ -1273,11 +1294,16 @@ let _obraServicosExistentes = [];
 
 let cacheFuncionariosObra = [];
 let _obraEquipe           = new Set();   // idLogin dos selecionados no modal
+// Nomes conhecidos por idLogin. Quem não é de Administração não recebe a lista
+// de candidatos, mas a obra traz os nomes da própria equipe — sem isso o campo
+// apareceria vazio numa obra que tem equipe.
+let _nomesFuncionarios    = new Map();
 
 async function carregarFuncionariosObra() {
   try {
     const res = await apiFetch('/obra/funcionarios');
     cacheFuncionariosObra = res.funcionarios || [];
+    cacheFuncionariosObra.forEach(f => _nomesFuncionarios.set(f.idLogin, f.nomeLogin));
     _cacheReady.funcionariosObra = true;
     _renderEquipeDropdown();
   } catch (e) {
@@ -1308,14 +1334,17 @@ function _renderEquipeChips() {
   const toggle = document.getElementById('obraEquipeToggle');
   if (!chips || !resumo) return;
 
-  const escolhidos = cacheFuncionariosObra.filter(f => _obraEquipe.has(f.idLogin));
-  chips.innerHTML = escolhidos.map(f => `
+  // Monta pelos IDs selecionados, e não pela lista de candidatos: assim a
+  // equipe aparece mesmo para quem não recebeu a lista de candidatos.
+  const podeRemover = _ehAdministracao();
+  const escolhidos  = [..._obraEquipe];
+  chips.innerHTML = escolhidos.map(id => `
     <span class="equipe-chip">
-      <span>${f.nomeLogin}</span>
-      <button type="button" title="Remover da equipe"
-              onclick="alternarFuncionarioEquipe(${f.idLogin}, false)">
+      <span>${_nomesFuncionarios.get(id) || `Usuário ${id}`}</span>
+      ${podeRemover ? `<button type="button" title="Remover da equipe"
+              onclick="alternarFuncionarioEquipe(${id}, false)">
         <i class="fa-solid fa-xmark"></i>
-      </button>
+      </button>` : ''}
     </span>`).join('');
 
   const n = escolhidos.length;
@@ -1347,6 +1376,7 @@ function fecharDropdownEquipe() {
 }
 
 function _definirEquipeObra(funcionarios) {
+  (funcionarios || []).forEach(f => _nomesFuncionarios.set(f.idLogin, f.nomeLogin));
   _obraEquipe = new Set((funcionarios || []).map(f => f.idLogin));
   fecharDropdownEquipe();
   _renderEquipeDropdown();
@@ -1549,8 +1579,12 @@ function _definirModoLeituraObra() {
   const somenteLeitura = !podeEscrever('obras');
   document.querySelectorAll('#modalObra input, #modalObra select, #modalObra textarea')
     .forEach(el => { el.disabled = somenteLeitura; });
+
+  // Quem designa a equipe é a Administração. O funcionário edita a obra dele,
+  // mas não escolhe quem trabalha nela — o backend também ignora se tentar.
   const toggleEquipe = document.getElementById('obraEquipeToggle');
-  if (toggleEquipe) toggleEquipe.disabled = somenteLeitura;
+  if (toggleEquipe) toggleEquipe.disabled = !_ehAdministracao();
+
   if (somenteLeitura) {
     document.getElementById('modalObraTitle').innerHTML =
       '<i class="fa-solid fa-circle-info"></i> Detalhes da Obra';
@@ -1615,7 +1649,7 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraObs').value               = o.obsObra || '';
   document.getElementById('obraOrientacao').value        = o.orientacaoObra || '';
   _definirEquipeObra(o.funcionarios);
-  buscarClienteObra(document.getElementById('obraCodCliente'));
+  _carregarClienteDaObra(o);
   document.getElementById('obraSecaoProdutos').classList.add('hidden');
   document.getElementById('obraSecaoProdutosVer').classList.remove('hidden');
   document.getElementById('produtosObraEdList').innerHTML = '';
@@ -1754,6 +1788,22 @@ async function _buscarClienteObra() {
 
 // Usado apenas na abertura do modal de edição: preenche do cache sem sobrescrever
 // campos de contato já vindos da obra (email, celulares)
+// Preenche o bloco do cliente no modal da obra. Quem tem acesso à aba Clientes
+// usa o cache local; o funcionário de obra não tem essa lista, então busca só o
+// cliente da obra dele, pela rota que já valida a designação.
+async function _carregarClienteDaObra(obra) {
+  if (cacheClientes.length) {
+    buscarClienteObra(document.getElementById('obraCodCliente'));
+    return;
+  }
+  try {
+    const res = await apiFetch(`/obra/${obra.idObra}/cliente`);
+    _preencherCamposCliente(res.cliente);
+  } catch (e) {
+    console.error('_carregarClienteDaObra:', e);
+  }
+}
+
 function buscarClienteObra(input) {
   const id = parseInt(input.value);
   if (!id || id <= 0) return;
@@ -1839,7 +1889,9 @@ async function salvarObra() {
   if (!clientePrimario) { _obraSetError('obraClientePrimario', 'Selecione o cliente primário.'); temErro = true; }
   if (!resp)       { _obraSetError('obraResp',       'Selecione o field responsável.');     temErro = true; }
   if (!cod)        { _obraSetError('obraCodCliente', 'ID do cliente é obrigatório.');       temErro = true; }
-  else if (!cacheClientes.find(x => x.idCliente === parseInt(cod)))
+  // Só dá para conferir o ID contra a lista quando o cargo tem acesso a ela;
+  // sem isso, quem valida é o backend.
+  else if (_cacheReady.clientes && !cacheClientes.find(x => x.idCliente === parseInt(cod)))
                    { _obraSetError('obraCodCliente', 'Cliente não encontrado. Verifique o ID.'); temErro = true; }
   if (!idEdicao) {
     if (!cnpj)       { _obraSetError('obraClienteCNPJ',        'CNPJ / CPF é obrigatório.');       temErro = true; }
@@ -1876,9 +1928,11 @@ async function salvarObra() {
     const servicosNovos = _coletarServicosObra('servicosObraEdList');
 
     try {
-      await apiFetch(`/obra/${idEdicao}`, 'PUT', {
-        obra, produtosNovos, servicosNovos, funcionarios: [..._obraEquipe],
-      });
+      // Sem o campo, o backend mantém a equipe como está — é o que deve
+      // acontecer quando quem salva não é de Administração.
+      const payload = { obra, produtosNovos, servicosNovos };
+      if (_ehAdministracao()) payload.funcionarios = [..._obraEquipe];
+      await apiFetch(`/obra/${idEdicao}`, 'PUT', payload);
       fecharModal('modalObra');
       await Promise.all([carregarObras(), carregarProdutos(), carregarServicos()]);
       showToast('Obra atualizada!', 'success');
@@ -2185,7 +2239,7 @@ function _getSortValue(item, table, key) {
       if (key === 'id') return item.idObra;
       if (key === 'cliente') {
         const cliente = cacheClientes.find(c => c.idCliente === item.codCliente);
-        return cliente ? cliente.nomeCliente : '';
+        return cliente?.nomeCliente || item.nomeCliente || '';
       }
       if (key === 'obra') return item.descObra || '';
       if (key === 'inicio') return item.dataInicio || '';
@@ -3820,7 +3874,7 @@ function exportarObras() {
       o.idObra, o.descObra, o.respObra || '',
       (o.funcionarios || []).map(f => f.nomeLogin).join(', '),
       o.codCliente,
-      cliente ? cliente.nomeCliente : '', o.setorObra || '',
+      cliente?.nomeCliente || o.nomeCliente || '', o.setorObra || '',
       fmtData(o.dataInicio), fmtData(o.dataFim), o.statusObra,
       (o.statusObra === 'Concluida' && o.valorObra != null) ? o.valorObra : '',
       o.obsObra || '', o.orientacaoObra || '',

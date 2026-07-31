@@ -48,8 +48,19 @@ class ObraController:
     def buscar_equipe_da_obra(self, id_obra: int) -> list:
         return self.daoEquipe.listar_por_obra(id_obra)
 
+    def buscar_cliente_da_obra(self, id_obra: int):
+        """Cliente de uma obra específica. Existe para o funcionário de obra ver
+        os dados do cliente da obra dele sem abrir a lista inteira de clientes."""
+        obra = self.dao.buscar_por_id(id_obra)
+        if not obra:
+            return None
+        return self.daoCliente.buscar_por_id(obra[1])
+
     def buscar_equipes_das_obras(self, ids_obras: list) -> dict:
         return self.daoEquipe.listar_por_obras(ids_obras)
+
+    def buscar_nomes_clientes(self, ids_clientes: list) -> dict:
+        return self.daoCliente.buscar_nomes_por_ids(ids_clientes)
 
     def cadastrar(self, dadosObra: dict, produtosUsados: list,
                   servicosVinculados: list = None, funcionarios: list = None) -> tuple:

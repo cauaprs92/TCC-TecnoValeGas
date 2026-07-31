@@ -39,7 +39,7 @@ def handle_error(e: ErrorResponse):
     return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
-def _serializar(o, equipe=None):
+def _serializar(o, equipe=None, nome_cliente=None):
     dados = {
         "idObra":         o[0],
         "codCliente":     o[1],
@@ -61,6 +61,7 @@ def _serializar(o, equipe=None):
         "setorObra":        o[17] if len(o) > 17 else None,
     }
     dados["funcionarios"] = equipe or []
+    dados["nomeCliente"]  = nome_cliente
     return dados
 
 
@@ -125,9 +126,12 @@ def listar():
     # Funcionário de obra recebe só as obras em que está na equipe.
     obras   = controller.listar_para_usuario(g.get("cargo"), g.get("admin_id"))
     equipes = controller.buscar_equipes_das_obras([o[0] for o in obras])
+    # O nome do cliente vem junto porque nem todo cargo tem acesso à aba
+    # Clientes — sem isso a listagem mostraria só o código do cliente.
+    nomes   = controller.buscar_nomes_clientes([o[1] for o in obras])
     return jsonify({
         "status": True,
-        "obras":  [_serializar(o, equipes.get(o[0])) for o in obras],
+        "obras":  [_serializar(o, equipes.get(o[0]), nomes.get(o[1])) for o in obras],
     }), 200
 
 
@@ -153,7 +157,8 @@ def buscar_por_id(idObra: int):
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
     equipe = controller.buscar_equipe_da_obra(idObra)
-    return jsonify({"status": True, "obra": _serializar(obra, equipe)}), 200
+    nomes  = controller.buscar_nomes_clientes([obra[1]])
+    return jsonify({"status": True, "obra": _serializar(obra, equipe, nomes.get(obra[1]))}), 200
 
 
 # ─── GET /obra/cliente/<idCliente> ────────────────────────────────────────────
@@ -167,11 +172,43 @@ def listar_por_cliente(idCliente: int):
         raise ErrorResponse(404, mensagem, {"message": mensagem})
 
     equipes = controller.buscar_equipes_das_obras([o[0] for o in obras])
+    nomes   = controller.buscar_nomes_clientes([o[1] for o in obras])
     return jsonify({
         "status": True,
         "msg":    mensagem,
-        "obras":  [_serializar(o, equipes.get(o[0])) for o in obras],
+        "obras":  [_serializar(o, equipes.get(o[0]), nomes.get(o[1])) for o in obras],
     }), 200
+
+
+# ─── GET /obra/<idObra>/cliente ───────────────────────────────────────────────
+# O funcionário de obra não tem acesso à lista de clientes, mas precisa ver os
+# dados do cliente da obra dele. Aqui ele recebe só esse cliente.
+@obra_bp.route("/<int:idObra>/cliente", methods=["GET"])
+@jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
+@exigir_acesso_obra
+@middleware.validate_id_param
+def buscar_cliente_da_obra(idObra: int):
+    cliente = controller.buscar_cliente_da_obra(idObra)
+    if not cliente:
+        raise ErrorResponse(404, "Cliente da obra não encontrado.",
+                            {"message": f"Nenhum cliente vinculado à obra {idObra}."})
+
+    return jsonify({"status": True, "cliente": {
+        "idCliente":      cliente._idCliente,
+        "nomeCliente":    cliente._nomeCliente,
+        "CNPJCPF":        cliente._CNPJCPF,
+        "contatoCliente": cliente._contatoCliente,
+        "emailCliente":   cliente._emailCliente,
+        "telefone2":      cliente._telefone2,
+        "cep":            cliente._cep,
+        "rua":            cliente._rua,
+        "numero":         cliente._numero,
+        "complemento":    cliente._complemento,
+        "bairro":         cliente._bairro,
+        "cidade":         cliente._cidade,
+        "estado":         cliente._estado,
+    }}), 200
 
 
 # ─── GET /obra/<idObra>/produtos ──────────────────────────────────────────────
@@ -218,7 +255,8 @@ def listar_fotos(idObra: int):
 # ─── POST /obra/<idObra>/fotos ────────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>/fotos", methods=["POST"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def upload_foto(idObra: int):
     obra = controller.buscar_por_id(idObra)
@@ -259,7 +297,8 @@ def upload_foto(idObra: int):
 # ─── DELETE /obra/<idObra>/fotos/<idFoto> ─────────────────────────────────────
 @obra_bp.route("/<int:idObra>/fotos/<int:idFoto>", methods=["DELETE"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def deletar_foto(idObra: int, idFoto: int):
     nome = foto_dao.deletar(idFoto)
@@ -276,7 +315,8 @@ def deletar_foto(idObra: int, idFoto: int):
 # ─── PUT /obra/<idObra> ───────────────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>", methods=["PUT"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 @middleware.validate_update_body
 def atualizar(idObra: int):
@@ -287,6 +327,12 @@ def atualizar(idObra: int):
     desc           = dados_obra.get("descObra", "")
     # Ausente = não mexe na equipe; lista vazia = esvazia a equipe de propósito.
     funcionarios   = body.get("funcionarios") if "funcionarios" in body else None
+
+    # Quem decide a designação é a Administração. O funcionário edita tudo na
+    # obra dele, menos quem trabalha nela — senão poderia se remover da equipe
+    # (perdendo o acesso) ou incluir gente que não foi designada.
+    if g.get("cargo") != CARGO_ADMINISTRACAO:
+        funcionarios = None
 
     sucesso, mensagem = controller.atualizar(
         idObra, dados_obra, produtos_novos, servicos_novos, funcionarios
@@ -308,7 +354,8 @@ def atualizar(idObra: int):
 # ─── PATCH /obra/<idObra>/produto/<idProduto> ────────────────────────────────
 @obra_bp.route("/<int:idObra>/produto/<int:idProduto>", methods=["PATCH"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def atualizar_produto_obra(idObra: int, idProduto: int):
     body     = request.get_json() or {}
@@ -324,7 +371,8 @@ def atualizar_produto_obra(idObra: int, idProduto: int):
 # ─── DELETE /obra/<idObra>/produto/<idProduto> ───────────────────────────────
 @obra_bp.route("/<int:idObra>/produto/<int:idProduto>", methods=["DELETE"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def remover_produto_obra(idObra: int, idProduto: int):
     sucesso, mensagem = controller.remover_produto_obra(idObra, idProduto)
@@ -336,7 +384,8 @@ def remover_produto_obra(idObra: int, idProduto: int):
 # ─── PATCH /obra/<idObra>/servico/<idServico> ────────────────────────────────
 @obra_bp.route("/<int:idObra>/servico/<int:idServico>", methods=["PATCH"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def atualizar_servico_obra(idObra: int, idServico: int):
     body           = request.get_json() or {}
@@ -352,7 +401,8 @@ def atualizar_servico_obra(idObra: int, idServico: int):
 # ─── DELETE /obra/<idObra>/servico/<idServico> ───────────────────────────────
 @obra_bp.route("/<int:idObra>/servico/<int:idServico>", methods=["DELETE"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def remover_servico_obra(idObra: int, idServico: int):
     sucesso, mensagem = controller.remover_servico_obra(idObra, idServico)
@@ -364,7 +414,8 @@ def remover_servico_obra(idObra: int, idServico: int):
 # ─── PATCH /obra/<idObra>/status ─────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>/status", methods=["PATCH"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 @middleware.validate_status_body
 def atualizar_status(idObra: int):
@@ -388,7 +439,8 @@ def atualizar_status(idObra: int):
 # ─── DELETE /obra/<idObra> ────────────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>", methods=["DELETE"])
 @jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
+@exigir_acesso_obra
 @middleware.validate_id_param
 def deletar(idObra: int):
     obra = controller.buscar_por_id(idObra)
