@@ -1120,6 +1120,15 @@ body {
 .field-error.visible { display: block; }
 /* Texto de apoio abaixo do campo — explica a escolha, não sinaliza erro. */
 .field-hint { font-size: .74rem; color: var(--gray-500); display: block; margin-top: 3px; line-height: 1.35; }
+
+/* Campos travados em modo consulta — cargos sem escrita abrem o formulário
+   apenas para ver, então o campo precisa parecer inativo e não apenas inerte. */
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled,
+.equipe-toggle:disabled {
+  background: var(--gray-50); color: var(--gray-500); cursor: default;
+}
 .required { color: #DC2626; margin-left: 2px; }
 .form-group input.input-error,
 .form-group select.input-error,

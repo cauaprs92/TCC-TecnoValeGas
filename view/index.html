@@ -57,7 +57,7 @@
         </div>
         <div class="user-details">
           <span class="user-name" id="userName">Administrador</span>
-          <span class="user-role">Gestor de Estoque</span>
+          <span class="user-role" id="userRole">Gestor de Estoque</span>
         </div>
       </div>
       <button class="btn-logout" title="Sair" onclick="logout()">
@@ -110,35 +110,35 @@
 
         <!-- KPIs — clicáveis, navegam para a seção correspondente -->
         <div class="kpi-grid">
-          <div class="kpi-card kpi-nav" onclick="navegarPara('estoque')" title="Ir para Estoque">
+          <div class="kpi-card kpi-nav" onclick="navegarPara('estoque')" data-pagina="estoque" title="Ir para Estoque">
             <div class="kpi-icon orange"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-produtos">—</span>
               <span class="kpi-label">Produtos Cadastrados</span>
             </div>
           </div>
-          <div class="kpi-card kpi-nav" onclick="irParaObrasAtivas()" title="Ir para Obras Ativas">
+          <div class="kpi-card kpi-nav" onclick="irParaObrasAtivas()" data-pagina="obras" title="Ir para Obras Ativas">
             <div class="kpi-icon dark"><i class="fa-solid fa-hard-hat"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-obras">—</span>
               <span class="kpi-label">Obras Ativas</span>
             </div>
           </div>
-          <div class="kpi-card kpi-nav" onclick="navegarPara('clientes')" title="Ir para Clientes">
+          <div class="kpi-card kpi-nav" onclick="navegarPara('clientes')" data-pagina="clientes" title="Ir para Clientes">
             <div class="kpi-icon orange"><i class="fa-solid fa-users"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-clientes">—</span>
               <span class="kpi-label">Clientes</span>
             </div>
           </div>
-          <div class="kpi-card kpi-alert kpi-nav" onclick="irParaAlertasEstoque()" title="Ver alertas no Estoque">
+          <div class="kpi-card kpi-alert kpi-nav" onclick="irParaAlertasEstoque()" data-pagina="estoque" title="Ver alertas no Estoque">
             <div class="kpi-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-alertas">—</span>
               <span class="kpi-label">Alertas de Estoque</span>
             </div>
           </div>
-          <div class="kpi-card kpi-nav" onclick="irParaObrasConcluidas()" title="Ver obras concluídas">
+          <div class="kpi-card kpi-nav" onclick="irParaObrasConcluidas()" data-pagina="obras" title="Ver obras concluídas">
             <div class="kpi-icon green"><i class="fa-solid fa-sack-dollar"></i></div>
             <div class="kpi-info">
               <span class="kpi-value kpi-value-money" id="kpi-valor-faturado" title="">—</span>
@@ -282,10 +282,10 @@
           <button class="btn btn-secondary" onclick="exportarProdutos()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
-          <button class="btn btn-secondary" onclick="abrirModalImportarNF()">
+          <button class="btn btn-secondary" onclick="abrirModalImportarNF()" data-escrita="estoque">
             <i class="fa-solid fa-file-arrow-up"></i> Importar Nota Fiscal
           </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoProduto()">
+          <button class="btn btn-primary" onclick="abrirModalNovoProduto()" data-escrita="estoque">
             <i class="fa-solid fa-plus"></i> Novo Produto
           </button>
         </div>
@@ -360,7 +360,7 @@
           <button class="btn btn-secondary" onclick="exportarObras()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
-          <button class="btn btn-primary" onclick="abrirModalNovaObra()">
+          <button class="btn btn-primary" onclick="abrirModalNovaObra()" data-escrita="obras">
             <i class="fa-solid fa-plus"></i> Nova Obra
           </button>
         </div>
@@ -425,7 +425,7 @@
           <button class="btn btn-secondary" onclick="exportarClientes()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoCliente()">
+          <button class="btn btn-primary" onclick="abrirModalNovoCliente()" data-escrita="clientes">
             <i class="fa-solid fa-plus"></i> Novo Cliente
           </button>
         </div>
@@ -480,7 +480,7 @@
           <button class="btn btn-secondary" onclick="exportarServicos()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoServico()">
+          <button class="btn btn-primary" onclick="abrirModalNovoServico()" data-escrita="servicos">
             <i class="fa-solid fa-plus"></i> Novo Serviço
           </button>
         </div>
@@ -546,7 +546,7 @@
           <button class="btn btn-secondary" onclick="exportarAdmins()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoAdmin()">
+          <button class="btn btn-primary" onclick="abrirModalNovoAdmin()" data-escrita="admins">
             <i class="fa-solid fa-plus"></i> Novo Usuário
           </button>
         </div>
@@ -613,7 +613,7 @@
           <button class="btn btn-secondary" onclick="exportarResponsaveis()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()">
+          <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()" data-escrita="responsaveis">
             <i class="fa-solid fa-plus"></i> Novo Field
           </button>
         </div>
@@ -1221,7 +1221,7 @@
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="fecharModal('modalObra')">Cancelar</button>
-            <button class="btn btn-primary" onclick="salvarObra()">
+            <button class="btn btn-primary" onclick="salvarObra()" data-escrita="obras">
               <i class="fa-solid fa-floppy-disk"></i> Salvar
             </button>
           </div>
@@ -1398,7 +1398,7 @@
           </div>
           <div class="modal-body">
             <div class="form-group foto-section">
-              <div class="foto-dropzone" id="fotoObraDropzone"
+              <div class="foto-dropzone" id="fotoObraDropzone" data-escrita="obras"
                    onclick="document.getElementById('fotoObraInput').click()"
                    ondragover="event.preventDefault();this.classList.add('drag-over')"
                    ondragleave="this.classList.remove('drag-over')"

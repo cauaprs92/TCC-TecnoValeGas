@@ -86,8 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
   _observarKpiMoeda();
 
   carregarAdministrador();
+  aplicarPermissoesUI();
   carregarTodos();
-  carregarConsumo();
+  if (podeVerPagina('estoque')) carregarConsumo();
   _setupValidacaoProduto();
   _setupValidacaoModais();
   _setupValidacaoServico();
@@ -179,25 +180,85 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function carregarTodos() {
-  await Promise.allSettled([
-    carregarProdutos(),
-    carregarObras(),
-    carregarClientes(),
-    carregarServicos(),
-    carregarAdmins(),
-    carregarResponsaveis(),
-    carregarHistorico(),
-    carregarFornecedores(),
-    carregarFuncionariosObra(),
-  ]);
-  renderGraficoProdutos();
+  // Só busca o que o cargo pode ver — pedir o resto só renderiza erro 403.
+  const cargas = [];
+  if (podeVerPagina('estoque'))      cargas.push(carregarProdutos(), carregarFornecedores());
+  if (podeVerPagina('obras'))        cargas.push(carregarObras());
+  if (podeVerPagina('clientes'))     cargas.push(carregarClientes());
+  if (podeVerPagina('servicos'))     cargas.push(carregarServicos());
+  if (podeVerPagina('admins'))       cargas.push(carregarAdmins());
+  if (podeVerPagina('responsaveis')) cargas.push(carregarResponsaveis());
+  if (podeVerPagina('historico'))    cargas.push(carregarHistorico());
+  if (podeEscrever('obras'))         cargas.push(carregarFuncionariosObra());
+
+  await Promise.allSettled(cargas);
+  if (podeVerPagina('estoque')) renderGraficoProdutos();
 }
 
 function carregarAdministrador() {
   const nome = sessionStorage.getItem('nomeLogin') || 'Administrador';
   const avatarEl = document.getElementById('userAvatar');
   const nameEl   = document.getElementById('userName');
+  const roleEl   = document.getElementById('userRole');
   if (nameEl) nameEl.textContent = nome;
+  if (roleEl) roleEl.textContent = cargoLabel(sessionStorage.getItem('cargo') || 'Administracao');
+}
+
+
+// ══════════════════════════════════════════════════
+// PERMISSÕES DE TELA POR CARGO
+// ══════════════════════════════════════════════════
+// Isto é acabamento: esconde o que o cargo não usa para a tela não ficar cheia
+// de erro 403. Quem realmente bloqueia é o backend — mexer no sessionStorage
+// daqui não dá acesso a nada.
+
+const PERMISSOES = {
+  Administracao: {
+    paginas: ['dashboard','estoque','obras','clientes','servicos','admins','responsaveis','historico'],
+    escrita: ['estoque','obras','clientes','servicos','admins','responsaveis'],
+  },
+  Almoxarifado: {
+    paginas: ['dashboard','estoque','obras','servicos'],
+    escrita: ['estoque'],
+  },
+  Obra: {
+    paginas: ['obras'],
+    escrita: [],
+  },
+};
+
+function cargoAtual() {
+  return sessionStorage.getItem('cargo') || 'Administracao';
+}
+
+function permissoes() {
+  return PERMISSOES[cargoAtual()] || PERMISSOES.Administracao;
+}
+
+function podeVerPagina(pagina) { return permissoes().paginas.includes(pagina); }
+function podeEscrever(recurso) { return permissoes().escrita.includes(recurso); }
+
+function aplicarPermissoesUI() {
+  const perm = permissoes();
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.classList.toggle('hidden', !perm.paginas.includes(item.dataset.page));
+  });
+  document.querySelectorAll('[data-pagina]').forEach(el => {
+    el.classList.toggle('hidden', !perm.paginas.includes(el.dataset.pagina));
+  });
+  document.querySelectorAll('[data-escrita]').forEach(el => {
+    el.classList.toggle('hidden', !perm.escrita.includes(el.dataset.escrita));
+  });
+
+  // O relatório de consumo lê o estoque inteiro.
+  document.querySelector('[onclick="gerarRelatorio()"]')?.classList
+    .toggle('hidden', !perm.paginas.includes('estoque'));
+
+  // Cai numa página que o cargo enxerga: a inicial é o Dashboard, que
+  // Administração e Almoxarifado têm, mas o funcionário de obra não.
+  const paginaAtual = document.querySelector('.page.active')?.id.replace('page-', '');
+  if (!perm.paginas.includes(paginaAtual)) navegarPara(perm.paginas[0]);
 }
 
 
@@ -294,9 +355,9 @@ function renderTabelaProdutos(produtos) {
           </td>
           <td>${label}</td>
           <td>${_actionMenu([
-            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarProduto(${p.idProduto})` },
+            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarProduto(${p.idProduto})`, escrita:'estoque' },
             { divider: true },
-            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('produto',${p.idProduto},'${nomeSafe}')` },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('produto',${p.idProduto},'${nomeSafe}')`, escrita:'estoque' },
           ])}</td>
         </tr>`;
     }).join('');
@@ -443,12 +504,16 @@ function _thumbFotoHTML(url, nome, tipo, pending, onremove) {
   const conteudo   = isPdf
     ? `<i class="fa-solid fa-file-pdf foto-pdf-icon"></i>`
     : `<img src="${url}" alt="${_esc(nome)}" onclick="window.open('${url}','_blank')">`;
+  // onremove nulo = miniatura só para visualizar, sem o botão de remover.
+  const btnRemover = onremove
+    ? `<button class="foto-remove" onclick="${onremove}" title="Remover">
+      <i class="fa-solid fa-xmark"></i>
+    </button>`
+    : '';
   return `<div class="foto-thumb${pending ? ' pending' : ''}">
     ${conteudo}
     <span class="foto-badge ${badgeClass}">${badgeLabel}</span>
-    <button class="foto-remove" onclick="${onremove}" title="Remover">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
+    ${btnRemover}
     <span class="foto-nome">${_esc(nome)}</span>
   </div>`;
 }
@@ -990,9 +1055,10 @@ function renderTabelaObras(obras) {
           <td>${_actionMenu([
             { icon:'fa-eye',   label:'Ver Produtos', onclick:`verProdutosObra(${o.idObra})` },
             { icon:'fa-image', label:'Imagens',      onclick:`abrirModalFotosObra(${o.idObra})` },
-            { icon:'fa-pen',   label:'Editar',       onclick:`abrirModalEditarObra(${o.idObra})` },
+            ...(podeEscrever('obras') ? [] : [{ icon:'fa-circle-info', label:'Detalhes', onclick:`abrirModalEditarObra(${o.idObra})` }]),
+            { icon:'fa-pen',   label:'Editar',       onclick:`abrirModalEditarObra(${o.idObra})`, escrita:'obras' },
             { divider: true },
-            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('obra',${o.idObra},'${descEsc}')` },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('obra',${o.idObra},'${descEsc}')`, escrita:'obras' },
           ])}</td>
         </tr>`;
     }).join('');
@@ -1476,6 +1542,25 @@ function _atualizarBoxValorObra(o) {
   }
 }
 
+// Almoxarifado e funcionário de obra só consultam a obra. Em vez de deixar o
+// formulário editável e o salvamento cair em 403, os campos ficam travados e o
+// botão Salvar some (ele já é escondido por data-escrita).
+function _definirModoLeituraObra() {
+  const somenteLeitura = !podeEscrever('obras');
+  document.querySelectorAll('#modalObra input, #modalObra select, #modalObra textarea')
+    .forEach(el => { el.disabled = somenteLeitura; });
+  const toggleEquipe = document.getElementById('obraEquipeToggle');
+  if (toggleEquipe) toggleEquipe.disabled = somenteLeitura;
+  if (somenteLeitura) {
+    document.getElementById('modalObraTitle').innerHTML =
+      '<i class="fa-solid fa-circle-info"></i> Detalhes da Obra';
+  }
+  // Seções de adicionar produto/serviço não fazem sentido em consulta.
+  ['obraSecaoProdutos','obraSecaoServicos'].forEach(id => {
+    if (somenteLeitura) document.getElementById(id)?.classList.add('hidden');
+  });
+}
+
 function abrirModalNovaObra() {
   _limparCamposObra();
   const el = document.createElement('div');
@@ -1492,6 +1577,7 @@ function abrirModalNovaObra() {
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-hard-hat"></i> Nova Obra';
   _resetAbasObra();
+  _definirModoLeituraObra();
   abrirModal('modalObra');
 }
 
@@ -1547,8 +1633,9 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Obra';
   _renderHistoricoObra(o.idObra);
-  carregarHistorico().then(() => _renderHistoricoObra(o.idObra));
+  if (podeVerPagina('historico')) carregarHistorico().then(() => _renderHistoricoObra(o.idObra));
   _resetAbasObra();
+  _definirModoLeituraObra();
   abrirModal('modalObra');
 }
 
@@ -1900,8 +1987,10 @@ function _renderFotoGridObra(fotos) {
     grid.innerHTML = '<p class="foto-grid-empty">Nenhuma imagem enviada para esta obra</p>';
     return;
   }
+  // Sem escrita em obras, as imagens ficam só para visualizar.
+  const remover = podeEscrever('obras');
   grid.innerHTML = fotos.map(f =>
-    _thumbFotoHTML(f.url, f.nomeOriginal, 'obra', false, `_removerFotoObra(${f.idFoto})`)
+    _thumbFotoHTML(f.url, f.nomeOriginal, 'obra', false, remover ? `_removerFotoObra(${f.idFoto})` : null)
   ).join('');
 }
 
@@ -2259,9 +2348,9 @@ function renderTabelaClientes(clientes) {
           <td style="min-width:160px"><div class="cell-stack" style="line-height:1.6">${locHtml}</div></td>
           <td><div class="cell-stack" style="gap:4px">${contatoHtml}</div></td>
           <td>${_actionMenu([
-            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarCliente(${c.idCliente})` },
+            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarCliente(${c.idCliente})`, escrita:'clientes' },
             { divider: true },
-            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('cliente',${c.idCliente},'${nomeSafe}')` },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('cliente',${c.idCliente},'${nomeSafe}')`, escrita:'clientes' },
           ])}</td>
         </tr>`;
     }).join('');
@@ -2492,9 +2581,9 @@ function renderTabelaServicos(servicos) {
           <td><span class="cell-secondary">${_fmtMoeda(s.precoServico)}</span></td>
           <td><span class="cell-secondary">${qtdProdutos} produto${qtdProdutos !== 1 ? 's' : ''}</span></td>
           <td>${_actionMenu([
-            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarServico(${s.idServico})` },
+            { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarServico(${s.idServico})`, escrita:'servicos' },
             { divider: true },
-            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarServico(${s.idServico},'${nomeSafe}')` },
+            { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarServico(${s.idServico},'${nomeSafe}')`, escrita:'servicos' },
           ])}</td>
         </tr>`;
     }).join('');
@@ -3203,7 +3292,10 @@ function badgeStatus(status) {
 
 // ── Action buttons helper ──
 function _actionMenu(items) {
-  const btns = items.filter(it => !it.divider).map(it => {
+  // Itens marcados com `escrita` só aparecem para quem pode alterar o recurso.
+  const btns = items.filter(it => !it.divider)
+                    .filter(it => !it.escrita || podeEscrever(it.escrita))
+                    .map(it => {
     const cls = it.danger ? 'danger' : 'edit';
     return `<button class="btn-icon ${cls}" onclick="${it.onclick}" title="${it.label}"><i class="fa-solid ${it.icon}"></i></button>`;
   }).join('');
@@ -3571,9 +3663,9 @@ function renderTabelaAdmins(admins) {
         <td><span class="cell-secondary">${a.email}</span></td>
         <td>${badgeCargo(a.cargoLogin)}</td>
         <td>${_actionMenu([
-          { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarAdmin(${a.idLogin})` },
+          { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarAdmin(${a.idLogin})`, escrita:'admins' },
           { divider: true },
-          { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('admin',${a.idLogin},'${nomeSafe}')` },
+          { icon:'fa-trash', label:'Excluir', danger:true, onclick:`deletarItem('admin',${a.idLogin},'${nomeSafe}')`, escrita:'admins' },
         ])}</td>
       </tr>`;
   }).join('');
@@ -3989,9 +4081,9 @@ function renderTabelaResponsaveis(lista) {
         <td><span class="cell-id">${r.idResponsavel}</span></td>
         <td><span class="cell-primary">${r.nomeResponsavel}</span></td>
         <td>${_actionMenu([
-          { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarResponsavel(${r.idResponsavel})` },
+          { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarResponsavel(${r.idResponsavel})`, escrita:'responsaveis' },
           { divider: true },
-          { icon:'fa-trash', label:'Excluir', danger:true, onclick:`confirmarExcluirResponsavel(${r.idResponsavel},'${nomeSafe}')` },
+          { icon:'fa-trash', label:'Excluir', danger:true, onclick:`confirmarExcluirResponsavel(${r.idResponsavel},'${nomeSafe}')`, escrita:'responsaveis' },
         ])}</td>
       </tr>`;
   }).join('');
