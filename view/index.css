@@ -132,6 +132,9 @@ body {
   margin-left: var(--sidebar-w); flex: 1;
   display: flex; flex-direction: column; min-height: 100vh;
   transition: margin-left var(--transition);
+  /* como flex item o padrão é min-width:auto, o que faz um filho largo
+     (ex.: a faixa de datas do histórico) esticar a página inteira */
+  min-width: 0;
 }
 .main-content.expanded { margin-left: 64px; }
 
@@ -1217,7 +1220,9 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .page-header { flex-wrap: wrap; gap: 10px; }
   .page-header h1 { font-size: 1.35rem; }
   .page-subtitle { font-size: .8rem; }
-  .page-header-info { flex: 1 1 auto; min-width: 0; }
+  /* basis 0 para o subtítulo longo não empurrar o botão de recarregar
+     para uma linha própria (ex.: Histórico) */
+  .page-header-info { flex: 1 1 0; min-width: 0; }
   .page-header-actions {
     flex: 1 1 100%;
     margin-left: 0;
@@ -1229,10 +1234,19 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .search-inline { flex: 1 1 100%; }
   .toolbar > .btn { flex: 1 1 calc(50% - 5px); justify-content: center; }
   .select-filter { flex: 1 1 100%; }
-
   .filtro-periodo { flex: 1 1 100%; }
-  .filtro-periodo input { flex: 1; width: auto; min-width: 0; }
-  .filtro-group { flex: 1 1 100%; min-width: 0; }
+  .filtro-periodo input { flex: 1; width: auto; }
+  .filtro-group { flex: 1 1 100%; }
+
+  /* Sem min-width:0 esses wrappers ficam presos ao min-content dos campos
+     (input tem largura intrínseca de ~186px, select tem a da maior opção)
+     e esticam a barra de filtros para além da tela. */
+  .search-inline,
+  .select-filter,
+  .filtro-periodo,
+  .filtro-group,
+  .search-inline input,
+  .filtro-periodo input { min-width: 0; }
 }
 
 /* ══ ≤ 600px — topbar e área de conteúdo compactas ══ */
@@ -1312,6 +1326,17 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .data-table td.td-actions::before { display: none; }
   .data-table .actions { gap: 8px; }
   .data-table .btn-icon { width: 38px; height: 38px; font-size: .85rem; }
+
+  /* histórico: a descrição é texto longo — rótulo em cima e texto à esquerda,
+     em vez de comprimido na coluna da direita */
+  #tabelaHistorico td[data-col="5"] {
+    flex-direction: column; align-items: stretch;
+    gap: 3px; text-align: left;
+    margin-top: 6px; padding-top: 9px;
+    border-top: 1px dashed var(--gray-200);
+    line-height: 1.45;
+  }
+  #tabelaHistorico td[data-col="5"]::before { flex: none; }
 
   /* linhas de carregamento / estado vazio seguem ocupando a largura toda */
   .data-table tbody tr.row-plain { display: block; padding: 0; }
