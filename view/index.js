@@ -3760,9 +3760,10 @@ function abrirModalEditarAdmin(idLogin) {
   document.getElementById('adminNovaSenha').value  = '';
   document.getElementById('adminSenhaGroup').classList.add('hidden');
   // A senha atual só é pedida (e só serve) quando a pessoa edita o próprio
-  // perfil — quem é de Administração não sabe a senha de terceiros.
+  // perfil — quem é de Administração não sabe a senha de terceiros. Já a
+  // nova senha pode ser definida para qualquer usuário sendo editado.
   document.getElementById('adminSenhaAtualGroup').classList.toggle('hidden', !proprio);
-  document.getElementById('adminNovaSenhaGroup').classList.toggle('hidden', !proprio);
+  document.getElementById('adminNovaSenhaGroup').classList.remove('hidden');
   // Só Administração troca cargo; o backend ignora a troca vinda dos demais.
   document.getElementById('adminCargo').disabled = !_ehAdministracao();
   ['adminNome','adminEmail','adminCargo','adminSenha','adminSenhaAtual'].forEach(_limparErroCampo);
@@ -3805,7 +3806,7 @@ async function salvarAdmin() {
     if (temErro) { _mostrarBanner('banner-modalAdmin'); _scrollPrimeiroErro('modalAdmin'); return; }
     const payload = { admin: {
       email, nomeLogin: nome, cargo,
-      novaSenha:  proprio ? (novaSenha || undefined) : undefined,
+      novaSenha:  novaSenha || undefined,
       senhaAtual: proprio ? senhaAtual : undefined,
     } };
     try {
