@@ -2,26 +2,29 @@ import os
 import sys
 import traceback
 import mysql.connector
+from contextlib import contextmanager
 
 class Conexao:
-    _host    = os.environ.get("DB_HOST")
-    _porta   = int(os.environ.get("DB_PORT", 3306))
-    _usuario = os.environ.get("DB_USER")
-    _senha   = os.environ.get("DB_PASSWORD")
-    _banco   = os.environ.get("DB_NAME")
+    _host     = os.environ.get("DB_HOST", "localhost")
+    _porta    = int(os.environ.get("DB_PORT", 3306))
+    _usuario  = os.environ.get("DB_USER", "root")
+    _senha    = os.environ.get("DB_PASSWORD", "")
+    _banco    = os.environ.get("DB_NAME", "tcc")
 
     @staticmethod
     def obter_conexao():
         try:
             return mysql.connector.connect(
-                host=Conexao._host, port=Conexao._porta,
-                user=Conexao._usuario, password=Conexao._senha,
+                host=Conexao._host, 
+                port=Conexao._porta,
+                user=Conexao._usuario, 
+                password=Conexao._senha,
                 database=Conexao._banco,
-                ssl_disabled=False,
+                ssl_disabled=True,  
                 connection_timeout=10
             )
         except Exception as e:
-            print(f"Erro ao conectar: {e}", flush=True)
+            print(f"Erro ao conectar ao MySQL: {e}", flush=True)
             traceback.print_exc()
             sys.stdout.flush()
             return None
@@ -35,3 +38,13 @@ class Conexao:
                 conexao.close()
         except Exception as e:
             print(f"Erro ao fechar conexão: {e}", flush=True)
+
+    @staticmethod
+    @contextmanager
+    def abrir_sessao(dictionary=True):
+        conexao = Conexao.obter_conexao()
+        cursor = conexao.cursor(dictionary=dictionary) if conexao else None
+        try:
+            yield conexao, cursor
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
