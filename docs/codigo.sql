@@ -29,21 +29,39 @@ insert into login (email, senha, nomeLogin, cargoLogin) values(
 -- cnpjFornecedor é usado pela importação de NF-e: o fornecedor da nota é
 -- identificado pelo CNPJ do <emit>, evitando duplicar fornecedores com
 -- grafias diferentes.
+-- prazoEntregaDias: quantos dias o fornecedor leva para entregar. Entra no
+-- cálculo automático do estoque mínimo de todos os produtos dele.
 create table fornecedores (
-    idFornecedor   int primary key NOT NULL AUTO_INCREMENT,
-    nomeFornecedor VARCHAR(150) NOT NULL UNIQUE,
-    cnpjFornecedor VARCHAR(18)  DEFAULT NULL UNIQUE
+    idFornecedor     int primary key NOT NULL AUTO_INCREMENT,
+    nomeFornecedor   VARCHAR(150) NOT NULL UNIQUE,
+    cnpjFornecedor   VARCHAR(18)  DEFAULT NULL UNIQUE,
+    prazoEntregaDias int          NOT NULL DEFAULT 7,
+    CONSTRAINT ck_fornecedor_prazo CHECK (prazoEntregaDias > 0)
 );
 
+-- O estoque mínimo é calculado (src/service/estoqueMinimo.py):
+--   consumo médio diário × prazo de entrega + margem de segurança.
+-- Colunas opcionais que ajustam o cálculo:
+--   qtdMinimaManual    → se preenchida, substitui o valor calculado
+--   prazoEntregaDias   → prazo deste produto; NULL usa o do fornecedor
+--   consumoEstimado +
+--   periodoEstimativa  → uso aproximado informado no cadastro ('dia',
+--                        'semana' ou 'mes'), usado enquanto o produto ainda
+--                        não tem histórico suficiente
 create table produtos(
-    idProduto     int primary key NOT NULL AUTO_INCREMENT,
-    nomeProduto   VARCHAR(255),
-    qtdProduto    int          DEFAULT 0,
-    descProduto   TEXT,
-    qtdMinima     int          DEFAULT 0,
-    qtdMaxima     int          DEFAULT 9999,
-    idFornecedor  int          DEFAULT NULL,
-    FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
+    idProduto         int primary key NOT NULL AUTO_INCREMENT,
+    nomeProduto       VARCHAR(255),
+    qtdProduto        int          DEFAULT 0,
+    descProduto       TEXT,
+    qtdMinimaManual   int          DEFAULT NULL,
+    qtdMaxima         int          DEFAULT 9999,
+    idFornecedor      int          DEFAULT NULL,
+    prazoEntregaDias  int          DEFAULT NULL,
+    consumoEstimado   DECIMAL(10,2) DEFAULT NULL,
+    periodoEstimativa VARCHAR(6)   DEFAULT NULL,
+    FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor),
+    CONSTRAINT ck_produto_periodo CHECK (periodoEstimativa IN ('dia', 'semana', 'mes')),
+    CONSTRAINT ck_produto_prazo   CHECK (prazoEntregaDias > 0)
 );
 
 create table clientes(
@@ -206,6 +224,28 @@ create view vw_consumo_obra as
     select os.idObra, osp.idProduto, osp.quantidade
     from obraServicoProdutos osp
     join obraServicos os on os.idObraServico = osp.idObraServico;
+
+-- Toda entrada e saída de estoque, com data. É daqui que sai o consumo médio
+-- diário do cálculo do estoque mínimo (saídas para obra menos devoluções).
+--   tipo:   'entrada' | 'saida'
+--   origem: 'obra' (baixa/devolução de material) | 'nota_fiscal' | 'ajuste'
+--           (cadastro ou edição manual da quantidade)
+create table movimentacoesEstoque(
+    idMovimentacao int primary key NOT NULL AUTO_INCREMENT,
+    idProduto      int          NOT NULL,
+    idObra         int          DEFAULT NULL,
+    tipo           VARCHAR(7)   NOT NULL,
+    origem         VARCHAR(12)  NOT NULL,
+    quantidade     int          NOT NULL,
+    dataMov        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX ix_mov_produto_data (idProduto, dataMov),
+    FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE,
+    FOREIGN KEY (idObra)    REFERENCES obras(idObra) ON DELETE SET NULL,
+    CONSTRAINT ck_mov_tipo   CHECK (tipo IN ('entrada', 'saida')),
+    CONSTRAINT ck_mov_origem CHECK (origem IN ('obra', 'nota_fiscal', 'ajuste')),
+    CONSTRAINT ck_mov_qtd    CHECK (quantidade > 0)
+);
 
 create table notasFiscais(
     idNotaFiscal   int          primary key NOT NULL AUTO_INCREMENT,

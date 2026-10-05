@@ -59,3 +59,49 @@ ALTER TABLE login ADD CONSTRAINT ck_login_cargo
     CHECK (cargoLogin IN ('Administracao', 'Almoxarifado', 'Obra'));
 ALTER TABLE obras ADD CONSTRAINT ck_obras_status
     CHECK (statusObra IN ('À iniciar', 'Em andamento', 'Concluida', 'Cancelada', 'Pausada'));
+
+-- ── 4. Estoque mínimo automático ─────────────────────────────────────────────
+-- O mínimo passa a ser calculado: consumo médio diário × prazo de entrega +
+-- margem. O valor digitado antes vira "mínimo manual" (qtdMinimaManual) e é
+-- zerado para NULL, que significa "usar o cálculo". Para manter algum valor
+-- manual, preencha qtdMinimaManual dele depois desta migração.
+ALTER TABLE fornecedores
+    ADD COLUMN prazoEntregaDias int NOT NULL DEFAULT 7,
+    ADD CONSTRAINT ck_fornecedor_prazo CHECK (prazoEntregaDias > 0);
+
+ALTER TABLE produtos
+    RENAME COLUMN qtdMinima TO qtdMinimaManual,
+    ADD COLUMN prazoEntregaDias  int           DEFAULT NULL,
+    ADD COLUMN consumoEstimado   DECIMAL(10,2) DEFAULT NULL,
+    ADD COLUMN periodoEstimativa VARCHAR(6)    DEFAULT NULL,
+    ADD CONSTRAINT ck_produto_periodo CHECK (periodoEstimativa IN ('dia', 'semana', 'mes')),
+    ADD CONSTRAINT ck_produto_prazo   CHECK (prazoEntregaDias > 0);
+ALTER TABLE produtos MODIFY COLUMN qtdMinimaManual int DEFAULT NULL;
+SET SQL_SAFE_UPDATES = 0;
+UPDATE produtos SET qtdMinimaManual = NULL;
+SET SQL_SAFE_UPDATES = 1;
+
+CREATE TABLE movimentacoesEstoque (
+    idMovimentacao int primary key NOT NULL AUTO_INCREMENT,
+    idProduto      int          NOT NULL,
+    idObra         int          DEFAULT NULL,
+    tipo           VARCHAR(7)   NOT NULL,
+    origem         VARCHAR(12)  NOT NULL,
+    quantidade     int          NOT NULL,
+    dataMov        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX ix_mov_produto_data (idProduto, dataMov),
+    FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE,
+    FOREIGN KEY (idObra)    REFERENCES obras(idObra) ON DELETE SET NULL,
+    CONSTRAINT ck_mov_tipo   CHECK (tipo IN ('entrada', 'saida')),
+    CONSTRAINT ck_mov_origem CHECK (origem IN ('obra', 'nota_fiscal', 'ajuste')),
+    CONSTRAINT ck_mov_qtd    CHECK (quantidade > 0)
+);
+
+-- Histórico a partir do que já foi consumido: a saída é datada no início da
+-- obra (ou hoje, se ela ainda vai começar). Obras canceladas já devolveram o
+-- material e ficam de fora.
+INSERT INTO movimentacoesEstoque (idProduto, idObra, tipo, origem, quantidade, dataMov)
+SELECT v.idProduto, v.idObra, 'saida', 'obra', v.quantidade, LEAST(o.dataInicio, CURDATE())
+FROM vw_consumo_obra v
+JOIN obras o ON o.idObra = v.idObra
+WHERE o.statusObra <> 'Cancelada';

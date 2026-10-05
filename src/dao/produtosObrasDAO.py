@@ -1,4 +1,5 @@
 from src.dao.banco import OperacaoInvalida, executar_transacao, consultar
+from src.dao.movimentacaoDAO import registrar_movimentacao
 
 STATUS_CANCELADA = "Cancelada"
 
@@ -15,7 +16,9 @@ class ProdutosObrasDAO:
 
     # ─── Estoque ──────────────────────────────────────────────────────────────
 
-    def baixar(self, cursor, id_produto: int, qtd: int, origem: str = ""):
+    def baixar(self, cursor, id_obra: int, id_produto: int, qtd: int, origem: str = ""):
+        """Tira material do estoque para a obra e registra a saída (é ela que
+        entra no consumo médio do cálculo do estoque mínimo)."""
         cursor.execute("""
             UPDATE produtos SET qtdProduto = qtdProduto - %s
             WHERE idProduto = %s AND qtdProduto >= %s
@@ -28,12 +31,15 @@ class ProdutosObrasDAO:
             raise OperacaoInvalida(
                 f"Estoque insuficiente para '{row[0]}'{origem} (necessário: {qtd}, disponível: {row[1]})."
             )
+        registrar_movimentacao(cursor, id_produto, "saida", "obra", qtd, id_obra)
 
-    def repor(self, cursor, id_produto: int, qtd: int):
+    def repor(self, cursor, id_obra: int, id_produto: int, qtd: int):
+        """Devolve material da obra ao estoque; a entrada desconta o consumo."""
         cursor.execute(
             "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
             (qtd, id_produto)
         )
+        registrar_movimentacao(cursor, id_produto, "entrada", "obra", qtd, id_obra)
 
     def consumo_da_obra(self, cursor, id_obra: int) -> list:
         """(idProduto, quantidade) de tudo que a obra tira do estoque."""
@@ -44,11 +50,11 @@ class ProdutosObrasDAO:
 
     def repor_obra(self, cursor, id_obra: int):
         for id_produto, qtd in self.consumo_da_obra(cursor, id_obra):
-            self.repor(cursor, id_produto, qtd)
+            self.repor(cursor, id_obra, id_produto, qtd)
 
     def baixar_obra(self, cursor, id_obra: int):
         for id_produto, qtd in self.consumo_da_obra(cursor, id_obra):
-            self.baixar(cursor, id_produto, qtd)
+            self.baixar(cursor, id_obra, id_produto, qtd)
 
     # ─── Vínculos (dentro da transação de quem chama) ─────────────────────────
 
@@ -69,7 +75,7 @@ class ProdutosObrasDAO:
                 ON DUPLICATE KEY UPDATE qtdProdutosObra = qtdProdutosObra + VALUES(qtdProdutosObra)
             """, (id_obra, id_produto, qtd))
             if baixar_estoque:
-                self.baixar(cursor, id_produto, qtd)
+                self.baixar(cursor, id_obra, id_produto, qtd)
 
     def vincular_servicos(self, cursor, id_obra: int, servicos: list, baixar_estoque: bool):
         """Vincula cada serviço guardando a receita do momento em
@@ -99,7 +105,7 @@ class ProdutosObrasDAO:
 
             if baixar_estoque:
                 for id_produto, qtd in self._receita_vinculada(cursor, id_obra_servico):
-                    self.baixar(cursor, id_produto, qtd, f" (serviço '{nome_servico}')")
+                    self.baixar(cursor, id_obra, id_produto, qtd, f" (serviço '{nome_servico}')")
 
     def recalcular_valor(self, cursor, id_obra: int):
         """valorObra = soma dos serviços quando a obra está concluída; NULL nos
@@ -134,10 +140,10 @@ class ProdutosObrasDAO:
             raise OperacaoInvalida("Serviço não vinculado a esta obra.")
         return row[0]
 
-    def _desvincular_servico(self, cursor, id_obra_servico: int, devolver_estoque: bool):
+    def _desvincular_servico(self, cursor, id_obra: int, id_obra_servico: int, devolver_estoque: bool):
         if devolver_estoque:
             for id_produto, qtd in self._receita_vinculada(cursor, id_obra_servico):
-                self.repor(cursor, id_produto, qtd)
+                self.repor(cursor, id_obra, id_produto, qtd)
         # obraServicoProdutos sai junto pelo ON DELETE CASCADE
         cursor.execute("DELETE FROM obraServicos WHERE idObraServico = %s", (id_obra_servico,))
 
@@ -163,9 +169,9 @@ class ProdutosObrasDAO:
 
             diferenca = nova_qtd - row[0]
             if ativa and diferenca > 0:
-                self.baixar(cursor, id_produto, diferenca)
+                self.baixar(cursor, id_obra, id_produto, diferenca)
             elif ativa and diferenca < 0:
-                self.repor(cursor, id_produto, -diferenca)
+                self.repor(cursor, id_obra, id_produto, -diferenca)
 
             cursor.execute(
                 "UPDATE produtosObras SET qtdProdutosObra = %s WHERE idObra = %s AND idProduto = %s",
@@ -188,7 +194,7 @@ class ProdutosObrasDAO:
                 raise OperacaoInvalida("A obra precisa ter ao menos um produto ou serviço vinculado.")
 
             if ativa:
-                self.repor(cursor, id_produto, row[0])
+                self.repor(cursor, id_obra, id_produto, row[0])
             cursor.execute(
                 "DELETE FROM produtosObras WHERE idObra = %s AND idProduto = %s", (id_obra, id_produto)
             )
@@ -202,7 +208,7 @@ class ProdutosObrasDAO:
             if id_servico_atual == id_servico_novo:
                 return "Nenhuma alteração necessária."
 
-            self._desvincular_servico(cursor, id_obra_servico, ativa)
+            self._desvincular_servico(cursor, id_obra, id_obra_servico, ativa)
             self.vincular_servicos(cursor, id_obra, [id_servico_novo], ativa)
             self.recalcular_valor(cursor, id_obra)
             return "Serviço atualizado com sucesso!"
@@ -215,7 +221,7 @@ class ProdutosObrasDAO:
             if self._total_vinculos(cursor, id_obra) <= 1:
                 raise OperacaoInvalida("A obra precisa ter ao menos um produto ou serviço vinculado.")
 
-            self._desvincular_servico(cursor, id_obra_servico, ativa)
+            self._desvincular_servico(cursor, id_obra, id_obra_servico, ativa)
             self.recalcular_valor(cursor, id_obra)
             return "Serviço removido da obra com sucesso!"
         return executar_transacao(operacao, "Erro ao remover serviço da obra.")

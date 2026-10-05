@@ -20,12 +20,13 @@ INSERT INTO responsavel (nomeResponsavel) VALUES
 ('Ana Carolina');
 
 -- ── Fornecedores ──────────────────────────────────────────────────────────────
-INSERT INTO fornecedores (nomeFornecedor) VALUES
-('Metalúrgica Vale do Aço'),
-('Fersol Equipamentos de Gás'),
-('Conexão Flex Indústria e Comércio'),
-('SafeWork Proteção Industrial'),
-('QuimGás Insumos Técnicos');
+-- prazoEntregaDias entra no cálculo do estoque mínimo dos produtos de cada um.
+INSERT INTO fornecedores (nomeFornecedor, prazoEntregaDias) VALUES
+('Metalúrgica Vale do Aço',           15),
+('Fersol Equipamentos de Gás',        10),
+('Conexão Flex Indústria e Comércio',  7),
+('SafeWork Proteção Industrial',       5),
+('QuimGás Insumos Técnicos',          12);
 
 -- ── Clientes ──────────────────────────────────────────────────────────────────
 INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailCliente, telefone2, cep, rua, numero, complemento, bairro, cidade, estado) VALUES
@@ -51,53 +52,53 @@ INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailClie
 (20, 'Distribuidora GLP Norte',     '45.678.903/0001-24', 'Sérgio',        'distribuidora@glpnorte.com.br',       '(12) 3627-9000',  '12570-000', 'Av. Dom Pedro I',             '350',  'Galpão 1', 'Parque Industrial',     'Guaratinguetá',       'SP');
 
 -- ── Produtos ──────────────────────────────────────────────────────────────────
--- qtdProduto = estoque atual | Produtos 3, 5, 12 abaixo do qtdMinima → alerta de estoque baixo
-INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima) VALUES
-(1,  'Tubo Aço Galvanizado 1"',           180, 'Tubo rígido galvanizado para rede de gás',                     50, 500),
-(2,  'Registro de Esfera 3/4"',            95, 'Registro de esfera para gás com vedação reforçada',             30, 300),
-(3,  'Medidor de Gás Industrial G16',       8, 'Medidor para instalação industrial de gás natural',             10,  50),
-(4,  'Válvula Redutora de Pressão',         55, 'Válvula reguladora de pressão para rede de gás',               20, 200),
-(5,  'Mangueira Flexível 3/4"',             42, 'Mangueira flexível para conexão de gás',                       50, 300),
-(6,  'Cinta de Fixação Metálica',          150, 'Cinta metálica para fixação de tubulações',                    50, 500),
-(7,  'Tubo PPR 32mm',                       63, 'Tubo de polipropileno para água e gás',                        20, 200),
-(8,  'Filtro de Linha para Gás',            67, 'Filtro de linha de proteção para rede de gás',                 20, 150),
-(9,  'Conector Curvo 90° 1/2"',            120, 'Conector em curva para tubulação de gás',                      30, 300),
-(10, 'Adaptador Rosca 1/2" x 3/4"',       144, 'Adaptador de rosca para composições mistas',                   50, 500),
-(11, 'Lanterna de Inspeção Antichama',      18, 'Lanterna para inspeção com proteção antichama',                10,  80),
-(12, 'Detector de Vazão Portátil',           4, 'Detector portátil para vazamentos de gás',                      5,  40),
-(13, 'Regulador de Pressão 1ª Família',     72, 'Regulador para GLP residencial, saída 2,8 kPa',                20, 200),
-(14, 'Regulador de Pressão 2ª Família',     48, 'Regulador para GLP industrial, saída 15 kPa',                  15, 150),
-(15, 'Mangueira GLP 1,20m Certificada',     85, 'Mangueira certificada INMETRO para botijão residencial',       30, 300),
-(16, 'Abraçadeira Metálica 3/4"',          200, 'Abraçadeira para fixação de mangueiras e tubos 3/4"',          40, 600),
-(17, 'Válvula de Alívio 1/2" 1,5 kgf',     36, 'Válvula de alívio de segurança para sistemas de GLP',          10, 100),
-(18, 'Luva de Redução 3/4" x 1/2"',       160, 'Luva de redução roscada galvanizada',                          40, 500),
-(19, 'Niple Duplo 1/2"',                   175, 'Niple duplo galvanizado para conexões de gás',                 40, 600),
-(20, 'Tê 1/2" Galvanizado',               130, 'Tê roscado para ramificações em redes de gás',                 30, 400),
-(21, 'Joelho 90° 1/2" Galvanizado',       145, 'Joelho 90° roscado para mudança de direção',                   30, 500),
-(22, 'Joelho 90° 3/4" Galvanizado',       110, 'Joelho 90° roscado 3/4" para tubulações de gás',               25, 400),
-(23, 'Tampão Macho 1/2"',                  90, 'Tampão macho roscado para fechamento de pontos de gás',         20, 300),
-(24, 'Fita Veda Rosca 18mm x 50m',         95, 'Fita PTFE para vedação de roscas em instalações de gás',       20, 300),
-(25, 'Selante para GLP 250ml',              58, 'Selante líquido específico para vedação de conexões GLP',       15, 200),
-(26, 'Detector de Gás Natural/GLP',         22, 'Detector fixo de vazamento de gás para ambientes internos',     5, 100),
-(27, 'Extintor CO2 6kg',                    15, 'Extintor de dióxido de carbono para áreas de equipamentos',     5,  50),
-(28, 'Extintor Pó Químico Seco 4kg',        19, 'Extintor ABC 4kg para uso geral em obras e instalações',        5,  60),
-(29, 'Manômetro 0-4 kgf/cm² 1/4"',         33, 'Manômetro para aferição de pressão em redes de GLP',            8, 100),
-(30, 'Manifold GLP 4 Saídas',              17, 'Manifold para distribuição simultânea de GLP, 4 saídas',         4,  40),
-(31, 'Tubo Flexível Metálico 1m',           38, 'Tubo flexível de aço inox corrugado para fogões industriais',   8, 100),
-(32, 'Tubo Flexível Metálico 2m',           25, 'Tubo flexível de aço inox corrugado 2m para uso geral',         6,  80),
-(33, 'Conector Rápido GLP 1/2"',            62, 'Engate rápido para mangueiras de GLP, 1/2"',                   15, 200),
-(34, 'Válvula Solenóide GLP 1/2" 220V',    13, 'Válvula solenóide 220V para corte automático de GLP',           4,  30),
-(35, 'Filtro de GLP Inline 3/4"',           40, 'Filtro de impurezas inline para linhas de GLP 3/4"',           10, 120),
-(36, 'Queimador Industrial 50.000 BTU',     11, 'Queimador a gás para uso industrial, 50.000 BTU/h',             3,  30),
-(37, 'Queimador Industrial 100.000 BTU',     7, 'Queimador a gás de alta potência para fornos industriais',       2,  20),
-(38, 'Kit Reparo de Regulador GLP',         42, 'Kit com vedações e mola para manutenção de reguladores',        10, 150),
-(39, 'Capacete de Segurança CA',            28, 'Capacete de proteção com certificado INMETRO',                   5,  60),
-(40, 'Óculos de Segurança Incolor',         35, 'Óculos de proteção com lente incolor e vedação lateral',        8,  80),
-(41, 'Luva de Couro Cano Longo',            20, 'Luva de couro para trabalhos com gás e maçarico',               5,  50),
-(42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',      4,  40),
-(43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro',  50, 800),
-(44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro',        40, 600),
-(45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 8, 100);
+-- qtdProduto = estoque atual | o estoque mínimo é calculado (ver docs/codigo.sql)
+INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMaxima) VALUES
+(1,  'Tubo Aço Galvanizado 1"',           180, 'Tubo rígido galvanizado para rede de gás', 500),
+(2,  'Registro de Esfera 3/4"',            95, 'Registro de esfera para gás com vedação reforçada', 300),
+(3,  'Medidor de Gás Industrial G16',       8, 'Medidor para instalação industrial de gás natural',  50),
+(4,  'Válvula Redutora de Pressão',         55, 'Válvula reguladora de pressão para rede de gás', 200),
+(5,  'Mangueira Flexível 3/4"',             42, 'Mangueira flexível para conexão de gás', 300),
+(6,  'Cinta de Fixação Metálica',          150, 'Cinta metálica para fixação de tubulações', 500),
+(7,  'Tubo PPR 32mm',                       63, 'Tubo de polipropileno para água e gás', 200),
+(8,  'Filtro de Linha para Gás',            67, 'Filtro de linha de proteção para rede de gás', 150),
+(9,  'Conector Curvo 90° 1/2"',            120, 'Conector em curva para tubulação de gás', 300),
+(10, 'Adaptador Rosca 1/2" x 3/4"',       144, 'Adaptador de rosca para composições mistas', 500),
+(11, 'Lanterna de Inspeção Antichama',      18, 'Lanterna para inspeção com proteção antichama',  80),
+(12, 'Detector de Vazão Portátil',           4, 'Detector portátil para vazamentos de gás',  40),
+(13, 'Regulador de Pressão 1ª Família',     72, 'Regulador para GLP residencial, saída 2,8 kPa', 200),
+(14, 'Regulador de Pressão 2ª Família',     48, 'Regulador para GLP industrial, saída 15 kPa', 150),
+(15, 'Mangueira GLP 1,20m Certificada',     85, 'Mangueira certificada INMETRO para botijão residencial', 300),
+(16, 'Abraçadeira Metálica 3/4"',          200, 'Abraçadeira para fixação de mangueiras e tubos 3/4"', 600),
+(17, 'Válvula de Alívio 1/2" 1,5 kgf',     36, 'Válvula de alívio de segurança para sistemas de GLP', 100),
+(18, 'Luva de Redução 3/4" x 1/2"',       160, 'Luva de redução roscada galvanizada', 500),
+(19, 'Niple Duplo 1/2"',                   175, 'Niple duplo galvanizado para conexões de gás', 600),
+(20, 'Tê 1/2" Galvanizado',               130, 'Tê roscado para ramificações em redes de gás', 400),
+(21, 'Joelho 90° 1/2" Galvanizado',       145, 'Joelho 90° roscado para mudança de direção', 500),
+(22, 'Joelho 90° 3/4" Galvanizado',       110, 'Joelho 90° roscado 3/4" para tubulações de gás', 400),
+(23, 'Tampão Macho 1/2"',                  90, 'Tampão macho roscado para fechamento de pontos de gás', 300),
+(24, 'Fita Veda Rosca 18mm x 50m',         95, 'Fita PTFE para vedação de roscas em instalações de gás', 300),
+(25, 'Selante para GLP 250ml',              58, 'Selante líquido específico para vedação de conexões GLP', 200),
+(26, 'Detector de Gás Natural/GLP',         22, 'Detector fixo de vazamento de gás para ambientes internos', 100),
+(27, 'Extintor CO2 6kg',                    15, 'Extintor de dióxido de carbono para áreas de equipamentos',  50),
+(28, 'Extintor Pó Químico Seco 4kg',        19, 'Extintor ABC 4kg para uso geral em obras e instalações',  60),
+(29, 'Manômetro 0-4 kgf/cm² 1/4"',         33, 'Manômetro para aferição de pressão em redes de GLP', 100),
+(30, 'Manifold GLP 4 Saídas',              17, 'Manifold para distribuição simultânea de GLP, 4 saídas',  40),
+(31, 'Tubo Flexível Metálico 1m',           38, 'Tubo flexível de aço inox corrugado para fogões industriais', 100),
+(32, 'Tubo Flexível Metálico 2m',           25, 'Tubo flexível de aço inox corrugado 2m para uso geral',  80),
+(33, 'Conector Rápido GLP 1/2"',            62, 'Engate rápido para mangueiras de GLP, 1/2"', 200),
+(34, 'Válvula Solenóide GLP 1/2" 220V',    13, 'Válvula solenóide 220V para corte automático de GLP',  30),
+(35, 'Filtro de GLP Inline 3/4"',           40, 'Filtro de impurezas inline para linhas de GLP 3/4"', 120),
+(36, 'Queimador Industrial 50.000 BTU',     11, 'Queimador a gás para uso industrial, 50.000 BTU/h',  30),
+(37, 'Queimador Industrial 100.000 BTU',     7, 'Queimador a gás de alta potência para fornos industriais',  20),
+(38, 'Kit Reparo de Regulador GLP',         42, 'Kit com vedações e mola para manutenção de reguladores', 150),
+(39, 'Capacete de Segurança CA',            28, 'Capacete de proteção com certificado INMETRO',  60),
+(40, 'Óculos de Segurança Incolor',         35, 'Óculos de proteção com lente incolor e vedação lateral',  80),
+(41, 'Luva de Couro Cano Longo',            20, 'Luva de couro para trabalhos com gás e maçarico',  50),
+(42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',  40),
+(43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro', 800),
+(44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro', 600),
+(45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 100);
 
 -- ── Fornecedor de cada produto ────────────────────────────────────────────────
 -- Vincula por nomeProduto/nomeFornecedor para não depender da ordem/IDs de quem
@@ -515,3 +516,27 @@ SET o.valorObra = totais.total
 WHERE o.statusObra = 'Concluida';
 
 SET SQL_SAFE_UPDATES = 1;
+
+-- ── Histórico de movimentações ────────────────────────────────────────────────
+-- No sistema, cada baixa de material numa obra grava uma saída com a data do
+-- momento. Para os dados de exemplo, a saída é datada no início da obra (ou
+-- hoje, se a obra ainda vai começar). Obras canceladas já devolveram o
+-- material, então não entram. É desse histórico que sai o consumo médio diário.
+INSERT INTO movimentacoesEstoque (idProduto, idObra, tipo, origem, quantidade, dataMov)
+SELECT v.idProduto, v.idObra, 'saida', 'obra', v.quantidade, LEAST(o.dataInicio, CURDATE())
+FROM vw_consumo_obra v
+JOIN obras o ON o.idObra = v.idObra
+WHERE o.statusObra <> 'Cancelada';
+
+-- ── Ajustes do estoque mínimo ─────────────────────────────────────────────────
+-- Produtos ainda sem uso em obra, para mostrar as outras origens do cálculo:
+--   26 → estimativa informada no cadastro (uso aproximado de 8 por mês)
+--   27 → mínimo definido manualmente (ex.: quantidade exigida por norma)
+UPDATE produtos SET consumoEstimado = 8, periodoEstimativa = 'mes' WHERE idProduto = 26;
+UPDATE produtos SET qtdMinimaManual = 5 WHERE idProduto = 27;
+
+-- Estoque atual abaixo do mínimo calculado, para o dashboard ter alertas:
+--   1 → abaixo do mínimo | 6 → abaixo do mínimo | 3 → esgotado
+UPDATE produtos SET qtdProduto = 40 WHERE idProduto = 1;
+UPDATE produtos SET qtdProduto = 15 WHERE idProduto = 6;
+UPDATE produtos SET qtdProduto = 0  WHERE idProduto = 3;

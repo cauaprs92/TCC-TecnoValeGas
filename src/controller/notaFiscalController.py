@@ -105,13 +105,14 @@ class NotaFiscalController:
             if len(nome) < 3:
                 return False, "Nome deve ter pelo menos 3 caracteres.", None
 
-            valido, mensagem, qtdMin = self._validar_limite(quantidadeMinima, 0, "mínima")
+            # Mínimo vazio = cálculo automático; preenchido = mínimo manual.
+            valido, mensagem, qtdMin = self._validar_limite(quantidadeMinima, None, "mínima")
             if not valido:
                 return False, mensagem, None
             valido, mensagem, qtdMax = self._validar_limite(quantidadeMaxima, 9999, "máxima")
             if not valido:
                 return False, mensagem, None
-            if qtdMax > 0 and qtdMin > qtdMax:
+            if qtdMin is not None and qtdMax > 0 and qtdMin > qtdMax:
                 return False, "Quantidade mínima não pode ser maior que a máxima.", None
 
             quantidade = int(round(item._quantidade or 0))

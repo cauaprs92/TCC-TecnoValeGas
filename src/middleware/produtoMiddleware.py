@@ -34,9 +34,9 @@ class ProdutoMiddleware:
                 raise ErrorResponse(400, "Erro na validação de dados",
                                     {"message": "O campo 'qtdProduto' não pode ser negativo!"})
 
-            for campo in ('qtdMinima', 'qtdMaxima'):
+            for campo in ('qtdMaxima', 'qtdMinimaManual'):
                 val = produto.get(campo)
-                if val is not None:
+                if val is not None and val != "":
                     try:
                         int(val)
                     except (ValueError, TypeError):

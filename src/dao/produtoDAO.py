@@ -1,12 +1,31 @@
-from src.dao.banco import consultar, consultar_um, executar, executar_transacao, inserir
+from src.dao.banco import consultar, consultar_um, executar_transacao
+from src.dao.movimentacaoDAO import registrar_movimentacao
 from src.modelo.produto import Produto
+from src.service import estoqueMinimo
 
-_CAMPOS = ["nomeProduto", "qtdProduto", "descProduto", "qtdMinima", "qtdMaxima", "idFornecedor"]
-_SELECT = """
-    SELECT p.idProduto, p.nomeProduto, p.qtdProduto, p.descProduto, p.qtdMinima, p.qtdMaxima,
-           p.idFornecedor, f.nomeFornecedor
+_CAMPOS = [
+    "nomeProduto", "qtdProduto", "descProduto", "qtdMaxima", "idFornecedor",
+    "qtdMinimaManual", "prazoEntregaDias", "consumoEstimado", "periodoEstimativa",
+]
+
+# Consumo líquido das obras na janela (saídas menos devoluções) e a data da
+# primeira saída — as duas entradas do cálculo do estoque mínimo.
+_SELECT = f"""
+    SELECT p.idProduto, p.nomeProduto, p.qtdProduto, p.descProduto, p.qtdMaxima,
+           p.idFornecedor, p.qtdMinimaManual, p.prazoEntregaDias, p.consumoEstimado,
+           p.periodoEstimativa, f.nomeFornecedor, f.prazoEntregaDias,
+           COALESCE(m.consumoJanela, 0), m.primeiraSaida
     FROM produtos p
     LEFT JOIN fornecedores f ON f.idFornecedor = p.idFornecedor
+    LEFT JOIN (
+        SELECT idProduto,
+               SUM(CASE WHEN dataMov >= CURDATE() - INTERVAL {estoqueMinimo.JANELA_DIAS} DAY
+                        THEN IF(tipo = 'saida', quantidade, -quantidade) ELSE 0 END) AS consumoJanela,
+               MIN(CASE WHEN tipo = 'saida' THEN dataMov END) AS primeiraSaida
+        FROM movimentacoesEstoque
+        WHERE origem = 'obra'
+        GROUP BY idProduto
+    ) m ON m.idProduto = p.idProduto
 """
 
 
@@ -17,13 +36,15 @@ def _valores(produto: Produto) -> list:
 class ProdutoDAO:
 
     def inserir(self, produto: Produto) -> bool:
-        id_gerado = inserir(
-            f"INSERT INTO produtos ({', '.join(_CAMPOS)}) VALUES ({', '.join(['%s'] * len(_CAMPOS))})",
-            _valores(produto), erro="Erro ao inserir produto:")
-        if id_gerado is None:
-            return False
-        produto._idProduto = id_gerado
-        return True
+        def operacao(cursor):
+            cursor.execute(
+                f"INSERT INTO produtos ({', '.join(_CAMPOS)}) VALUES ({', '.join(['%s'] * len(_CAMPOS))})",
+                _valores(produto)
+            )
+            produto._idProduto = cursor.lastrowid
+            registrar_movimentacao(cursor, produto._idProduto, "entrada", "ajuste", produto._qtdProduto)
+        sucesso, _ = executar_transacao(operacao, "Erro ao inserir produto:")
+        return sucesso
 
     def buscar_todos(self) -> list:
         return [self._linha_para_produto(l) for l in consultar(_SELECT, erro="Erro ao buscar produtos:")]
@@ -34,9 +55,20 @@ class ProdutoDAO:
         return self._linha_para_produto(linha) if linha else None
 
     def atualizar(self, produto: Produto) -> bool:
-        sets = ", ".join(f"{c} = %s" for c in _CAMPOS)
-        return executar(f"UPDATE produtos SET {sets} WHERE idProduto = %s",
-                        _valores(produto) + [produto._idProduto], erro="Erro ao atualizar produto:")
+        """A quantidade digitada na edição é um ajuste manual: a diferença para o
+        estoque atual fica registrada como entrada ou saída de 'ajuste'."""
+        def operacao(cursor):
+            cursor.execute("SELECT qtdProduto FROM produtos WHERE idProduto = %s FOR UPDATE",
+                           (produto._idProduto,))
+            row = cursor.fetchone()
+            sets = ", ".join(f"{c} = %s" for c in _CAMPOS)
+            cursor.execute(f"UPDATE produtos SET {sets} WHERE idProduto = %s",
+                           _valores(produto) + [produto._idProduto])
+            diferenca = produto._qtdProduto - (row[0] if row else 0)
+            tipo = "entrada" if diferenca > 0 else "saida"
+            registrar_movimentacao(cursor, produto._idProduto, tipo, "ajuste", abs(diferenca))
+        sucesso, _ = executar_transacao(operacao, "Erro ao atualizar produto:")
+        return sucesso
 
     def deletar(self, idProduto: int) -> bool:
         # O item da nota fiscal só aponta para o produto; a nota continua íntegra
@@ -50,8 +82,18 @@ class ProdutoDAO:
 
     def _linha_para_produto(self, linha) -> Produto:
         p = Produto()
-        (p._idProduto, p._nomeProduto, p._qtdProduto, p._descProduto,
-         qtd_minima, qtd_maxima, p._idFornecedor, p._nomeFornecedor) = linha
-        p._qtdMinima = qtd_minima if qtd_minima is not None else 0
-        p._qtdMaxima = qtd_maxima if qtd_maxima is not None else 9999
+        (p._idProduto, p._nomeProduto, p._qtdProduto, p._descProduto, qtd_maxima,
+         p._idFornecedor, p._qtdMinimaManual, p._prazoEntregaDias, consumo_estimado,
+         p._periodoEstimativa, p._nomeFornecedor, prazo_fornecedor,
+         consumo_janela, primeira_saida) = linha
+        p._qtdMaxima       = qtd_maxima if qtd_maxima is not None else 9999
+        p._consumoEstimado = float(consumo_estimado) if consumo_estimado is not None else None
+
+        p._estoqueMinimo = estoqueMinimo.calcular(
+            consumo_janela, primeira_saida,
+            consumo_estimado=p._consumoEstimado, periodo_estimativa=p._periodoEstimativa,
+            prazo_produto=p._prazoEntregaDias, prazo_fornecedor=prazo_fornecedor,
+            minimo_manual=p._qtdMinimaManual,
+        )
+        p._qtdMinima = p._estoqueMinimo["qtdMinima"]
         return p

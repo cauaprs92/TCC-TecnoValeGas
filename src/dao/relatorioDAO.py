@@ -1,4 +1,5 @@
 from src.dao.banco import consultar
+from src.dao.produtoDAO import ProdutoDAO
 
 # Consumo = produtos avulsos + receita dos serviços (vw_consumo_obra).
 # Obra cancelada já devolveu o material ao estoque, então não conta.
@@ -7,11 +8,12 @@ from src.dao.banco import consultar
 class RelatorioDAO:
 
     def produtos_consumidos(self) -> list:
-        """Total consumido por produto, com estoque atual e mínimo."""
+        """Total consumido por produto, com estoque atual e mínimo (calculado)."""
+        minimos = {p._idProduto: p._qtdMinima for p in ProdutoDAO().buscar_todos()}
         linhas = consultar("""
             SELECT p.idProduto, p.nomeProduto,
                    COALESCE(SUM(c.quantidade), 0) AS totalConsumido,
-                   p.qtdProduto, p.qtdMinima
+                   p.qtdProduto
             FROM produtos p
             LEFT JOIN (
                 SELECT v.idProduto, v.quantidade
@@ -19,12 +21,12 @@ class RelatorioDAO:
                 JOIN obras o ON o.idObra = v.idObra
                 WHERE o.statusObra <> 'Cancelada'
             ) c ON c.idProduto = p.idProduto
-            GROUP BY p.idProduto, p.nomeProduto, p.qtdProduto, p.qtdMinima
+            GROUP BY p.idProduto, p.nomeProduto, p.qtdProduto
             ORDER BY totalConsumido DESC
         """, erro="Erro no relatório de produtos consumidos:")
         return [
             {"idProduto": r[0], "nomeProduto": r[1], "totalConsumido": int(r[2]),
-             "estoqueAtual": r[3], "qtdMinima": r[4]}
+             "estoqueAtual": r[3], "qtdMinima": minimos.get(r[0], 0)}
             for r in linhas
         ]
 

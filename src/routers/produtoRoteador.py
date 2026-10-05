@@ -21,10 +21,16 @@ def _serializar(p) -> dict:
         "nomeProduto":    p._nomeProduto,
         "qtdProduto":     p._qtdProduto,
         "descProduto":    p._descProduto,
-        "qtdMinima":      p._qtdMinima,
         "qtdMaxima":      p._qtdMaxima,
         "idFornecedor":   p._idFornecedor,
         "nomeFornecedor": p._nomeFornecedor,
+        # Ajustes gravados no produto (vazios = usar o cálculo/fornecedor)
+        "qtdMinimaManual":     p._qtdMinimaManual,
+        "prazoEntregaProduto": p._prazoEntregaDias,
+        "consumoEstimado":     p._consumoEstimado,
+        "periodoEstimativa":   p._periodoEstimativa,
+        # Resultado do cálculo: qtdMinima (efetivo), origem, consumo, prazo...
+        **p._estoqueMinimo,
     }
 
 
@@ -37,14 +43,7 @@ def cadastrar():
     produto = request.get_json()["produto"]
     nome    = produto.get("nomeProduto")
 
-    sucesso, mensagem, aviso, idProduto = controller.cadastrar(
-        nome,
-        produto.get("qtdProduto"),
-        produto.get("descProduto", ""),
-        int(produto.get("qtdMinima") or 0),
-        int(produto.get("qtdMaxima") or 9999),
-        produto.get("fornecedor"),
-    )
+    sucesso, mensagem, aviso, idProduto = controller.cadastrar(produto)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
@@ -92,15 +91,7 @@ def editar(idProduto: int):
     produto = request.get_json()["produto"]
     nome    = produto.get("nomeProduto")
 
-    sucesso, mensagem, aviso = controller.editar(
-        idProduto,
-        nome,
-        produto.get("qtdProduto"),
-        produto.get("descProduto", ""),
-        int(produto.get("qtdMinima") or 0),
-        int(produto.get("qtdMaxima") or 9999),
-        produto.get("fornecedor"),
-    )
+    sucesso, mensagem, aviso = controller.editar(idProduto, produto)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})

@@ -3,6 +3,7 @@ import unicodedata
 from difflib import SequenceMatcher
 
 from src.dao.banco import OperacaoInvalida, consultar, consultar_um, executar_transacao
+from src.dao.movimentacaoDAO import registrar_movimentacao
 from src.modelo.notaFiscal import NotaFiscal, NotaFiscalItem
 
 # similaridade mínima para sugerir um produto já cadastrado na tela de conferência
@@ -252,13 +253,13 @@ class NotaFiscalDAO:
                 dados = dadosNovoProduto or {}
                 cursor.execute("""
                     INSERT INTO produtos
-                        (nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
+                        (nomeProduto, qtdProduto, descProduto, qtdMinimaManual, qtdMaxima, idFornecedor)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
                     (dados.get("nomeProduto") or nome_nota or "").strip(),
                     quantidade,
                     (dados.get("descProduto") or "").strip(),
-                    quantidadeMinima if quantidadeMinima is not None else 0,
+                    quantidadeMinima,  # None = mínimo automático
                     quantidadeMaxima if quantidadeMaxima is not None else 9999,
                     idFornecedor,
                 ))
@@ -266,6 +267,7 @@ class NotaFiscalDAO:
             else:
                 raise OperacaoInvalida(f"Ação inválida: {acao}.")
 
+            registrar_movimentacao(cursor, id_produto, "entrada", "nota_fiscal", quantidade)
             cursor.execute(
                 "UPDATE notaFiscalItens SET idProduto = %s, statusItem = 'confirmado' WHERE idItem = %s",
                 (id_produto, idItem)
