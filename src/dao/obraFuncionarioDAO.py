@@ -94,25 +94,13 @@ class ObraFuncionarioDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def substituir_equipe(self, id_obra: int, ids_login: list) -> bool:
-        """Troca a equipe inteira da obra pela lista informada. Lista vazia
-        remove todo mundo — é assim que a edição desvincula funcionários."""
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False
-        cursor = conexao.cursor()
-        try:
-            cursor.execute("DELETE FROM obraFuncionarios WHERE idObra = %s", (id_obra,))
-            for id_login in dict.fromkeys(ids_login or []):
-                cursor.execute(
-                    "INSERT INTO obraFuncionarios (idObra, idLogin) VALUES (%s, %s)",
-                    (id_obra, id_login)
-                )
-            conexao.commit()
-            return True
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao salvar equipe da obra {id_obra}: {e}")
-            return False
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+    def salvar_equipe(self, cursor, id_obra: int, ids_login: list):
+        """Troca a equipe inteira da obra pela lista informada, dentro da
+        transação de quem chama. Lista vazia remove todo mundo — é assim que a
+        edição desvincula funcionários."""
+        cursor.execute("DELETE FROM obraFuncionarios WHERE idObra = %s", (id_obra,))
+        for id_login in dict.fromkeys(ids_login or []):
+            cursor.execute(
+                "INSERT INTO obraFuncionarios (idObra, idLogin) VALUES (%s, %s)",
+                (id_obra, id_login)
+            )

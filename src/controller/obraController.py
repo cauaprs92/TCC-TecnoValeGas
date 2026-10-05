@@ -90,38 +90,14 @@ class ObraController:
         if not produtosUsados and not servicosVinculados:
             return False, "Informe pelo menos um produto ou servico para a obra."
 
-        avisos = []
+        avisos = self._avisos_de_estoque(dadosObra, produtosUsados, servicosVinculados)
 
-        for item in produtosUsados:
-            estoque_ok, mensagem = self.ctrlProduto.verificar_estoque(
-                item["idProduto"], item["quantidade"]
-            )
-            if not estoque_ok:
-                return False, mensagem
-            if "ATENCAO" in mensagem or "AVISO" in mensagem:
-                avisos.append(mensagem)
-
-        for id_servico in servicosVinculados:
-            receita = self.daoServico.buscar_produtos_do_servico(id_servico)
-            for item in receita:
-                estoque_ok, mensagem = self.ctrlProduto.verificar_estoque(
-                    item["idProduto"], item["quantidade"]
-                )
-                if not estoque_ok:
-                    return False, mensagem
-                if "ATENCAO" in mensagem or "AVISO" in mensagem:
-                    avisos.append(mensagem)
-
-        idObraGerado = self.daoProdObras.cadastrar_obra_com_produtos(
+        sucesso, resultado = self.dao.cadastrar(
             dadosObra, produtosUsados, servicosVinculados, funcionarios
         )
-        if idObraGerado:
-            if dadosObra.get("statusObra") == "Concluida":
-                self.dao.recalcular_valor_concluida(idObraGerado)
-            if avisos:
-                return True, "Obra cadastrada com sucesso!\n" + "\n".join(avisos)
-            return True, "Obra cadastrada com sucesso!"
-        return False, "Erro ao cadastrar obra."
+        if not sucesso:
+            return False, resultado
+        return True, "\n".join(["Obra cadastrada com sucesso!"] + avisos)
 
     def atualizar(self, idObra: int, dadosObra: dict,
                   produtosNovos: list = None, servicosNovos: list = None,
@@ -146,52 +122,35 @@ class ObraController:
             if not valido:
                 return False, mensagem
 
-        sucesso = self.dao.atualizar(idObra, dadosObra)
-        if not sucesso:
-            return False, "Erro ao atualizar obra."
+        avisos = self._avisos_de_estoque(dadosObra, produtosNovos, servicosNovos)
 
-        # None = o formulário não mandou equipe, então não mexemos nela.
-        # Lista vazia = o usuário removeu todo mundo de propósito.
-        if funcionarios is not None:
-            if not self.daoEquipe.substituir_equipe(idObra, funcionarios):
-                return False, "Erro ao salvar a equipe da obra."
+        # Dados, equipe, status (com a baixa/devolução de estoque que ele
+        # implica) e material novo são gravados juntos: ou tudo, ou nada.
+        # funcionarios=None = o formulário não mandou equipe, então não mexemos nela.
+        sucesso, resultado = self.dao.atualizar(
+            idObra, dadosObra, produtosNovos or [], servicosNovos or [], funcionarios
+        )
+        if not sucesso:
+            return False, resultado
+        return True, "\n".join(["Obra atualizada com sucesso!"] + avisos)
+
+    def _avisos_de_estoque(self, dadosObra: dict, produtos: list, servicos: list) -> list:
+        """Avisos de estoque baixo para o material que a obra vai consumir. A
+        checagem que bloqueia de fato é feita na transação de gravação; aqui
+        só se avisa quem salva. Obra cancelada não consome estoque."""
+        if dadosObra.get("statusObra") == "Cancelada":
+            return []
+        necessarios = [(i["idProduto"], i["quantidade"]) for i in produtos or []]
+        for id_servico in servicos or []:
+            necessarios += [(i["idProduto"], i["quantidade"])
+                            for i in self.daoServico.buscar_produtos_do_servico(id_servico)]
 
         avisos = []
-
-        if produtosNovos:
-            for item in produtosNovos:
-                estoque_ok, msg = self.ctrlProduto.verificar_estoque(item["idProduto"], item["quantidade"])
-                if not estoque_ok:
-                    return False, msg
-                if "ATENCAO" in msg or "AVISO" in msg:
-                    avisos.append(msg)
-
-            ok = self.daoProdObras.adicionar_produtos_obra(idObra, produtosNovos)
-            if not ok:
-                return False, "Erro ao adicionar produtos à obra."
-
-        if servicosNovos:
-            for id_servico in servicosNovos:
-                receita = self.daoServico.buscar_produtos_do_servico(id_servico)
-                for item in receita:
-                    estoque_ok, msg = self.ctrlProduto.verificar_estoque(
-                        item["idProduto"], item["quantidade"]
-                    )
-                    if not estoque_ok:
-                        return False, msg
-                    if "ATENCAO" in msg or "AVISO" in msg:
-                        avisos.append(msg)
-
-            ok = self.daoProdObras.adicionar_servicos_obra(idObra, servicosNovos)
-            if not ok:
-                return False, "Erro ao adicionar serviços à obra."
-
-        if dadosObra.get("statusObra") == "Concluida":
-            self.dao.recalcular_valor_concluida(idObra)
-
-        if avisos:
-            return True, "Obra atualizada!\n" + "\n".join(avisos)
-        return True, "Obra atualizada com sucesso!"
+        for id_produto, qtd in necessarios:
+            _, mensagem = self.ctrlProduto.verificar_estoque(id_produto, qtd)
+            if "ATENCAO" in mensagem or "AVISO" in mensagem:
+                avisos.append(mensagem)
+        return avisos
 
     def listar(self) -> list:
         return self.dao.buscar_todas()
@@ -236,29 +195,21 @@ class ObraController:
         if statusAtual == novoStatus:
             return True, "Status já estava definido como esse valor."
 
-        if novoStatus == "Cancelada" and statusAtual != "Cancelada":
-            if not self.daoProdObras.restaurar_estoque_obra(idObra):
-                return False, "Erro ao restaurar estoque ao cancelar obra."
-
-        elif statusAtual == "Cancelada" and novoStatus != "Cancelada":
-            ok, msg = self.daoProdObras.baixar_estoque_obra(idObra)
-            if not ok:
-                return False, f"Não foi possível reativar a obra: {msg}"
-
-        sucesso = self.dao.atualizar_status(idObra, novoStatus)
+        sucesso, resultado = self.dao.atualizar_status(idObra, novoStatus)
         if sucesso:
             return True, "Status atualizado com sucesso!"
-        return False, "Erro ao atualizar status."
+        return False, resultado
 
     def deletar(self, idObra: int) -> tuple:
+        """Retorna (sucesso, mensagem, arquivos de foto a apagar do disco)."""
         obraExistente = self.dao.buscar_por_id(idObra)
         if not obraExistente:
-            return False, "Obra nao encontrada."
+            return False, "Obra nao encontrada.", []
 
-        sucesso = self.daoProdObras.deletar_obra_com_reposicao(idObra)
+        sucesso, resultado = self.dao.deletar(idObra)
         if sucesso:
-            return True, "Obra deletada com sucesso!"
-        return False, "Erro ao deletar obra."
+            return True, "Obra deletada com sucesso!", resultado
+        return False, resultado, []
 
     def buscar_produtos_da_obra(self, idObra: int) -> list:
         return self.daoProdObras.buscar_produtos_da_obra(idObra)

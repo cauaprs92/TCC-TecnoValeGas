@@ -446,10 +446,15 @@ def deletar(idObra: int):
     obra = controller.buscar_por_id(idObra)
     desc = obra[2] if obra else str(idObra)
 
-    sucesso, mensagem = controller.deletar(idObra)
+    sucesso, mensagem, arquivos = controller.deletar(idObra)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    for nome in arquivos:
+        caminho = os.path.join(UPLOADS_DIR, nome)
+        if os.path.exists(caminho):
+            os.remove(caminho)
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),

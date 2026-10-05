@@ -481,8 +481,15 @@ INSERT INTO obraServicos (idObra, idServico) VALUES
 (29, 6), -- Ampliação rede GLP industrial novo setor    → Extensão de Rede Comercial
 (30, 1); -- Novo setor de churrasco expansão            → Instalação de Ramal Residencial
 
+-- Receita que cada vínculo consumiu — no sistema ela é copiada de
+-- servicoProdutos no momento em que o serviço entra na obra.
+INSERT INTO obraServicoProdutos (idObraServico, idProduto, quantidade)
+SELECT os.idObraServico, sp.idProduto, sp.quantidade
+FROM obraServicos os
+JOIN servicoProdutos sp ON sp.idServico = os.idServico;
+
 -- Recalcula valorObra das obras concluídas com base nos serviços vinculados,
--- replicando a regra de negócio real (ObraDAO.atualizar_status): soma do
+-- replicando a regra de negócio real (ProdutosObrasDAO.recalcular_valor): soma do
 -- precoServico de todos os serviços ligados à obra via obraServicos.
 -- SQL_SAFE_UPDATES desligado temporariamente: o MySQL Workbench bloqueia
 -- UPDATE...JOIN por não reconhecer a condição do join como uma cláusula de

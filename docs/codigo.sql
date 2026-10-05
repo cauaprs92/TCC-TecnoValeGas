@@ -142,6 +142,7 @@ DROP SCHEMA IF EXISTS tcc;
         idProduto       int NOT NULL,
         qtdProdutosObra int NOT NULL,
 
+        UNIQUE KEY uq_obra_produto (idObra, idProduto),
         FOREIGN KEY (idObra)    REFERENCES obras(idObra),
         FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
     );
@@ -179,13 +180,15 @@ DROP SCHEMA IF EXISTS tcc;
 
     create table historico (
     idHistorico INT PRIMARY KEY AUTO_INCREMENT,
-    idAdmin     INT          NOT NULL,
+    idAdmin     INT          DEFAULT NULL,
     nomeAdmin   VARCHAR(45)  NOT NULL,
     acao        VARCHAR(20)  NOT NULL,
     entidade    VARCHAR(30)  NOT NULL,
     descricao   TEXT         NOT NULL,
     dataHora    DATETIME     DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (idAdmin) REFERENCES login(idLogin)
+    -- O nome fica gravado em nomeAdmin, então o registro continua legível
+    -- depois que o usuário é excluído; só o vínculo vira NULL.
+    FOREIGN KEY (idAdmin) REFERENCES login(idLogin) ON DELETE SET NULL
     );
 
     -- ── MIGRAÇÃO (rodar se as tabelas já existirem) ───────────────────────────
@@ -312,9 +315,33 @@ DROP SCHEMA IF EXISTS tcc;
         idObra        int NOT NULL,
         idServico     int NOT NULL,
 
+        UNIQUE KEY uq_obra_servico (idObra, idServico),
         FOREIGN KEY (idObra)    REFERENCES obras(idObra),
         FOREIGN KEY (idServico) REFERENCES servicos(idServico)
     );
+
+    -- Receita do serviço no momento em que ele foi vinculado à obra. É o que
+    -- saiu do estoque e o que volta se o vínculo for desfeito, mesmo que a
+    -- receita em servicoProdutos seja editada depois.
+    create table obraServicoProdutos(
+        idObraServicoProduto int primary key NOT NULL AUTO_INCREMENT,
+        idObraServico        int NOT NULL,
+        idProduto            int NOT NULL,
+        quantidade           int NOT NULL,
+
+        FOREIGN KEY (idObraServico) REFERENCES obraServicos(idObraServico) ON DELETE CASCADE,
+        FOREIGN KEY (idProduto)     REFERENCES produtos(idProduto)
+    );
+
+    -- Tudo o que cada obra tira do estoque: produtos avulsos + receita dos
+    -- serviços vinculados. Usada na baixa/devolução e nos relatórios.
+    create view vw_consumo_obra as
+        select idObra, idProduto, qtdProdutosObra as quantidade
+        from produtosObras
+        union all
+        select os.idObra, osp.idProduto, osp.quantidade
+        from obraServicoProdutos osp
+        join obraServicos os on os.idObraServico = osp.idObraServico;
 
     -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
     -- CREATE TABLE IF NOT EXISTS obraServicos (
