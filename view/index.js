@@ -2392,7 +2392,10 @@ function _getSortValue(item, table, key) {
       return item.nomeResponsavel || '';
     case 'historico':
       if (key === 'id') return item.idHistorico;
-      if (key === 'dataHora') return item.dataHora || '';
+      // dataHora vem como "dd/mm/aaaa HH:MM:SS"; ordenar como texto colocaria
+      // o dia do mês antes do ano (05/10/2026 cairia abaixo de 31/.../2024).
+      // Converte para timestamp para a ordenação ser cronológica de verdade.
+      if (key === 'dataHora') return item.dataHora ? _parseDateBR(item.dataHora).getTime() : 0;
       if (key === 'nomeAdmin') return item.nomeAdmin || '';
       if (key === 'acao') return item.acao || '';
       if (key === 'entidade') return item.entidade || '';
