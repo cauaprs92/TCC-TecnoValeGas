@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 
@@ -64,8 +65,19 @@ if __name__ == "__main__":
     install_packages()
 
     print("\n[2/2] Configurando banco de dados...")
-    # Se o seu MySQL tiver senha, coloque em password=""
-    setup_database(password="")
+    # codigo.sql começa com DROP SCHEMA: rodar de novo apaga todos os dados.
+    resposta = input("ATENÇÃO: isto APAGA e recria o banco 'tcc'. Continuar? (s/N) ")
+    if resposta.strip().lower() != "s":
+        print("Banco não alterado. Para atualizar um banco existente, use docs/migracao.sql.")
+        sys.exit(0)
+    # Mesmas variáveis de ambiente que src/dao/conexao.py usa;
+    # sem elas assume o MySQL/XAMPP padrão (root sem senha).
+    setup_database(
+        host=os.environ.get("DB_HOST", "127.0.0.1"),
+        port=int(os.environ.get("DB_PORT", 3306)),
+        user=os.environ.get("DB_USER", "root"),
+        password=os.environ.get("DB_PASSWORD", ""),
+    )
 
     print("\nInstalação concluída!")
     print("Execute 'python app.py' para iniciar o servidor.")
