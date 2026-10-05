@@ -1,11 +1,10 @@
-import os
-import uuid
 from flask import Blueprint, request, jsonify, g
 from src.controller.produtoController    import ProdutoController
 from src.controller.historicoController  import HistoricoController
 from src.middleware.produtoMiddleware    import ProdutoMiddleware
 from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA
-from src.dao.fotoProdutoDAO              import FotoProdutoDAO
+from src.dao.fotoDAO                     import foto_produto_dao
+from src.uploads                         import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
 from src.error_response                  import ErrorResponse
 
 produto_bp     = Blueprint("produto", __name__, url_prefix="/produto")
@@ -13,13 +12,7 @@ controller     = ProdutoController()
 historico_ctrl = HistoricoController()
 middleware     = ProdutoMiddleware()
 jwt            = JwtMiddleware()
-foto_dao       = FotoProdutoDAO()
-
-UPLOADS_DIR        = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads')
-_ALLOWED_EXT       = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'}
-
-def _extensao_permitida(filename: str) -> bool:
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in _ALLOWED_EXT
+foto_dao       = foto_produto_dao()
 
 
 def _serializar(p) -> dict:
@@ -131,11 +124,14 @@ def editar(idProduto: int):
 def deletar(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
     nome    = produto._nomeProduto if produto else str(idProduto)
+    # As linhas de produto_fotos saem por ON DELETE CASCADE; os arquivos, não.
+    arquivos = foto_dao.nomes_arquivos(idProduto)
 
     sucesso, mensagem, _ = controller.deletar(idProduto)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+    apagar_arquivos(*arquivos)
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
@@ -151,7 +147,7 @@ def deletar(idProduto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 def listar_fotos(idProduto: int):
-    fotos = foto_dao.buscar_por_produto(idProduto)
+    fotos = foto_dao.buscar(idProduto)
     return jsonify({"status": True, "fotos": fotos}), 200
 
 
@@ -163,29 +159,15 @@ def upload_foto(idProduto: int):
     if not controller.buscar_por_id(idProduto):
         raise ErrorResponse(404, "Produto não encontrado.", {"message": f"Nenhum produto com ID {idProduto}."})
 
-    if 'arquivo' not in request.files:
-        raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
-
-    arquivo = request.files['arquivo']
-    if not arquivo.filename:
-        raise ErrorResponse(400, "Arquivo inválido.", {"message": "Nome de arquivo vazio."})
-
-    if not _extensao_permitida(arquivo.filename):
-        raise ErrorResponse(400, "Tipo de arquivo não permitido.", {"message": "Permitidos: JPG, PNG, GIF, WebP, PDF."})
-
     tipoFoto = request.form.get('tipoFoto', 'produto')
     if tipoFoto not in ('produto', 'nota_fiscal'):
         tipoFoto = 'produto'
 
-    ext        = arquivo.filename.rsplit('.', 1)[1].lower()
-    nome_unico = f"{uuid.uuid4().hex}.{ext}"
-
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    arquivo.save(os.path.join(UPLOADS_DIR, nome_unico))
-
-    idFoto = foto_dao.inserir(idProduto, tipoFoto, nome_unico, arquivo.filename)
+    # Nota fiscal pode vir digitalizada em PDF; foto de produto, só imagem.
+    nome_unico, nome_original = salvar_arquivo_da_requisicao(EXT_IMAGEM | {"pdf"})
+    idFoto = foto_dao.inserir(idProduto, nome_unico, nome_original, tipoFoto)
     if not idFoto:
-        os.remove(os.path.join(UPLOADS_DIR, nome_unico))
+        apagar_arquivos(nome_unico)
         raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
 
     return jsonify({
@@ -194,7 +176,7 @@ def upload_foto(idProduto: int):
             "idFoto":       idFoto,
             "tipoFoto":     tipoFoto,
             "nomeArquivo":  nome_unico,
-            "nomeOriginal": arquivo.filename,
+            "nomeOriginal": nome_original,
             "url":          f"/uploads/{nome_unico}",
         }
     }), 201
@@ -209,8 +191,6 @@ def deletar_foto(idProduto: int, idFoto: int):
     if not nome:
         raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
 
-    caminho = os.path.join(UPLOADS_DIR, nome)
-    if os.path.exists(caminho):
-        os.remove(caminho)
+    apagar_arquivos(nome)
 
     return jsonify({"status": True, "msg": "Foto removida."}), 200

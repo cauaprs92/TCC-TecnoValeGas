@@ -17,7 +17,7 @@ from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp, res
 
 STATIC_DIR   = os.path.join(BASE_DIR, "view")
 IMAGES_DIR   = os.path.join(BASE_DIR, "images")
-UPLOADS_DIR  = os.path.join(BASE_DIR, "uploads")
+from src.uploads import UPLOADS_DIR
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")

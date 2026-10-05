@@ -1,5 +1,3 @@
-import os
-import uuid
 from functools import wraps
 from flask import Blueprint, request, jsonify, g
 from src.controller.obraController      import ObraController
@@ -9,20 +7,15 @@ from src.middleware.jwtMiddleware       import (
     JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA
 )
 from src.error_response                 import ErrorResponse
-from src.dao.fotoObraDAO                import FotoObraDAO
-
-UPLOADS_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads')
-_ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
-
-def _extensao_permitida(filename: str) -> bool:
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in _ALLOWED_EXT
+from src.dao.fotoDAO                    import foto_obra_dao
+from src.uploads                        import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
 
 obra_bp        = Blueprint("obra", __name__, url_prefix="/obra")
 controller     = ObraController()
 historico_ctrl = HistoricoController()
 middleware     = ObraMiddleware()
 jwt            = JwtMiddleware()
-foto_dao       = FotoObraDAO()
+foto_dao       = foto_obra_dao()
 
 
 def _serializar(o, equipe=None, nome_cliente=None):
@@ -210,7 +203,7 @@ def buscar_servicos_da_obra(idObra: int):
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
 def listar_fotos(idObra: int):
-    fotos = foto_dao.buscar_por_obra(idObra)
+    fotos = foto_dao.buscar(idObra)
     return jsonify({"status": True, "fotos": fotos}), 200
 
 
@@ -224,25 +217,10 @@ def upload_foto(idObra: int):
     if not obra:
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
-    if 'arquivo' not in request.files:
-        raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
-
-    arquivo = request.files['arquivo']
-    if not arquivo.filename:
-        raise ErrorResponse(400, "Arquivo inválido.", {"message": "Nome de arquivo vazio."})
-
-    if not _extensao_permitida(arquivo.filename):
-        raise ErrorResponse(400, "Tipo de arquivo não permitido.", {"message": "Permitidos: JPG, PNG, GIF, WebP."})
-
-    ext        = arquivo.filename.rsplit('.', 1)[1].lower()
-    nome_unico = f"{uuid.uuid4().hex}.{ext}"
-
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    arquivo.save(os.path.join(UPLOADS_DIR, nome_unico))
-
-    idFoto = foto_dao.inserir(idObra, nome_unico, arquivo.filename)
+    nome_unico, nome_original = salvar_arquivo_da_requisicao(EXT_IMAGEM)
+    idFoto = foto_dao.inserir(idObra, nome_unico, nome_original)
     if not idFoto:
-        os.remove(os.path.join(UPLOADS_DIR, nome_unico))
+        apagar_arquivos(nome_unico)
         raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
 
     return jsonify({
@@ -250,7 +228,7 @@ def upload_foto(idObra: int):
         "foto": {
             "idFoto":       idFoto,
             "nomeArquivo":  nome_unico,
-            "nomeOriginal": arquivo.filename,
+            "nomeOriginal": nome_original,
             "url":          f"/uploads/{nome_unico}",
         }
     }), 201
@@ -266,9 +244,7 @@ def deletar_foto(idObra: int, idFoto: int):
     if not nome:
         raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
 
-    caminho = os.path.join(UPLOADS_DIR, nome)
-    if os.path.exists(caminho):
-        os.remove(caminho)
+    apagar_arquivos(nome)
 
     return jsonify({"status": True, "msg": "Foto removida."}), 200
 
@@ -381,10 +357,7 @@ def deletar(idObra: int):
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
-    for nome in arquivos:
-        caminho = os.path.join(UPLOADS_DIR, nome)
-        if os.path.exists(caminho):
-            os.remove(caminho)
+    apagar_arquivos(*arquivos)
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
