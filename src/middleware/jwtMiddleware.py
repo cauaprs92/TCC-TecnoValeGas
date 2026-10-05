@@ -1,20 +1,41 @@
+import os
 import jwt
 import time
 import secrets
 from flask import request, jsonify, g
 from functools import wraps
+from src.dao.adminDAO import AdminDAO
+
+_RAIZ_PROJETO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+_ARQUIVO_CHAVE = os.path.join(_RAIZ_PROJETO, ".jwt_secret")
+
+
+def _carregar_chave() -> str:
+    """Chave de assinatura dos tokens. Vem de JWT_SECRET ou, na falta dela, de
+    um arquivo gerado no primeiro uso (fora do git) — nunca do código."""
+    chave = os.environ.get("JWT_SECRET")
+    if chave:
+        return chave
+    if os.path.exists(_ARQUIVO_CHAVE):
+        with open(_ARQUIVO_CHAVE, encoding="utf-8") as f:
+            return f.read().strip()
+    chave = secrets.token_hex(32)
+    with open(_ARQUIVO_CHAVE, "w", encoding="utf-8") as f:
+        f.write(chave)
+    return chave
 
 
 class MeuTokenJWT:
     """Classe para gerar e validar tokens JWT"""
-    
+
+    _key = _carregar_chave()
+
     def __init__(self):
-        self._key = "x9S4q0v+V0IjvHkG20uAxaHx1ijj+q1HWjHKv+ohxp/oK+77qyXkVj/l4QYHHTF3"
         self._alg = "HS256"
         self._iss = "http://localhost"
         self._aud = "http://localhost"
         self._sub = "acesso_sistema"
-        self._duracao_token = 3600 * 24 * 60  # 60 dias em segundos
+        self._duracao_token = 3600 * 12  # 12 horas
         self._payload = None
 
     @property
@@ -37,7 +58,6 @@ class MeuTokenJWT:
 
     def validar_token(self, token: str) -> bool:
         if not token:
-            print("Token não fornecido")
             return False
 
         token = token.replace("Bearer ", "").strip()
@@ -46,11 +66,8 @@ class MeuTokenJWT:
             decoded = jwt.decode(token, self._key, algorithms=[self._alg], audience=self._aud, issuer=self._iss)
             self._payload = decoded
             return True
-        except jwt.ExpiredSignatureError:
-            print("Token expirado")
         except jwt.InvalidTokenError:
-            print("Token inválido")
-        return False
+            return False
 
 
 CARGO_ADMINISTRACAO = "Administracao"
@@ -61,23 +78,27 @@ CARGO_OBRA          = "Obra"
 class JwtMiddleware:
     """Middleware Flask para validação de tokens JWT"""
 
+    def __init__(self):
+        self.daoAdmin = AdminDAO()
+
     def validate_token(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 JwtMiddleware.validate_token()")
-            authorization = request.headers.get("Authorization", None)
             jwt_instance = MeuTokenJWT()
-
-            if jwt_instance.validar_token(authorization):
-                g.jwt_payload = jwt_instance.payload or {}
-                g.admin_id    = g.jwt_payload.get("idAdmin")
-                # Tokens emitidos antes do cargo existir não trazem o claim.
-                # Como todos os usuários da época eram administradores, tratamos
-                # a ausência como Administração e ninguém é deslogado à força.
-                g.cargo       = g.jwt_payload.get("cargo") or CARGO_ADMINISTRACAO
-                return f(*args, **kwargs)
-            else:
+            if not jwt_instance.validar_token(request.headers.get("Authorization")):
                 return jsonify({"status": False, "msg": "token inválido"}), 401
+
+            payload = jwt_instance.payload or {}
+            # Cargo e nome vêm do banco, não do token: um usuário rebaixado ou
+            # excluído perde o acesso na hora, sem esperar o token expirar.
+            usuario = self.daoAdmin.buscar_por_id(payload.get("idAdmin"))
+            if not usuario:
+                return jsonify({"status": False, "msg": "usuário não encontrado"}), 401
+
+            g.jwt_payload = {**payload, "nomeLogin": usuario[2]}
+            g.admin_id    = usuario[0]
+            g.cargo       = usuario[3]
+            return f(*args, **kwargs)
 
         return decorated_function
 
