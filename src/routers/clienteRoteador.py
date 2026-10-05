@@ -12,7 +12,7 @@ middleware     = ClienteMiddleware()
 jwt            = JwtMiddleware()
 
 
-def _serializar(c) -> dict:
+def serializar_cliente(c) -> dict:
     return {
         "idCliente":      c._idCliente,
         "nomeCliente":    c._nomeCliente,
@@ -72,7 +72,7 @@ def cadastrar():
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
 def listar():
     clientes = controller.listar()
-    return jsonify({"status": True, "clientes": [_serializar(c) for c in clientes]}), 200
+    return jsonify({"status": True, "clientes": [serializar_cliente(c) for c in clientes]}), 200
 
 
 # ─── GET /cliente/<idCliente> ─────────────────────────────────────────────────
@@ -85,7 +85,7 @@ def buscar_por_id(idCliente: int):
     if not cliente:
         raise ErrorResponse(404, "Cliente não encontrado.", {"message": f"Nenhum cliente com ID {idCliente}."})
 
-    return jsonify({"status": True, "cliente": _serializar(cliente)}), 200
+    return jsonify({"status": True, "cliente": serializar_cliente(cliente)}), 200
 
 
 # ─── PUT /cliente/<idCliente> ─────────────────────────────────────────────────

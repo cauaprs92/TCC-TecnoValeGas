@@ -7,6 +7,7 @@ from src.middleware.jwtMiddleware       import (
     JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA
 )
 from src.error_response                 import ErrorResponse
+from src.routers.clienteRoteador        import serializar_cliente
 from src.dao.fotoDAO                    import foto_obra_dao
 from src.uploads                        import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
 
@@ -152,21 +153,7 @@ def buscar_cliente_da_obra(idObra: int):
         raise ErrorResponse(404, "Cliente da obra não encontrado.",
                             {"message": f"Nenhum cliente vinculado à obra {idObra}."})
 
-    return jsonify({"status": True, "cliente": {
-        "idCliente":      cliente._idCliente,
-        "nomeCliente":    cliente._nomeCliente,
-        "CNPJCPF":        cliente._CNPJCPF,
-        "contatoCliente": cliente._contatoCliente,
-        "emailCliente":   cliente._emailCliente,
-        "telefone2":      cliente._telefone2,
-        "cep":            cliente._cep,
-        "rua":            cliente._rua,
-        "numero":         cliente._numero,
-        "complemento":    cliente._complemento,
-        "bairro":         cliente._bairro,
-        "cidade":         cliente._cidade,
-        "estado":         cliente._estado,
-    }}), 200
+    return jsonify({"status": True, "cliente": serializar_cliente(cliente)}), 200
 
 
 # ─── GET /obra/<idObra>/produtos ──────────────────────────────────────────────
