@@ -10,10 +10,19 @@
 
 const API_BASE_URL = '';
 
-// Escapa string para uso seguro em atributo onclick="func('...')"
-// Trata: & → &amp;  |  " → &quot;  |  ' → \'
+// Escapa texto vindo do servidor antes de entrar em innerHTML — vale para
+// conteúdo de tag e para valor de atributo entre aspas duplas. Nomes de
+// produto chegam até do XML de NF-e de fornecedores, então nunca são confiáveis.
+function escHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Escapa string para virar argumento entre aspas simples num atributo de
+// evento: onclick="func('...')". Primeiro escapa para JS, depois para HTML.
 function _esc(s) {
-  return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+  return escHtml(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r?\n/g, '\\n'));
 }
 
 function getToken() {
@@ -309,7 +318,7 @@ async function carregarProdutos() {
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyProdutos').innerHTML =
-      `<tr><td colspan="6" class="empty-row">Erro ao carregar produtos: ${e.message}</td></tr>`;
+      `<tr><td colspan="6" class="empty-row">Erro ao carregar produtos: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarProdutos:', e);
   }
 }
@@ -343,7 +352,7 @@ function renderTabelaProdutos(produtos) {
       'boxes-stacked',
       total === 0 && q ? 'Nenhum resultado encontrado' : 'Nenhum produto cadastrado',
       total === 0 && q
-        ? `A busca por "${q}" não retornou resultados.`
+        ? `A busca por "${escHtml(q)}" não retornou resultados.`
         : 'Comece cadastrando o primeiro produto do estoque.',
       !q ? 'Cadastrar Produto' : '', 'abrirModalNovoProduto()', 5
     );
@@ -360,9 +369,9 @@ function renderTabelaProdutos(produtos) {
           <td><span class="cell-id">${p.idProduto}</span></td>
           <td>
             <div class="cell-stack">
-              <span class="cell-primary">${p.nomeProduto}</span>
-              ${p.nomeFornecedor ? `<span class="cell-secondary"><i class="fa-solid fa-truck-field" style="opacity:.6"></i> ${_esc(p.nomeFornecedor)}</span>` : ''}
-              ${p.descProduto ? `<span class="cell-secondary">${p.descProduto}</span>` : ''}
+              <span class="cell-primary">${escHtml(p.nomeProduto)}</span>
+              ${p.nomeFornecedor ? `<span class="cell-secondary"><i class="fa-solid fa-truck-field" style="opacity:.6"></i> ${escHtml(p.nomeFornecedor)}</span>` : ''}
+              ${p.descProduto ? `<span class="cell-secondary">${escHtml(p.descProduto)}</span>` : ''}
             </div>
           </td>
           <td>
@@ -521,7 +530,7 @@ function _thumbFotoHTML(url, nome, tipo, pending, onremove) {
   const badgeClass = tipo === 'nota_fiscal' ? 'nf' : '';
   const conteudo   = isPdf
     ? `<i class="fa-solid fa-file-pdf foto-pdf-icon"></i>`
-    : `<img src="${url}" alt="${_esc(nome)}" onclick="window.open('${url}','_blank')">`;
+    : `<img src="${url}" alt="${escHtml(nome)}" onclick="window.open('${url}','_blank')">`;
   // onremove nulo = miniatura só para visualizar, sem o botão de remover.
   const btnRemover = onremove
     ? `<button class="foto-remove" onclick="${onremove}" title="Remover">
@@ -532,7 +541,7 @@ function _thumbFotoHTML(url, nome, tipo, pending, onremove) {
     ${conteudo}
     <span class="foto-badge ${badgeClass}">${badgeLabel}</span>
     ${btnRemover}
-    <span class="foto-nome">${_esc(nome)}</span>
+    <span class="foto-nome">${escHtml(nome)}</span>
   </div>`;
 }
 
@@ -777,11 +786,11 @@ function _renderConferenciaNF() {
   document.getElementById('nfCabecalho').innerHTML = `
     <div class="nf-cab-item">
       <span class="nf-cab-label">Fornecedor</span>
-      <strong>${_esc(nota.nomeFornecedor || '—')}</strong>
+      <strong>${escHtml(nota.nomeFornecedor || '—')}</strong>
     </div>
     <div class="nf-cab-item">
       <span class="nf-cab-label">Nota</span>
-      <strong>nº ${_esc(nota.numero || '—')}${nota.serie ? ' / série ' + _esc(nota.serie) : ''}</strong>
+      <strong>nº ${escHtml(nota.numero || '—')}${nota.serie ? ' / série ' + escHtml(nota.serie) : ''}</strong>
     </div>
     <div class="nf-cab-item">
       <span class="nf-cab-label">Emissão</span>
@@ -811,8 +820,8 @@ function _nfItemHTML(item) {
     <div class="nf-item-topo">
       <div class="nf-item-nome">
         ${resolvido ? `<i class="fa-solid fa-circle-check nf-item-check"></i>` : ''}
-        ${_esc(item.nomeProdutoNota)}
-        ${item.codProdutoFornecedor ? `<span class="nf-item-cod">cód. ${_esc(item.codProdutoFornecedor)}</span>` : ''}
+        ${escHtml(item.nomeProdutoNota)}
+        ${item.codProdutoFornecedor ? `<span class="nf-item-cod">cód. ${escHtml(item.codProdutoFornecedor)}</span>` : ''}
       </div>
       <div class="nf-item-numeros">
         <span class="nf-item-qtd">${_nfFmtQtd(item.quantidade)} un</span>
@@ -836,7 +845,7 @@ function _nfItemHTML(item) {
     <div class="produto-obra-row nf-item-busca">
       <div class="prod-search-wrap">
         <input type="text" class="prod-search" placeholder="Buscar produto no sistema (nome ou ID)..."
-          value="${_esc(buscaVal)}"
+          value="${escHtml(buscaVal)}"
           oninput="buscarProdutoInput(this);_nfOnBuscaInput(this)"
           onfocus="buscarProdutoInput(this)"
           onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
@@ -862,7 +871,7 @@ function _nfItemHTML(item) {
       <div class="form-row" style="grid-template-columns:1fr;margin-bottom:12px">
         <div class="form-group" style="margin-bottom:0">
           <label>Nome do Produto<span class="required">*</span></label>
-          <input type="text" class="nf-np-nome" value="${_esc(item.nomeProdutoNota)}" />
+          <input type="text" class="nf-np-nome" value="${escHtml(item.nomeProdutoNota)}" />
         </div>
       </div>
       <div class="form-row" style="margin-bottom:12px">
@@ -1001,7 +1010,7 @@ async function carregarObras() {
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyObras').innerHTML =
-      `<tr><td colspan="6" class="empty-row">Erro ao carregar obras: ${e.message}</td></tr>`;
+      `<tr><td colspan="6" class="empty-row">Erro ao carregar obras: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarObras:', e);
   }
 }
@@ -1050,7 +1059,7 @@ function renderTabelaObras(obras) {
       const tags = [o.tipoObra, o.respObra].filter(Boolean);
       const equipe = o.funcionarios || [];
       const equipeHtml = equipe.length
-        ? `<span class="cell-tag" title="Equipe: ${_esc(equipe.map(f => f.nomeLogin).join(', '))}"><i class="fa-solid fa-users"></i>${equipe.length} na equipe</span>`
+        ? `<span class="cell-tag" title="Equipe: ${escHtml(equipe.map(f => f.nomeLogin).join(', '))}"><i class="fa-solid fa-users"></i>${equipe.length} na equipe</span>`
         : '';
       const valorHtml = (o.statusObra === 'Concluida' && o.valorObra != null)
         ? `<span style="color:#2D8A4E;font-weight:700">${_fmtMoeda(o.valorObra)}</span>`
@@ -1060,14 +1069,14 @@ function renderTabelaObras(obras) {
           <td><span class="cell-id">${o.idObra}</span></td>
           <td>
             <div class="cell-stack">
-              <span class="cell-primary">${nomeCliente}</span>
+              <span class="cell-primary">${escHtml(nomeCliente)}</span>
               ${o.codCliente ? `<span class="cell-secondary">Cód. ${o.codCliente}</span>` : ''}
             </div>
           </td>
           <td>
             <div class="cell-stack">
-              <span class="cell-primary">${o.descObra || '—'}</span>
-              ${(tags.length || equipeHtml) ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${tags.map(t=>`<span class="cell-tag"><i class="fa-solid fa-tag"></i>${t}</span>`).join('')}${equipeHtml}</div>` : ''}
+              <span class="cell-primary">${escHtml(o.descObra || '—')}</span>
+              ${(tags.length || equipeHtml) ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${tags.map(t=>`<span class="cell-tag"><i class="fa-solid fa-tag"></i>${escHtml(t)}</span>`).join('')}${equipeHtml}</div>` : ''}
             </div>
           </td>
           <td><span class="cell-secondary">${fmtData(o.dataInicio)}</span></td>
@@ -1128,7 +1137,7 @@ function buscarProdutoInput(input) {
     const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
     return `<div class="prod-dropdown-item" onmousedown="selecionarProdutoDropdown(this,${p.idProduto})">
       <span class="prod-id">${p.idProduto}</span>
-      <span class="prod-name">${p.nomeProduto}</span>
+      <span class="prod-name">${escHtml(p.nomeProduto)}</span>
       <span class="prod-stock" style="color:${cor}">${p.qtdProduto} em estoque</span>
     </div>`;
   }).join('');
@@ -1171,7 +1180,7 @@ function buscarFornecedorInput(input) {
 
   drop.innerHTML = matches.map(f => `
     <div class="prod-dropdown-item" onmousedown="selecionarFornecedorDropdown(this,'${_esc(f.nomeFornecedor)}')">
-      <span class="prod-name">${_esc(f.nomeFornecedor)}</span>
+      <span class="prod-name">${escHtml(f.nomeFornecedor)}</span>
     </div>`).join('');
   drop.classList.remove('hidden');
 }
@@ -1247,7 +1256,7 @@ function buscarServicoInput(input) {
   drop.innerHTML = matches.map(s => `
     <div class="prod-dropdown-item" onmousedown="selecionarServicoDropdown(this,${s.idServico})">
       <span class="prod-id">${s.idServico}</span>
-      <span class="prod-name">${s.nomeServico}</span>
+      <span class="prod-name">${escHtml(s.nomeServico)}</span>
       <span class="prod-stock" style="color:#16A34A">${_fmtMoeda(s.precoServico)}</span>
     </div>`).join('');
   drop.classList.remove('hidden');
@@ -1323,8 +1332,8 @@ function _renderEquipeDropdown() {
       <input type="checkbox" value="${f.idLogin}"
              ${_obraEquipe.has(f.idLogin) ? 'checked' : ''}
              onchange="alternarFuncionarioEquipe(${f.idLogin}, this.checked)" />
-      <span class="eq-nome">${f.nomeLogin}</span>
-      <span class="eq-email">${f.email || ''}</span>
+      <span class="eq-nome">${escHtml(f.nomeLogin)}</span>
+      <span class="eq-email">${escHtml(f.email || '')}</span>
     </label>`).join('');
 }
 
@@ -1340,7 +1349,7 @@ function _renderEquipeChips() {
   const escolhidos  = [..._obraEquipe];
   chips.innerHTML = escolhidos.map(id => `
     <span class="equipe-chip">
-      <span>${_nomesFuncionarios.get(id) || `Usuário ${id}`}</span>
+      <span>${escHtml(_nomesFuncionarios.get(id) || `Usuário ${id}`)}</span>
       ${podeRemover ? `<button type="button" title="Remover da equipe"
               onclick="alternarFuncionarioEquipe(${id}, false)">
         <i class="fa-solid fa-xmark"></i>
@@ -1538,10 +1547,10 @@ function _renderHistoricoObra(idObra) {
       <tbody>
         ${registros.map(h => `
           <tr>
-            <td style="white-space:nowrap;font-size:.82rem">${h.dataHora}</td>
-            <td style="font-size:.82rem">${h.nomeAdmin}</td>
-            <td style="font-size:.82rem">${h.acao}</td>
-            <td style="font-size:.82rem">${h.descricao}</td>
+            <td style="white-space:nowrap;font-size:.82rem">${escHtml(h.dataHora)}</td>
+            <td style="font-size:.82rem">${escHtml(h.nomeAdmin)}</td>
+            <td style="font-size:.82rem">${escHtml(h.acao)}</td>
+            <td style="font-size:.82rem">${escHtml(h.descricao)}</td>
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -1686,7 +1695,7 @@ function _carregarProdutosVerObra(idObra) {
     listEl.innerHTML = produtos.map(p => `
       <div class="produto-obra-row">
         <input type="number" class="prod-id-input" value="${p.idProduto}" readonly />
-        <input type="text" class="prod-nome-input" value="${p.nomeProduto}" readonly />
+        <input type="text" class="prod-nome-input" value="${escHtml(p.nomeProduto)}" readonly />
         <input type="text" class="prod-estoque-input" value="Qtd: ${p.qtdProdutosObra}" readonly />
         <button class="btn-icon edit" title="Editar quantidade"
           onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}',${p.qtdProdutosObra})">
@@ -1714,7 +1723,7 @@ function _carregarServicosVerObra(idObra) {
     } else {
       servListEl.innerHTML = servicos.map(s => `
         <div class="produto-obra-row">
-          <input type="text" class="prod-nome-input" value="${_esc(s.nomeServico)}" readonly />
+          <input type="text" class="prod-nome-input" value="${escHtml(s.nomeServico)}" readonly />
           <input type="text" class="prod-estoque-input" value="${_fmtMoeda(s.precoServico)}" readonly />
           <button class="btn-icon edit" title="Trocar serviço"
             onclick="abrirModalEditarServObra(${idObra},${s.idServico},'${_esc(s.nomeServico)}')">
@@ -1990,7 +1999,7 @@ async function verProdutosObra(idObra) {
           ${produtos.map(p => `
             <tr>
               <td>${p.idProduto}</td>
-              <td>${p.nomeProduto || '—'}</td>
+              <td>${escHtml(p.nomeProduto || '—')}</td>
               <td>${p.qtdProdutosObra}</td>
               <td class="actions">
                 <button class="btn-icon edit" title="Editar quantidade"
@@ -2007,7 +2016,7 @@ async function verProdutosObra(idObra) {
       </table>`;
     _marcarCelulasTabela(body.querySelector('table'));
   } catch (e) {
-    body.innerHTML = `<div class="empty-row">Erro ao carregar produtos: ${e.message}</div>`;
+    body.innerHTML = `<div class="empty-row">Erro ao carregar produtos: ${escHtml(e.message)}</div>`;
   }
 }
 
@@ -2031,7 +2040,7 @@ async function _carregarFotosObra(idObra) {
     _renderFotoGridObra(res.fotos || []);
   } catch (e) {
     document.getElementById('fotoObraGrid').innerHTML =
-      `<div class="empty-row">Erro ao carregar imagens: ${e.message}</div>`;
+      `<div class="empty-row">Erro ao carregar imagens: ${escHtml(e.message)}</div>`;
   }
 }
 
@@ -2337,7 +2346,7 @@ async function carregarClientes() {
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyClientes').innerHTML =
-      `<tr><td colspan="6" class="empty-row">Erro ao carregar clientes: ${e.message}</td></tr>`;
+      `<tr><td colspan="6" class="empty-row">Erro ao carregar clientes: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarClientes:', e);
   }
 }
@@ -2379,7 +2388,7 @@ function renderTabelaClientes(clientes) {
       'users',
       total === 0 && q ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado',
       total === 0 && q
-        ? `A busca por "${q}" não retornou resultados.`
+        ? `A busca por "${escHtml(q)}" não retornou resultados.`
         : 'Comece cadastrando o primeiro cliente.',
       !q ? 'Cadastrar Cliente' : '', 'abrirModalNovoCliente()', 6
     );
@@ -2388,17 +2397,17 @@ function renderTabelaClientes(clientes) {
       const nomeSafe  = _esc(c.nomeCliente);
       const loc1 = [c.rua, c.numero ? `nº ${c.numero}` : null].filter(Boolean).join(', ');
       const loc2 = [c.bairro, c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade].filter(Boolean).join(', ');
-      const locHtml = [loc1, loc2].filter(Boolean).join('<br>') || '—';
+      const locHtml = [loc1, loc2].filter(Boolean).map(escHtml).join('<br>') || '—';
       const contatoHtml = [
-        c.contatoCliente ? `<span class="cell-secondary"><i class="fa-solid fa-phone fa-xs" style="width:13px;opacity:.45"></i> ${c.contatoCliente}</span>` : '',
-        c.telefone2      ? `<span class="cell-secondary"><i class="fa-solid fa-phone fa-xs" style="width:13px;opacity:.45"></i> ${c.telefone2}</span>` : '',
-        c.emailCliente   ? `<span class="cell-secondary"><i class="fa-regular fa-envelope fa-xs" style="width:13px;opacity:.45"></i> ${c.emailCliente}</span>` : '',
+        c.contatoCliente ? `<span class="cell-secondary"><i class="fa-solid fa-phone fa-xs" style="width:13px;opacity:.45"></i> ${escHtml(c.contatoCliente)}</span>` : '',
+        c.telefone2      ? `<span class="cell-secondary"><i class="fa-solid fa-phone fa-xs" style="width:13px;opacity:.45"></i> ${escHtml(c.telefone2)}</span>` : '',
+        c.emailCliente   ? `<span class="cell-secondary"><i class="fa-regular fa-envelope fa-xs" style="width:13px;opacity:.45"></i> ${escHtml(c.emailCliente)}</span>` : '',
       ].filter(Boolean).join('') || '<span class="cell-secondary">—</span>';
       return `
         <tr onclick="abrirModalEditarCliente(${c.idCliente})">
           <td><span class="cell-id">${c.idCliente}</span></td>
-          <td><span class="cell-primary">${c.nomeCliente}</span></td>
-          <td><span class="cell-secondary">${c.CNPJCPF}</span></td>
+          <td><span class="cell-primary">${escHtml(c.nomeCliente)}</span></td>
+          <td><span class="cell-secondary">${escHtml(c.CNPJCPF)}</span></td>
           <td style="min-width:160px"><div class="cell-stack" style="line-height:1.6">${locHtml}</div></td>
           <td><div class="cell-stack" style="gap:4px">${contatoHtml}</div></td>
           <td>${_actionMenu([
@@ -2564,7 +2573,7 @@ async function carregarServicos() {
     atualizarStats();
   } catch (e) {
     document.getElementById('bodyServicos').innerHTML =
-      `<tr><td colspan="5" class="empty-row">Erro ao carregar serviços: ${e.message}</td></tr>`;
+      `<tr><td colspan="5" class="empty-row">Erro ao carregar serviços: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarServicos:', e);
   }
 }
@@ -2620,7 +2629,7 @@ function renderTabelaServicos(servicos) {
       'screwdriver-wrench',
       total === 0 && q ? 'Nenhum resultado encontrado' : 'Nenhum serviço cadastrado',
       total === 0 && q
-        ? `A busca por "${q}" não retornou resultados.`
+        ? `A busca por "${escHtml(q)}" não retornou resultados.`
         : 'Comece cadastrando o primeiro serviço do catálogo.',
       !q ? 'Novo Serviço' : '', 'abrirModalNovoServico()', 5
     );
@@ -2631,7 +2640,7 @@ function renderTabelaServicos(servicos) {
       return `
         <tr onclick="abrirModalEditarServico(${s.idServico})">
           <td><span class="cell-id">${s.idServico}</span></td>
-          <td><span class="cell-primary">${s.nomeServico}</span></td>
+          <td><span class="cell-primary">${escHtml(s.nomeServico)}</span></td>
           <td><span class="cell-secondary">${_fmtMoeda(s.precoServico)}</span></td>
           <td><span class="cell-secondary">${qtdProdutos} produto${qtdProdutos !== 1 ? 's' : ''}</span></td>
           <td>${_actionMenu([
@@ -2900,7 +2909,7 @@ function renderAlertas(produtos) {
           <i class="fa-solid ${critico ? 'fa-box-open' : 'fa-triangle-exclamation'}"></i>
         </div>
         <div class="alert-info">
-          <strong>${p.nomeProduto}</strong>
+          <strong>${escHtml(p.nomeProduto)}</strong>
           <span>${info}</span>
         </div>
         <span class="badge ${critico ? 'badge-red' : 'badge-yellow'}">${critico ? 'Esgotado' : 'Atenção'}</span>
@@ -3294,7 +3303,7 @@ function renderNotificacoes(produtos) {
     return `
       <div class="notif-item ${critico ? 'alert' : 'warn'}">
         <i class="fa-solid ${critico ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i>
-        <div><strong>${critico ? 'Sem estoque' : 'Estoque baixo'}</strong><p>${p.nomeProduto}: ${p.qtdProduto} unidades</p></div>
+        <div><strong>${critico ? 'Sem estoque' : 'Estoque baixo'}</strong><p>${escHtml(p.nomeProduto)}: ${p.qtdProduto} unidades</p></div>
       </div>`;
   }).join('');
 }
@@ -3341,7 +3350,7 @@ function badgeStatus(status) {
     'Cancelada':     '<span class="badge badge-red">Cancelada</span>',
     'À iniciar':     '<span class="badge badge-blue">À iniciar</span>',
   };
-  return map[status] || `<span class="badge badge-gray">${status}</span>`;
+  return map[status] || `<span class="badge badge-gray">${escHtml(status)}</span>`;
 }
 
 // ── Action buttons helper ──
@@ -3631,7 +3640,8 @@ function showToast(msg, type = 'success') {
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success}"></i><span>${msg}</span>`;
+  toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success}"></i><span></span>`;
+  toast.querySelector('span').textContent = msg;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateY(10px)'; toast.style.transition='.3s'; }, 2800);
   setTimeout(() => toast.remove(), 3200);
@@ -3658,7 +3668,7 @@ function cargoLabel(cargo) {
 
 function badgeCargo(cargo) {
   const c = CARGOS[cargo];
-  if (!c) return `<span class="badge badge-gray">${cargo || '—'}</span>`;
+  if (!c) return `<span class="badge badge-gray">${escHtml(cargo || '—')}</span>`;
   return `<span class="badge ${c.badge}">${c.label}</span>`;
 }
 
@@ -3677,7 +3687,7 @@ async function carregarAdmins() {
     atualizarStats();
   } catch (e) {
     document.getElementById('bodyAdmins').innerHTML =
-      `<tr><td colspan="5" class="empty-row">Erro ao carregar usuários: ${e.message}</td></tr>`;
+      `<tr><td colspan="5" class="empty-row">Erro ao carregar usuários: ${escHtml(e.message)}</td></tr>`;
   }
 }
 
@@ -3711,10 +3721,10 @@ function renderTabelaAdmins(admins) {
         <td><span class="cell-id">${a.idLogin}</span></td>
         <td>
           <div class="cell-stack">
-            <span class="cell-primary">${a.nomeLogin}</span>
+            <span class="cell-primary">${escHtml(a.nomeLogin)}</span>
           </div>
         </td>
-        <td><span class="cell-secondary">${a.email}</span></td>
+        <td><span class="cell-secondary">${escHtml(a.email)}</span></td>
         <td>${badgeCargo(a.cargoLogin)}</td>
         <td>${_actionMenu([
           { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarAdmin(${a.idLogin})`, escrita:'admins' },
@@ -4134,7 +4144,7 @@ function renderTabelaResponsaveis(lista) {
     return `
       <tr onclick="abrirModalEditarResponsavel(${r.idResponsavel})">
         <td><span class="cell-id">${r.idResponsavel}</span></td>
-        <td><span class="cell-primary">${r.nomeResponsavel}</span></td>
+        <td><span class="cell-primary">${escHtml(r.nomeResponsavel)}</span></td>
         <td>${_actionMenu([
           { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarResponsavel(${r.idResponsavel})`, escrita:'responsaveis' },
           { divider: true },
@@ -4326,7 +4336,7 @@ function buscarServicoInputEdit(input) {
   drop.innerHTML = matches.map(s => `
     <div class="prod-dropdown-item" onmousedown="selecionarServicoDropdownEdit(this,${s.idServico})">
       <span class="prod-id">${s.idServico}</span>
-      <span class="prod-name">${s.nomeServico}</span>
+      <span class="prod-name">${escHtml(s.nomeServico)}</span>
       <span class="prod-stock" style="color:#16A34A">${_fmtMoeda(s.precoServico)}</span>
     </div>`).join('');
   drop.classList.remove('hidden');
@@ -4417,7 +4427,7 @@ async function carregarHistorico() {
   } catch (e) {
     const tbody = document.getElementById('bodyHistorico');
     if (tbody) tbody.innerHTML =
-      `<tr><td colspan="6" class="empty-row">Erro ao carregar histórico: ${e.message}</td></tr>`;
+      `<tr><td colspan="6" class="empty-row">Erro ao carregar histórico: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarHistorico:', e);
   }
 }
@@ -4446,18 +4456,18 @@ function _preencherSelectAdminsHistorico(lista) {
   const valorAtual = sel.value;
   const admins = [...new Set(lista.map(h => h.nomeAdmin))].sort();
   sel.innerHTML = '<option value="">Todos os administradores</option>' +
-    admins.map(a => `<option value="${a}">${a}</option>`).join('');
+    admins.map(a => `<option value="${escHtml(a)}">${escHtml(a)}</option>`).join('');
   if (admins.includes(valorAtual)) sel.value = valorAtual;
 }
 
 function _badgeAcao(acao) {
   const map = { 'Cadastrou': 'green', 'Editou': 'blue', 'Deletou': 'red' };
   const tipo = map[acao] || 'gray';
-  return `<span class="badge badge-${tipo}">${acao}</span>`;
+  return `<span class="badge badge-${tipo}">${escHtml(acao)}</span>`;
 }
 
 function _badgeEntidade(entidade) {
-  return `<span class="badge badge-gray">${_entidadeHistorico(entidade)}</span>`;
+  return `<span class="badge badge-gray">${escHtml(_entidadeHistorico(entidade))}</span>`;
 }
 
 function renderTabelaHistorico(lista) {
@@ -4495,11 +4505,11 @@ function renderTabelaHistorico(lista) {
   tbody.innerHTML = ordenado.map(h => `
     <tr>
       <td><span class="cell-id">${h.idHistorico}</span></td>
-      <td><span class="cell-secondary">${h.dataHora || '—'}</span></td>
-      <td><span class="cell-primary">${h.nomeAdmin}</span></td>
+      <td><span class="cell-secondary">${escHtml(h.dataHora || '—')}</span></td>
+      <td><span class="cell-primary">${escHtml(h.nomeAdmin)}</span></td>
       <td>${_badgeAcao(h.acao)}</td>
       <td>${_badgeEntidade(h.entidade)}</td>
-      <td>${h.descricao}</td>
+      <td>${escHtml(h.descricao)}</td>
     </tr>`).join('');
   atualizarIndicadoresOrdenacao('historico');
 }
