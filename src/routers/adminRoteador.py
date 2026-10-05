@@ -80,7 +80,13 @@ def atualizar(idLogin: int):
 
     # A senha atual confirma a identidade de quem mexe no próprio perfil.
     # Administração editando outra pessoa não tem como saber a senha dela.
-    senha_atual = (admin.get("senhaAtual") or None) if proprio else None
+    # Obrigatória: sem ela, um token roubado bastaria para trocar email e senha.
+    senha_atual = None
+    if proprio:
+        senha_atual = admin.get("senhaAtual") or ""
+        if not senha_atual:
+            raise ErrorResponse(400, "Informe sua senha atual para confirmar.",
+                                {"message": "Campo 'senhaAtual' é obrigatório ao editar o próprio perfil."})
 
     sucesso, mensagem = controller.atualizar(
         idLogin,
