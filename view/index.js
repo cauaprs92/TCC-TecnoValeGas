@@ -73,24 +73,6 @@ let fpInicio, fpFim;
 
 document.addEventListener('DOMContentLoaded', () => {
   verificarAutenticacao();
-
-  const snapRaw = sessionStorage.getItem('domSnapshot');
-  if (snapRaw) {
-    sessionStorage.removeItem('domSnapshot');
-    try {
-      const snap = JSON.parse(snapRaw);
-      Object.entries(snap).forEach(([id, html]) => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = html;
-      });
-    } catch (_) {}
-  }
-  const abaAtual = sessionStorage.getItem('abaAtual');
-  if (abaAtual) {
-    sessionStorage.removeItem('abaAtual');
-    navegarPara(abaAtual);
-  }
-  document.documentElement.classList.remove('restoring-tab');
   ajustarFonteKpiMoeda();
   _observarKpiMoeda();
 
@@ -3876,31 +3858,16 @@ function logout() {
 // NAVEGAÇÃO POR KPI
 // ══════════════════════════════════════════════════
 
-function recarregarAba() {
-  const pagina = document.querySelector('.page.active');
-  if (pagina) {
-    sessionStorage.setItem('abaAtual', pagina.id.replace('page-', ''));
+// Busca os dados de novo e redesenha as telas, sem recarregar a página.
+async function recarregarAba() {
+  const botoes = document.querySelectorAll('.btn-reload');
+  botoes.forEach(b => { b.classList.add('spinning'); b.disabled = true; });
+  try {
+    await carregarTodos();
+    if (podeVerPagina('estoque')) await carregarConsumo();
+  } finally {
+    botoes.forEach(b => { b.classList.remove('spinning'); b.disabled = false; });
   }
-
-  const snap = {};
-  [
-    'kpi-produtos', 'kpi-obras', 'kpi-clientes', 'kpi-alertas', 'kpi-valor-faturado',
-    'stat-prod-total', 'stat-prod-ok', 'stat-prod-alert', 'stat-prod-zero',
-    'stat-obra-total', 'stat-obra-ainiciar', 'stat-obra-andamento', 'stat-obra-pausada', 'stat-obra-concluida',
-    'stat-cli-total', 'stat-cli-ativos', 'stat-cli-email',
-    'stat-serv-total',
-    'stat-admin-total', 'stat-resp-total',
-    'stat-hist-total', 'stat-hist-produto', 'stat-hist-obra', 'stat-hist-cliente', 'stat-hist-admin', 'stat-hist-field',
-    'bodyProdutos', 'bodyObras', 'bodyClientes', 'bodyServicos', 'bodyAdmins', 'bodyResponsaveis', 'bodyHistorico',
-    'alertList', 'obrasStatusLegend',
-    'paginacaoProdutos', 'paginacaoObras', 'paginacaoClientes', 'paginacaoServicos',
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) snap[id] = el.innerHTML;
-  });
-  sessionStorage.setItem('domSnapshot', JSON.stringify(snap));
-
-  window.location.reload();
 }
 
 function navegarPara(page) {

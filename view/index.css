@@ -1067,9 +1067,6 @@ body {
 /* ── QTY BADGE SIZE ── */
 .qty-badge { font-size: .8rem; padding: 3px 9px; }
 
-/* ── RESTAURAÇÃO DE ABA (previne flash do Dashboard no reload) ── */
-.restoring-tab .page { display: none !important; }
-
 /* ── BOTÃO RECARREGAR (page-header) ── */
 .btn-reload {
   margin-left: auto;
