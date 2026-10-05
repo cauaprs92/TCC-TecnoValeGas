@@ -57,13 +57,20 @@ def obras_produtos():
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def produtos_consumidos():
+    # Consumo = produtos avulsos + receita dos serviços (vw_consumo_obra).
+    # Obra cancelada já devolveu o material ao estoque, então não conta.
     sql = """
         SELECT p.idProduto, p.nomeProduto,
-               COALESCE(SUM(po.qtdProdutosObra), 0) AS totalConsumido,
+               COALESCE(SUM(c.quantidade), 0) AS totalConsumido,
                p.qtdProduto AS estoqueAtual,
                p.qtdMinima
         FROM produtos p
-        LEFT JOIN produtosObras po ON p.idProduto = po.idProduto
+        LEFT JOIN (
+            SELECT v.idProduto, v.quantidade
+            FROM vw_consumo_obra v
+            JOIN obras o ON o.idObra = v.idObra
+            WHERE o.statusObra <> 'Cancelada'
+        ) c ON c.idProduto = p.idProduto
         GROUP BY p.idProduto, p.nomeProduto, p.qtdProduto, p.qtdMinima
         ORDER BY totalConsumido DESC
     """
@@ -99,11 +106,13 @@ def grafico_produtos():
     sql = """
         SELECT p.idProduto, p.nomeProduto,
                o.idObra, o.descObra, c.nomeCliente,
-               po.qtdProdutosObra
-        FROM produtos p
-        JOIN produtosObras po ON p.idProduto = po.idProduto
-        JOIN obras o          ON o.idObra    = po.idObra
+               SUM(v.quantidade), o.codCliente
+        FROM vw_consumo_obra v
+        JOIN produtos p       ON p.idProduto = v.idProduto
+        JOIN obras o          ON o.idObra    = v.idObra
         LEFT JOIN clientes c  ON c.idCliente = o.codCliente
+        WHERE o.statusObra <> 'Cancelada'
+        GROUP BY p.idProduto, p.nomeProduto, o.idObra, o.descObra, c.nomeCliente, o.codCliente
         ORDER BY p.idProduto, o.idObra
     """
     conexao = Conexao.obter_conexao()
@@ -123,7 +132,7 @@ def grafico_produtos():
             produtos[pid]["obras"].append({
                 "idObra":      r[2],
                 "descObra":    r[3],
-                "nomeCliente": r[4] or f"Cliente #{r[2]}",
+                "nomeCliente": r[4] or f"Cliente #{r[6]}",
                 "qtd":         int(r[5]),
             })
 
