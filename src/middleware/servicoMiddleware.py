@@ -8,7 +8,6 @@ class ServicoMiddleware:
     def validate_body(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 ServicoMiddleware.validate_body()")
             body = request.get_json()
 
             if not body or 'servico' not in body:
@@ -64,7 +63,6 @@ class ServicoMiddleware:
     def validate_id_param(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 ServicoMiddleware.validate_id_param()")
             if 'idServico' not in kwargs:
                 raise ErrorResponse(400, "Erro na validação de dados",
                                     {"message": "O parâmetro 'idServico' é obrigatório!"})

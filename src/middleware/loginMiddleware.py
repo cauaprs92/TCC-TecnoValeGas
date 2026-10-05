@@ -12,7 +12,6 @@ class LoginMiddleware:
     def validate_body(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 LoginMiddleware.validate_body()")
             body = request.get_json()
 
             if not body:

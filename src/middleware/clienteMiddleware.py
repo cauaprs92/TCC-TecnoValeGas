@@ -7,7 +7,6 @@ class ClienteMiddleware:
         
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 clienteMiddleware.validate_body()")
             body = request.get_json()
 
             if not body or 'cliente' not in body:
@@ -29,7 +28,6 @@ class ClienteMiddleware:
     def validate_id_param(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 clienteMiddleware.validate_id_param()")
             if 'idCliente' not in kwargs:
                 raise ErrorResponse(
                     400, "Erro na validação de dados",

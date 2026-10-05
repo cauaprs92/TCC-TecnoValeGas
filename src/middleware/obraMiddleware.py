@@ -51,7 +51,6 @@ class ObraMiddleware:
     def validate_body(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 ObraMiddleware.validate_body()")
             body = request.get_json()
 
             if not body or 'obra' not in body:
@@ -169,7 +168,6 @@ class ObraMiddleware:
     def validate_update_body(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 ObraMiddleware.validate_update_body()")
             body = request.get_json()
 
             if not body or 'obra' not in body:
@@ -269,7 +267,6 @@ class ObraMiddleware:
     def validate_id_param(self, f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            print("🔷 ObraMiddleware.validate_id_param()")
             if 'idObra' not in kwargs:
                 raise ErrorResponse(
                     400, "Erro na validação de dados",

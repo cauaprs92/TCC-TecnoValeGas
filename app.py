@@ -95,5 +95,5 @@ def handle_generic_error(e: Exception):
 
 
 if __name__ == "__main__":
-    print("🚀 Servidor rodando em: http://127.0.0.1:5000")
+    print("Servidor rodando em: http://127.0.0.1:5000")
     app.run(debug=False, host="0.0.0.0", port=5000)
