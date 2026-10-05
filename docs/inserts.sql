@@ -4,10 +4,13 @@ USE tcc;
 
 -- ── Login ─────────────────────────────────────────────────────────────────────
 -- senha: adm123 (bcrypt hash)  |  INSERT IGNORE evita erro se já existir
--- idLogin 1 → adm  |  idLogin 2 → João  (ordem garantida pelo AUTO_INCREMENT)
-INSERT IGNORE INTO login (email, senha, nomeLogin) VALUES
-('adm123@gmail.com',      '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'adm'),
-('joao@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'João');
+-- idLogin 1 → adm | 2 → João | 3 → Marcos (almoxarifado) | 4 → Pedro (obra)
+-- (ordem garantida pelo AUTO_INCREMENT; todos com a senha adm123)
+INSERT IGNORE INTO login (email, senha, nomeLogin, cargoLogin) VALUES
+('adm123@gmail.com',        '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'adm',    'Administracao'),
+('joao@tecnovalegas.com',   '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'João',   'Administracao'),
+('marcos@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Marcos', 'Almoxarifado'),
+('pedro@tecnovalegas.com',  '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Pedro',  'Obra');
 
 -- ── Responsáveis ──────────────────────────────────────────────────────────────
 INSERT INTO responsavel (nomeResponsavel) VALUES
@@ -225,6 +228,11 @@ INSERT INTO obras (codCliente, descObra, dataInicio, dataFim, statusObra, respOb
 (16, 'Ampliação da rede de GLP industrial - novo setor',              @hoje - INTERVAL 1 DAY,   NULL,                     'Em andamento', 'Beatriz Almeida', 'Integrar com rede existente',                 'Novo setor de produção em expansão',   'Instalação', 'Supergásbras',  'GLP',            'm',  'producao@acoforte.com.br',           '(12) 3944-7600',  '(12) 98167-9000', 'Industrial'),
 -- idObra 30 — Pausada (início hoje)
 (15, 'Instalação de novo setor de churrasco - expansão',              @hoje,                    NULL,                     'Pausada',      'Carlos Souza',    'Cliente solicitou pausa para adequação civil', 'Aguardar liberação do cliente',        'Instalação', 'Supergásbras',  'GLP',            'm',  'churrascaria@compadre.com.br',       '(12) 3153-8700',  '(12) 98389-9900', 'Comercial');
+
+-- ── Equipe das obras ─────────────────────────────────────────────────────────
+-- Pedro (cargo Obra) só enxerga as obras em que está na equipe.
+INSERT INTO obraFuncionarios (idObra, idLogin) VALUES
+(9, 4), (16, 4), (22, 4), (26, 4), (29, 4);
 -- ── Produtos por Obra ─────────────────────────────────────────────────────────
 INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra) VALUES
 -- Obra 1 — Instalação ramal residencial (Caua Silva)
