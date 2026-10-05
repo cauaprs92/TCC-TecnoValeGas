@@ -103,47 +103,6 @@ class ProdutoDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def atualizar_estoque(self, idProduto: int, quantidadeUsada: int) -> bool:
-        sql = """
-            UPDATE produtos
-            SET qtdProduto = qtdProduto - %s
-            WHERE idProduto = %s AND qtdProduto >= %s
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (quantidadeUsada, idProduto, quantidadeUsada))
-            conexao.commit()
-            if cursor.rowcount == 0:
-                print("Estoque insuficiente ou produto não encontrado.")
-                return False
-            return True
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao atualizar estoque: {e}")
-            return False
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
-
-    def adicionar(self, idProduto: int, quantidadeAds: int) -> bool:
-        sql = "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (quantidadeAds, idProduto))
-            conexao.commit()
-            return True
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao adicionar estoque: {e}")
-            return False
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
-
     def deletar(self, idProduto: int) -> bool:
         # O item da nota fiscal só aponta para o produto; a nota continua íntegra
         # sem esse vínculo (guarda nomeProdutoNota e statusItem próprios), então

@@ -65,15 +65,6 @@ class NotaFiscalController:
 
     # ─── Conferência ──────────────────────────────────────────────────────────
 
-    def buscar_nota(self, idNotaFiscal: int):
-        return self.dao.buscar_nota_com_itens(idNotaFiscal)
-
-    def listar_itens_pendentes(self, idNotaFiscal: int) -> list:
-        nota = self.dao.buscar_nota_com_itens(idNotaFiscal)
-        if not nota:
-            return []
-        return [i for i in nota._itens if i._statusItem == 'pendente']
-
     def confirmar_item(self, idItem, acao, idProduto=None, quantidadeMinima=None,
                        quantidadeMaxima=None, dadosNovoProduto=None) -> tuple:
         """Valida a decisão do usuário antes de aplicá-la ao estoque.

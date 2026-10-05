@@ -12,45 +12,6 @@ def handle_error(e: ErrorResponse):
     return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
-# ─── GET /relatorio/obras-produtos ────────────────────────────────────────────
-# Retorna as últimas obras com total de produtos consumidos (para o gráfico)
-@relatorio_bp.route("/obras-produtos", methods=["GET"])
-@jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO)
-def obras_produtos():
-    sql = """
-        SELECT o.idObra, o.descObra,
-               COUNT(po.idProduto)            AS numProdutos,
-               COALESCE(SUM(po.qtdProdutosObra), 0) AS totalConsumido
-        FROM obras o
-        LEFT JOIN produtosObras po ON o.idObra = po.idObra
-        GROUP BY o.idObra, o.descObra
-        ORDER BY o.idObra DESC
-        LIMIT 10
-    """
-    conexao = Conexao.obter_conexao()
-    if not conexao:
-        return jsonify({"status": False, "msg": "Erro de conexão."}), 500
-    cursor = conexao.cursor()
-    try:
-        cursor.execute(sql)
-        rows = cursor.fetchall()
-        data = [
-            {
-                "idObra":         r[0],
-                "descObra":       r[1],
-                "numProdutos":    r[2],
-                "totalConsumido": int(r[3]),
-            }
-            for r in rows
-        ]
-        return jsonify({"status": True, "dados": data}), 200
-    except Exception as e:
-        return jsonify({"status": False, "msg": str(e)}), 500
-    finally:
-        Conexao.fechar_conexao(conexao, cursor)
-
-
 # ─── GET /relatorio/produtos-consumidos ───────────────────────────────────────
 # Retorna total consumido por produto (para exportação)
 @relatorio_bp.route("/produtos-consumidos", methods=["GET"])

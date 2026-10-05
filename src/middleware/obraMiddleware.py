@@ -286,25 +286,3 @@ class ObraMiddleware:
                 )
             return f(*args, **kwargs)
         return decorated_function
-
-    def validate_status_body(self, f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            print("🔷 ObraMiddleware.validate_status_body()")
-            body = request.get_json()
-
-            if not body or 'statusObra' not in body:
-                raise ErrorResponse(
-                    400, "Erro na validação de dados",
-                    {"message": "O campo 'statusObra' é obrigatório!"}
-                )
-
-            if body['statusObra'] not in self.STATUS_VALIDOS:
-                opcoes = ", ".join(self.STATUS_VALIDOS)
-                raise ErrorResponse(
-                    400, "Erro na validação de dados",
-                    {"message": f"O campo 'statusObra' é inválido. Use: {opcoes}!"}
-                )
-
-            return f(*args, **kwargs)
-        return decorated_function

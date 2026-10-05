@@ -1,4 +1,3 @@
-import re
 from functools import wraps
 from flask import request
 from src.error_response import ErrorResponse

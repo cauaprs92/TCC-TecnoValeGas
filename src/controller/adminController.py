@@ -38,9 +38,6 @@ class AdminController:
         rows = self.dao.listar()
         return [{"idLogin": r[0], "email": r[1], "nomeLogin": r[2], "cargoLogin": r[3]} for r in rows]
 
-    def listar_por_cargo(self, cargo: str) -> list:
-        return [u for u in self.listar() if u["cargoLogin"] == cargo]
-
     def criar(self, email: str, senha: str, nome: str, cargo: str) -> tuple:
         valido, msg = self._validar_campos(email, nome, cargo, senha)
         if not valido:

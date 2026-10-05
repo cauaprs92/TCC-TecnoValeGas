@@ -68,32 +68,3 @@ class ProdutoMiddleware:
                                     {"message": "O parâmetro 'idProduto' deve ser um número inteiro positivo!"})
             return f(*args, **kwargs)
         return decorated_function
-
-    def validate_uso_em_obra_body(self, f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            print("🔷 ProdutoMiddleware.validate_uso_em_obra_body()")
-            body = request.get_json()
-
-            if not body:
-                raise ErrorResponse(400, "Erro na validação de dados",
-                                    {"message": "O corpo da requisição é obrigatório!"})
-
-            try:
-                id_val = int(body.get('idProduto'))
-                if id_val <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                raise ErrorResponse(400, "Erro na validação de dados",
-                                    {"message": "O campo 'idProduto' deve ser um número inteiro positivo!"})
-
-            try:
-                qtd_val = int(body.get('quantidade'))
-                if qtd_val <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                raise ErrorResponse(400, "Erro na validação de dados",
-                                    {"message": "O campo 'quantidade' deve ser um inteiro maior que zero!"})
-
-            return f(*args, **kwargs)
-        return decorated_function

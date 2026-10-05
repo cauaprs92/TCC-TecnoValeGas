@@ -96,27 +96,6 @@ def importar():
     }), 200 if reaberta else 201
 
 
-# ─── GET /nota-fiscal/<idNotaFiscal>/itens ────────────────────────────────────
-@nota_fiscal_bp.route("/<int:idNotaFiscal>/itens", methods=["GET"])
-@jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
-def listar_itens(idNotaFiscal: int):
-    nota = controller.buscar_nota(idNotaFiscal)
-
-    if not nota:
-        raise ErrorResponse(404, "Nota fiscal não encontrada.",
-                            {"message": f"Nenhuma nota fiscal com ID {idNotaFiscal}."})
-
-    apenasPendentes = request.args.get("pendentes", "").lower() in ('1', 'true', 'sim')
-    itens = [i for i in nota._itens if i._statusItem == 'pendente'] if apenasPendentes else nota._itens
-
-    return jsonify({
-        "status": True,
-        "nota":   _serializar(nota),
-        "itens":  [_serializar_item(i) for i in itens],
-    }), 200
-
-
 # ─── PATCH /nota-fiscal/item/<idItem>/confirmar ───────────────────────────────
 @nota_fiscal_bp.route("/item/<int:idItem>/confirmar", methods=["PATCH"])
 @jwt.validate_token

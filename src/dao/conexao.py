@@ -2,7 +2,6 @@ import os
 import sys
 import traceback
 import mysql.connector
-from contextlib import contextmanager
 
 class Conexao:
     _host     = os.environ.get("DB_HOST", "localhost")
@@ -38,13 +37,3 @@ class Conexao:
                 conexao.close()
         except Exception as e:
             print(f"Erro ao fechar conexão: {e}", flush=True)
-
-    @staticmethod
-    @contextmanager
-    def abrir_sessao(dictionary=True):
-        conexao = Conexao.obter_conexao()
-        cursor = conexao.cursor(dictionary=dictionary) if conexao else None
-        try:
-            yield conexao, cursor
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)

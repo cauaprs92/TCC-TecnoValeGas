@@ -129,17 +129,3 @@ def deletar(idServico: int):
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200
-
-
-# ─── GET /servico/<idServico>/produtos ────────────────────────────────────────
-@servico_bp.route("/<int:idServico>/produtos", methods=["GET"])
-@jwt.validate_token
-@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
-@middleware.validate_id_param
-def buscar_produtos(idServico: int):
-    servico = controller.buscar_por_id(idServico)
-
-    if not servico:
-        raise ErrorResponse(404, "Serviço não encontrado.", {"message": f"Nenhum serviço com ID {idServico}."})
-
-    return jsonify({"status": True, "produtos": servico._produtos}), 200

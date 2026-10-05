@@ -1,7 +1,7 @@
 import os
 import sys
 import traceback
-from flask import Flask, jsonify, send_from_directory, abort
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 

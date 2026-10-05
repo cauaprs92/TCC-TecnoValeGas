@@ -52,10 +52,6 @@ class NotaFiscalDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def verificar_chave_existe(self, chaveAcesso: str) -> bool:
-        """True se a chave de acesso já foi importada anteriormente."""
-        return self.buscar_id_por_chave(chaveAcesso) is not None
-
     def reabrir_itens(self, idNotaFiscal: int) -> int:
         """Devolve para 'pendente' os itens da nota que não afetam mais o estoque.
 

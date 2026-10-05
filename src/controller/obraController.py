@@ -152,9 +152,6 @@ class ObraController:
                 avisos.append(mensagem)
         return avisos
 
-    def listar(self) -> list:
-        return self.dao.buscar_todas()
-
     def listar_para_usuario(self, cargo: str, id_login) -> list:
         """Funcionário de obra enxerga só as obras em que está na equipe.
         Os demais cargos recebem a lista inteira."""
@@ -171,34 +168,6 @@ class ObraController:
 
     def buscar_por_id(self, idObra: int):
         return self.dao.buscar_por_id(idObra)
-
-    def listar_por_cliente(self, idCliente: int) -> tuple:
-        clienteExistente = self.daoCliente.buscar_por_id(idCliente)
-        if not clienteExistente:
-            return False, "Cliente nao encontrado.", []
-
-        obras = self.dao.buscar_por_cliente(idCliente)
-        return True, f"Obras do cliente {clienteExistente._nomeCliente}", obras
-
-    def atualizar_status(self, idObra: int, novoStatus: str) -> tuple:
-        valido, mensagem = self._validar_status(novoStatus)
-        if not valido:
-            return False, mensagem
-
-        obraExistente = self.dao.buscar_por_id(idObra)
-        if not obraExistente:
-            return False, "Obra nao encontrada."
-
-        statusAtual = obraExistente[5]
-        novoStatus  = novoStatus.strip()
-
-        if statusAtual == novoStatus:
-            return True, "Status já estava definido como esse valor."
-
-        sucesso, resultado = self.dao.atualizar_status(idObra, novoStatus)
-        if sucesso:
-            return True, "Status atualizado com sucesso!"
-        return False, resultado
 
     def deletar(self, idObra: int) -> tuple:
         """Retorna (sucesso, mensagem, arquivos de foto a apagar do disco)."""
