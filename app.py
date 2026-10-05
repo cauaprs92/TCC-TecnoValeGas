@@ -3,7 +3,7 @@ import sys
 import traceback
 from flask import Flask, jsonify, send_from_directory, abort
 from flask_cors import CORS
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import HTTPException
 
 _raw_origins    = os.getenv("ALLOWED_ORIGINS", "http://localhost:5000,http://127.0.0.1:5000")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
@@ -63,71 +63,34 @@ def dashboard():
     return send_from_directory(STATIC_DIR, "index.html")
 
 
-# ─── ROTA TEMPORÁRIA DE DIAGNÓSTICO — REMOVER APÓS RESOLVER A CONEXÃO ────────
-@app.route("/debug-db")
-def debug_db():
-    from src.dao.conexao import Conexao
-    try:
-        conexao = Conexao.obter_conexao()
-        if conexao is not None:
-            conexao.close()
-            return jsonify({"conectado": True})
-
-        # obter_conexao() engoliu a exceção e retornou None; reconecta
-        # diretamente aqui só para capturar a mensagem de erro real.
-        import mysql.connector
-        try:
-            mysql.connector.connect(
-                host=Conexao._host, port=Conexao._porta,
-                user=Conexao._usuario, password=Conexao._senha,
-                database=Conexao._banco,
-                ssl_disabled=False,
-                connection_timeout=10
-            ).close()
-            return jsonify({"conectado": True})
-        except Exception as e:
-            return jsonify({
-                "conectado": False,
-                "erro": str(e),
-                "stack": traceback.format_exc(),
-            })
-    except Exception as e:
-        return jsonify({
-            "conectado": False,
-            "erro": str(e),
-            "stack": traceback.format_exc(),
-        })
-
-
 # ─── Tratamento global de ErrorResponse ──────────────────────────────────────
 @app.errorhandler(ErrorResponse)
 def handle_error_response(e: ErrorResponse):
-    stack_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
     return jsonify({
         "status": False,
         "msg":    e.args[0],
         "error":  e.error,
-        "stack":  stack_str,
     }), e.httpCode
 
 
 # ─── Tratamento global de erros inesperados ───────────────────────────────────
+# Detalhes (mensagem e stack) ficam só no log do servidor: na resposta eles
+# expõem SQL, nomes de tabela e caminhos de arquivo.
 @app.errorhandler(Exception)
 def handle_generic_error(e: Exception):
-    if isinstance(e, NotFound):
+    if isinstance(e, HTTPException):
+        mensagens = {404: "Recurso não encontrado.", 413: "Arquivo maior que o limite de 10 MB."}
         return jsonify({
             "status": False,
-            "msg":    "Recurso não encontrado.",
-            "error":  str(e),
-        }), 404
+            "msg":    mensagens.get(e.code, e.description),
+            "error":  {"message": e.name},
+        }), e.code
 
-    stack_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-    print("🟡 handle_generic_error:", e)
+    traceback.print_exception(type(e), e, e.__traceback__)
     return jsonify({
         "status": False,
         "msg":    "Erro interno no servidor.",
-        "error":  str(e),
-        "stack":  stack_str,
+        "error":  {"message": "Erro interno no servidor."},
     }), 500
 
 
