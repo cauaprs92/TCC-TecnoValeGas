@@ -22,7 +22,7 @@ class LoginController:
                 return False, "Email ou senha incorretos."
 
             id_login, nome_login, hash_salvo, cargo_login = resultado
-            senha_bytes = senha.strip().encode("utf-8")
+            senha_bytes = senha.encode("utf-8")
             hash_bytes  = hash_salvo.encode("utf-8") if isinstance(hash_salvo, str) else hash_salvo
 
             if not bcrypt.checkpw(senha_bytes, hash_bytes):

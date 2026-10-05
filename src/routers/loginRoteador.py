@@ -21,7 +21,7 @@ def autenticar():
     """Autentica o usuário e retorna um token JWT."""
     body  = request.get_json()
     email = body.get("email").strip()
-    senha = body.get("senha").strip()
+    senha = body.get("senha")
 
     sucesso, resultado = controller.autenticar(email, senha)
 
