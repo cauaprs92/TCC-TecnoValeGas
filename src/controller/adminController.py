@@ -1,6 +1,7 @@
 import re
 import bcrypt
 from src.dao.adminDAO import AdminDAO
+from src.dao.obraFuncionarioDAO import ObraFuncionarioDAO
 
 EMAIL_REGEX = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 
@@ -14,6 +15,7 @@ class AdminController:
 
     def __init__(self):
         self.dao = AdminDAO()
+        self.daoEquipe = ObraFuncionarioDAO()
 
     def _validar_campos(self, email: str, nome: str, cargo: str, senha: str = None) -> tuple:
         if not nome or not nome.strip():
@@ -101,6 +103,13 @@ class AdminController:
 
         if existente[3] == self.CARGO_ADMIN and self.dao.contar_por_cargo(self.CARGO_ADMIN) <= 1:
             return False, "Não é possível excluir o único usuário de Administração."
+
+        # O vínculo com a equipe é o registro de quem trabalhou em cada obra,
+        # por isso o banco não o apaga sozinho.
+        obras = self.daoEquipe.listar_ids_obras_do_funcionario(id_login)
+        if obras:
+            return False, (f"Este usuário está na equipe de {len(obras)} obra(s). "
+                           "Remova-o das equipes antes de excluí-lo.")
 
         sucesso = self.dao.deletar(id_login)
         if sucesso:
