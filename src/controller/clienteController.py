@@ -29,6 +29,8 @@ class ClienteController:
 
         if not self._validar_cpf_cnpj(CNPJCPF):
             return False, "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos."
+        if self.dao.existe_documento(re.sub(r'\D', '', CNPJCPF)):
+            return False, "Já existe um cliente com esse CPF/CNPJ."
 
         if not rua or not rua.strip():
             return False, "Rua é obrigatória."
@@ -39,10 +41,7 @@ class ClienteController:
         if not estado or not estado.strip():
             return False, "Estado é obrigatório."
 
-        idCliente = self.dao.proximo_id()
-
         dadosCliente = Cliente()
-        dadosCliente._idCliente      = idCliente
         dadosCliente._nomeCliente    = nomeCliente.strip()
         dadosCliente._CNPJCPF        = CNPJCPF.strip()
         dadosCliente._contatoCliente = contatoCliente.strip() if contatoCliente else ""
@@ -76,6 +75,8 @@ class ClienteController:
 
         if not self._validar_cpf_cnpj(CNPJCPF):
             return False, "CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos."
+        if self.dao.existe_documento(re.sub(r'\D', '', CNPJCPF), excluir_id=int(idCliente)):
+            return False, "Já existe outro cliente com esse CPF/CNPJ."
 
         if not rua or not rua.strip():
             return False, "Rua é obrigatória."

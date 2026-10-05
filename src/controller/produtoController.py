@@ -47,10 +47,7 @@ class ProdutoController:
         if qtdMaxima > 0 and qtdMinima > qtdMaxima:
             return False, "Quantidade mínima não pode ser maior que a máxima.", None
 
-        idProduto = self.dao.proximo_id()
-
         dadoProduto = Produto()
-        dadoProduto._idProduto    = idProduto
         dadoProduto._nomeProduto  = nomeProduto.strip()
         dadoProduto._qtdProduto   = qtd
         dadoProduto._descProduto  = descProduto.strip() if descProduto else ""
@@ -61,7 +58,7 @@ class ProdutoController:
         sucesso = self.dao.inserir(dadoProduto)
         if sucesso:
             aviso = self._verificar_alerta_estoque(nomeProduto.strip(), qtd, qtdMinima)
-            return True, "Produto cadastrado com sucesso!", aviso, idProduto
+            return True, "Produto cadastrado com sucesso!", aviso, dadoProduto._idProduto
         return False, "Erro ao cadastrar produto.", None, None
 
     def listar(self) -> list:

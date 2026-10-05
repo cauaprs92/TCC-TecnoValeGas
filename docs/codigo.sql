@@ -1,52 +1,42 @@
+-- =============================================================================
+-- Schema do banco `tcc`. APAGA e recria o banco do zero — para atualizar um
+-- banco que já tem dados, use docs/migracao.sql.
+-- Depois deste script, docs/inserts.sql popula dados de exemplo.
+-- =============================================================================
 DROP SCHEMA IF EXISTS tcc;
-    create database tcc;
-    use tcc;
+create database tcc;
+use tcc;
 
-    create table login(
+-- cargoLogin define o que cada usuário pode acessar. Três valores fechados,
+-- gravados sem acento e exibidos com acento no front:
+--   'Administracao' → acesso total
+--   'Almoxarifado'  → estoque, produtos, notas fiscais e fornecedores
+--   'Obra'          → apenas as obras em que o usuário está na equipe
+create table login(
     idLogin    int primary key NOT NULL AUTO_INCREMENT,
     email      VARCHAR(45)  NOT NULL UNIQUE,
     senha      VARCHAR(60)  NOT NULL,
     nomeLogin  VARCHAR(45),
-    cargoLogin VARCHAR(20)  NOT NULL DEFAULT 'Administracao'
-    );
+    cargoLogin VARCHAR(20)  NOT NULL DEFAULT 'Administracao',
+    CONSTRAINT ck_login_cargo CHECK (cargoLogin IN ('Administracao', 'Almoxarifado', 'Obra'))
+);
 
-    -- senha: adm123 (bcrypt hash)
-    insert into login (email, senha, nomeLogin, cargoLogin) values(
+-- senha: adm123 (bcrypt hash)
+insert into login (email, senha, nomeLogin, cargoLogin) values(
     "adm123@gmail.com", "$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO", "adm", "Administracao"
-    );
+);
 
-    -- ── MIGRAÇÃO — cargoLogin (rodar se a tabela já existir) ──────────────────
-    -- Define o que cada usuário pode acessar. Três valores fechados, gravados
-    -- sem acento e exibidos com acento no front:
-    --   'Administracao' → acesso total
-    --   'Almoxarifado'  → estoque, produtos, notas fiscais e fornecedores
-    --   'Obra'          → apenas as obras em que o usuário está na equipe
-    -- O DEFAULT garante que todos os logins já existentes continuem como
-    -- Administração, sem perder acesso ao aplicar a migração.
-    -- ALTER TABLE login
-    --   ADD COLUMN cargoLogin VARCHAR(20) NOT NULL DEFAULT 'Administracao';
-
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- ALTER TABLE login
-    --   MODIFY COLUMN idLogin int NOT NULL AUTO_INCREMENT,
-    --   MODIFY COLUMN email VARCHAR(45) NOT NULL,
-    --   MODIFY COLUMN senha VARCHAR(60) NOT NULL,
-    --   ADD UNIQUE (email);
-
-    create table fornecedores (
+-- cnpjFornecedor é usado pela importação de NF-e: o fornecedor da nota é
+-- identificado pelo CNPJ do <emit>, evitando duplicar fornecedores com
+-- grafias diferentes.
+create table fornecedores (
     idFornecedor   int primary key NOT NULL AUTO_INCREMENT,
     nomeFornecedor VARCHAR(150) NOT NULL UNIQUE,
     cnpjFornecedor VARCHAR(18)  DEFAULT NULL UNIQUE
-    );
+);
 
-    -- ── MIGRAÇÃO — cnpjFornecedor (rodar se a tabela já existir) ──────────────
-    -- Usado pela importação de NF-e: o fornecedor da nota é identificado pelo
-    -- CNPJ do <emit>, evitando duplicar fornecedores com grafias diferentes.
-    -- ALTER TABLE fornecedores
-    --   ADD COLUMN cnpjFornecedor VARCHAR(18) DEFAULT NULL UNIQUE;
-
-    create table produtos(
-    idProduto     int primary key NOT NULL,
+create table produtos(
+    idProduto     int primary key NOT NULL AUTO_INCREMENT,
     nomeProduto   VARCHAR(255),
     qtdProduto    int          DEFAULT 0,
     descProduto   TEXT,
@@ -54,27 +44,12 @@ DROP SCHEMA IF EXISTS tcc;
     qtdMaxima     int          DEFAULT 9999,
     idFornecedor  int          DEFAULT NULL,
     FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
-    );
+);
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- ALTER TABLE produtos
-    --   MODIFY COLUMN descProduto TEXT,
-    --   ADD COLUMN qtdMinima int DEFAULT 0,
-    --   ADD COLUMN qtdMaxima int DEFAULT 9999;
-
-    -- ── MIGRAÇÃO — fornecedores (rodar se as tabelas já existirem) ────────────
-    -- CREATE TABLE IF NOT EXISTS fornecedores (
-    --   idFornecedor   int primary key NOT NULL AUTO_INCREMENT,
-    --   nomeFornecedor VARCHAR(150) NOT NULL UNIQUE
-    -- );
-    -- ALTER TABLE produtos
-    --   ADD COLUMN idFornecedor int DEFAULT NULL,
-    --   ADD FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor);
-
-    create table clientes(
-    idCliente      int primary key NOT NULL,
+create table clientes(
+    idCliente      int primary key NOT NULL AUTO_INCREMENT,
     nomeCliente    VARCHAR(45)  NOT NULL,
-    CNPJCPF        VARCHAR(18)  NOT NULL,
+    CNPJCPF        VARCHAR(18)  NOT NULL UNIQUE,
     contatoCliente VARCHAR(15),
     emailCliente   VARCHAR(255),
     telefone2      VARCHAR(15),
@@ -85,100 +60,69 @@ DROP SCHEMA IF EXISTS tcc;
     bairro         VARCHAR(100),
     cidade         VARCHAR(100),
     estado         VARCHAR(2)
-    );
+);
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- ALTER TABLE clientes
-    --   DROP COLUMN enderecoCliente,
-    --   MODIFY COLUMN contatoCliente VARCHAR(15),
-    --   ADD COLUMN cep         VARCHAR(9),
-    --   ADD COLUMN rua         VARCHAR(255),
-    --   ADD COLUMN numero      VARCHAR(20),
-    --   ADD COLUMN complemento VARCHAR(100),
-    --   ADD COLUMN bairro      VARCHAR(100),
-    --   ADD COLUMN cidade      VARCHAR(100),
-    --   ADD COLUMN estado      VARCHAR(2);
-
-    -- ── MIGRAÇÃO — campos de contato (rodar se a tabela já existir) ──────────
-    -- ALTER TABLE clientes
-    --   ADD COLUMN emailCliente VARCHAR(255) AFTER contatoCliente,
-    --   ADD COLUMN telefone2    VARCHAR(15)  AFTER emailCliente;
-
-    create table obras(
-    idObra         int primary key AUTO_INCREMENT,
-    codCliente     int          NOT NULL,
-    descObra       VARCHAR(255) NOT NULL,
-    dataInicio     DATE         NOT NULL,
-    dataFim        DATE,
-    statusObra     VARCHAR(255),
-    respObra       VARCHAR(255),
-    obsObra        VARCHAR(255),
-    orientacaoObra VARCHAR(255),
-    tipoObra       VARCHAR(100),
+-- clientePrimario: empresa "guarda-chuva" para quem a TecnoValeGas presta o
+-- serviço (ex.: Supergásbras). clientePrimario e setorObra são listas fechadas
+-- por enquanto, editáveis nos <select> do formulário de obra.
+-- valorObra só é preenchido com a obra Concluida (soma dos serviços).
+create table obras(
+    idObra          int primary key AUTO_INCREMENT,
+    codCliente      int          NOT NULL,
+    descObra        VARCHAR(255) NOT NULL,
+    dataInicio      DATE         NOT NULL,
+    dataFim         DATE,
+    statusObra      VARCHAR(255),
+    respObra        VARCHAR(255),
+    obsObra         VARCHAR(255),
+    orientacaoObra  VARCHAR(255),
+    tipoObra        VARCHAR(100),
     clientePrimario VARCHAR(100),
-    fieldObra      VARCHAR(100),
-    unidadeObra    VARCHAR(20),
-    emailContato   VARCHAR(100),
-    celular1       VARCHAR(20),
-    celular2       VARCHAR(20),
-    valorObra      DECIMAL(10,2) DEFAULT NULL,
-    setorObra      VARCHAR(20),
-    FOREIGN KEY (codCliente) REFERENCES clientes(idCliente)
-    );
+    fieldObra       VARCHAR(100),
+    unidadeObra     VARCHAR(20),
+    emailContato    VARCHAR(100),
+    celular1        VARCHAR(20),
+    celular2        VARCHAR(20),
+    valorObra       DECIMAL(10,2) DEFAULT NULL,
+    setorObra       VARCHAR(20),
+    FOREIGN KEY (codCliente) REFERENCES clientes(idCliente),
+    CONSTRAINT ck_obras_status
+        CHECK (statusObra IN ('À iniciar', 'Em andamento', 'Concluida', 'Cancelada', 'Pausada'))
+);
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- ALTER TABLE obras
-    --   DROP COLUMN codProduto,
-    --   ADD COLUMN dataInicio DATE NOT NULL AFTER descObra,
-    --   ADD COLUMN dataFim    DATE         AFTER dataInicio;
-    -- -- Se a coluna dataObra ainda existir:
-    -- ALTER TABLE obras DROP COLUMN dataObra;
-    -- -- Adicionar AUTO_INCREMENT ao idObra:
-    -- ALTER TABLE obras MODIFY COLUMN idObra int NOT NULL AUTO_INCREMENT;
+create table produtosObras(
+    idProdutosObra  int primary key AUTO_INCREMENT,
+    idObra          int NOT NULL,
+    idProduto       int NOT NULL,
+    qtdProdutosObra int NOT NULL,
 
-    create table produtosObras(
-        idProdutosObra  int primary key AUTO_INCREMENT,
-        idObra          int NOT NULL,
-        idProduto       int NOT NULL,
-        qtdProdutosObra int NOT NULL,
+    UNIQUE KEY uq_obra_produto (idObra, idProduto),
+    FOREIGN KEY (idObra)    REFERENCES obras(idObra),
+    FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
+);
 
-        UNIQUE KEY uq_obra_produto (idObra, idProduto),
-        FOREIGN KEY (idObra)    REFERENCES obras(idObra),
-        FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
-    );
-
-    -- Equipe da obra: quais usuários de cargo 'Obra' trabalham em cada obra.
-    -- É por essa tabela que o sistema decide quais obras cada funcionário vê.
-    -- Não confundir com obras.respObra, que é o Field (técnico responsável) e
-    -- vem da tabela responsavel — são pessoas de origens diferentes.
-    create table obraFuncionarios (
+-- Equipe da obra: quais usuários de cargo 'Obra' trabalham em cada obra.
+-- É por essa tabela que o sistema decide quais obras cada funcionário vê.
+-- Não confundir com obras.respObra, que é o Field (técnico responsável) e
+-- vem da tabela responsavel — são pessoas de origens diferentes.
+-- ON DELETE CASCADE só no idObra: excluir uma obra leva junto a equipe dela,
+-- mas excluir um usuário é barrado enquanto ele estiver vinculado a alguma
+-- obra — o vínculo é registro de quem trabalhou onde.
+create table obraFuncionarios (
     idObraFuncionario int primary key NOT NULL AUTO_INCREMENT,
     idObra            int NOT NULL,
     idLogin           int NOT NULL,
     UNIQUE KEY uq_obra_login (idObra, idLogin),
     FOREIGN KEY (idObra)  REFERENCES obras(idObra) ON DELETE CASCADE,
     FOREIGN KEY (idLogin) REFERENCES login(idLogin)
-    );
+);
 
-    -- ── MIGRAÇÃO — obraFuncionarios (rodar se as tabelas já existirem) ────────
-    -- ON DELETE CASCADE só no idObra: excluir uma obra leva junto a equipe dela,
-    -- mas excluir um usuário é barrado pelo banco enquanto ele estiver vinculado
-    -- a alguma obra — o vínculo é registro de quem trabalhou onde.
-    -- CREATE TABLE IF NOT EXISTS obraFuncionarios (
-    --   idObraFuncionario int primary key NOT NULL AUTO_INCREMENT,
-    --   idObra            int NOT NULL,
-    --   idLogin           int NOT NULL,
-    --   UNIQUE KEY uq_obra_login (idObra, idLogin),
-    --   FOREIGN KEY (idObra)  REFERENCES obras(idObra) ON DELETE CASCADE,
-    --   FOREIGN KEY (idLogin) REFERENCES login(idLogin)
-    -- );
-
-     create table responsavel (
+create table responsavel (
     idResponsavel   int primary key NOT NULL AUTO_INCREMENT,
     nomeResponsavel VARCHAR(100) NOT NULL UNIQUE
-    );
+);
 
-    create table historico (
+create table historico (
     idHistorico INT PRIMARY KEY AUTO_INCREMENT,
     idAdmin     INT          DEFAULT NULL,
     nomeAdmin   VARCHAR(45)  NOT NULL,
@@ -187,50 +131,11 @@ DROP SCHEMA IF EXISTS tcc;
     descricao   TEXT         NOT NULL,
     dataHora    DATETIME     DEFAULT CURRENT_TIMESTAMP,
     -- O nome fica gravado em nomeAdmin, então o registro continua legível
-    -- depois que o usuário é excluído; só o vínculo vira NULL.
+    -- depois que o usuário é excluído. Só o vínculo vira NULL.
     FOREIGN KEY (idAdmin) REFERENCES login(idLogin) ON DELETE SET NULL
-    );
+);
 
-    -- ── MIGRAÇÃO (rodar se as tabelas já existirem) ───────────────────────────
-    -- CREATE TABLE IF NOT EXISTS historico (
-    --   idHistorico INT PRIMARY KEY AUTO_INCREMENT,
-    --   idAdmin     INT          NOT NULL,
-    --   nomeAdmin   VARCHAR(45)  NOT NULL,
-    --   acao        VARCHAR(20)  NOT NULL,
-    --   entidade    VARCHAR(30)  NOT NULL,
-    --   descricao   TEXT         NOT NULL,
-    --   dataHora    DATETIME     DEFAULT CURRENT_TIMESTAMP,
-    --   FOREIGN KEY (idAdmin) REFERENCES login(idLogin)
-    -- );
-
-    -- ── MIGRAÇÃO obras — valorObra (rodar se a tabela já existir) ──────────────
-    -- ALTER TABLE obras
-    --   ADD COLUMN valorObra DECIMAL(10,2) DEFAULT NULL;
-
-    -- ── MIGRAÇÃO obras — novos campos (já incluídos no CREATE TABLE acima) ─────
-    -- ALTER TABLE obras
-    --   ADD COLUMN tipoObra     VARCHAR(100),
-    --   ADD COLUMN fieldObra    VARCHAR(100),
-    --   ADD COLUMN unidadeObra  VARCHAR(20),
-    --   ADD COLUMN emailContato VARCHAR(100),
-    --   ADD COLUMN celular1     VARCHAR(20),
-    --   ADD COLUMN celular2     VARCHAR(20);
-
-    -- ── MIGRAÇÃO obras — clientePrimario (rodar se a tabela já existir) ────────
-    -- Empresa "guarda-chuva" para quem a TecnoValeGas presta serviço nessa obra
-    -- (ex.: Supergásbras). Lista fechada por enquanto, editável no HTML do
-    -- <select id="obraClientePrimario"> conforme novos parceiros forem surgindo.
-    -- ALTER TABLE obras
-    --   ADD COLUMN clientePrimario VARCHAR(100) AFTER tipoObra;
-
-    -- ── MIGRAÇÃO obras — setorObra (rodar se a tabela já existir) ──────────────
-    -- Lista fechada por enquanto (Ambiental, ART, Comercial, Industrial, Judicial,
-    -- Residencial), editável no HTML do <select id="obraSetor"> conforme surgirem
-    -- novos setores.
-    -- ALTER TABLE obras
-    --   ADD COLUMN setorObra VARCHAR(20);
-
-    create table produto_fotos (
+create table produto_fotos (
     idFoto       INT PRIMARY KEY AUTO_INCREMENT,
     idProduto    INT NOT NULL,
     tipoFoto     VARCHAR(20)  NOT NULL DEFAULT 'produto',
@@ -238,203 +143,95 @@ DROP SCHEMA IF EXISTS tcc;
     nomeOriginal VARCHAR(255) NOT NULL,
     dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
-    );
+);
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- CREATE TABLE IF NOT EXISTS produto_fotos (
-    --   idFoto       INT PRIMARY KEY AUTO_INCREMENT,
-    --   idProduto    INT NOT NULL,
-    --   tipoFoto     VARCHAR(20)  NOT NULL DEFAULT 'produto',
-    --   nomeArquivo  VARCHAR(255) NOT NULL,
-    --   nomeOriginal VARCHAR(255) NOT NULL,
-    --   dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    --   FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
-    -- );
-
-    create table obra_fotos (
+create table obra_fotos (
     idFoto       INT PRIMARY KEY AUTO_INCREMENT,
     idObra       INT NOT NULL,
     nomeArquivo  VARCHAR(255) NOT NULL,
     nomeOriginal VARCHAR(255) NOT NULL,
     dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (idObra) REFERENCES obras(idObra) ON DELETE CASCADE
-    );
+);
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- CREATE TABLE IF NOT EXISTS obra_fotos (
-    --   idFoto       INT PRIMARY KEY AUTO_INCREMENT,
-    --   idObra       INT NOT NULL,
-    --   nomeArquivo  VARCHAR(255) NOT NULL,
-    --   nomeOriginal VARCHAR(255) NOT NULL,
-    --   dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    --   FOREIGN KEY (idObra) REFERENCES obras(idObra) ON DELETE CASCADE
-    -- );
+-- fornecedorServico: lista fechada por enquanto (apenas "Tecnovale Gás"),
+-- editável no <select id="servFornecedor"> do formulário de serviço.
+create table servicos(
+    idServico         int          primary key NOT NULL AUTO_INCREMENT,
+    nomeServico       VARCHAR(255) NOT NULL,
+    precoServico      DECIMAL(10,2) NOT NULL,
+    fornecedorServico VARCHAR(150) NOT NULL DEFAULT 'Tecnovale Gás'
+);
 
-    create table servicos(
-        idServico         int          primary key NOT NULL AUTO_INCREMENT,
-        nomeServico       VARCHAR(255) NOT NULL,
-        precoServico      DECIMAL(10,2) NOT NULL,
-        fornecedorServico VARCHAR(150) NOT NULL DEFAULT 'Tecnovale Gás'
-    );
+-- Receita do serviço: quais produtos ele consome do estoque.
+create table servicoProdutos(
+    idServicoProduto int primary key NOT NULL AUTO_INCREMENT,
+    idServico        int NOT NULL,
+    idProduto        int NOT NULL,
+    quantidade       int NOT NULL,
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- CREATE TABLE IF NOT EXISTS servicos (
-    --   idServico    INT           PRIMARY KEY NOT NULL AUTO_INCREMENT,
-    --   nomeServico  VARCHAR(255)  NOT NULL,
-    --   precoServico DECIMAL(10,2) NOT NULL
-    -- );
+    FOREIGN KEY (idServico) REFERENCES servicos(idServico),
+    FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
+);
 
-    -- ── MIGRAÇÃO — fornecedorServico (rodar se a tabela já existir) ────────────
-    -- Lista fechada por enquanto (apenas "Tecnovale Gás"), editável no HTML do
-    -- <select id="servFornecedor"> conforme novos fornecedores de serviço surgirem.
-    -- ALTER TABLE servicos
-    --   ADD COLUMN fornecedorServico VARCHAR(150) NOT NULL DEFAULT 'Tecnovale Gás';
+create table obraServicos(
+    idObraServico int primary key NOT NULL AUTO_INCREMENT,
+    idObra        int NOT NULL,
+    idServico     int NOT NULL,
 
-    create table servicoProdutos(
-        idServicoProduto int primary key NOT NULL AUTO_INCREMENT,
-        idServico        int NOT NULL,
-        idProduto        int NOT NULL,
-        quantidade       int NOT NULL,
+    UNIQUE KEY uq_obra_servico (idObra, idServico),
+    FOREIGN KEY (idObra)    REFERENCES obras(idObra),
+    FOREIGN KEY (idServico) REFERENCES servicos(idServico)
+);
 
-        FOREIGN KEY (idServico) REFERENCES servicos(idServico),
-        FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
-    );
+-- Receita do serviço no momento em que ele foi vinculado à obra. É o que
+-- saiu do estoque e o que volta se o vínculo for desfeito, mesmo que a
+-- receita em servicoProdutos seja editada depois.
+create table obraServicoProdutos(
+    idObraServicoProduto int primary key NOT NULL AUTO_INCREMENT,
+    idObraServico        int NOT NULL,
+    idProduto            int NOT NULL,
+    quantidade           int NOT NULL,
 
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- CREATE TABLE IF NOT EXISTS servicoProdutos (
-    --   idServicoProduto INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-    --   idServico        INT NOT NULL,
-    --   idProduto        INT NOT NULL,
-    --   quantidade       INT NOT NULL,
-    --   FOREIGN KEY (idServico) REFERENCES servicos(idServico),
-    --   FOREIGN KEY (idProduto) REFERENCES produtos(idProduto)
-    -- );
+    FOREIGN KEY (idObraServico) REFERENCES obraServicos(idObraServico) ON DELETE CASCADE,
+    FOREIGN KEY (idProduto)     REFERENCES produtos(idProduto)
+);
 
-    create table obraServicos(
-        idObraServico int primary key NOT NULL AUTO_INCREMENT,
-        idObra        int NOT NULL,
-        idServico     int NOT NULL,
+-- Tudo o que cada obra tira do estoque: produtos avulsos + receita dos
+-- serviços vinculados. Usada na baixa/devolução e nos relatórios.
+create view vw_consumo_obra as
+    select idObra, idProduto, qtdProdutosObra as quantidade
+    from produtosObras
+    union all
+    select os.idObra, osp.idProduto, osp.quantidade
+    from obraServicoProdutos osp
+    join obraServicos os on os.idObraServico = osp.idObraServico;
 
-        UNIQUE KEY uq_obra_servico (idObra, idServico),
-        FOREIGN KEY (idObra)    REFERENCES obras(idObra),
-        FOREIGN KEY (idServico) REFERENCES servicos(idServico)
-    );
+create table notasFiscais(
+    idNotaFiscal   int          primary key NOT NULL AUTO_INCREMENT,
+    chaveAcesso    VARCHAR(44)  NOT NULL UNIQUE,
+    numero         VARCHAR(20)  NOT NULL,
+    serie          VARCHAR(10),
+    idFornecedor   int          NOT NULL,
+    dataEmissao    DATETIME,
+    valorTotal     DECIMAL(10,2) NOT NULL,
+    nomeArquivo    VARCHAR(255),
+    dataImportacao DATETIME     DEFAULT CURRENT_TIMESTAMP,
 
-    -- Receita do serviço no momento em que ele foi vinculado à obra. É o que
-    -- saiu do estoque e o que volta se o vínculo for desfeito, mesmo que a
-    -- receita em servicoProdutos seja editada depois.
-    create table obraServicoProdutos(
-        idObraServicoProduto int primary key NOT NULL AUTO_INCREMENT,
-        idObraServico        int NOT NULL,
-        idProduto            int NOT NULL,
-        quantidade           int NOT NULL,
+    FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
+);
 
-        FOREIGN KEY (idObraServico) REFERENCES obraServicos(idObraServico) ON DELETE CASCADE,
-        FOREIGN KEY (idProduto)     REFERENCES produtos(idProduto)
-    );
+create table notaFiscalItens(
+    idItem               int          primary key NOT NULL AUTO_INCREMENT,
+    idNotaFiscal         int          NOT NULL,
+    idProduto            int          DEFAULT NULL,
+    codProdutoFornecedor VARCHAR(60),
+    nomeProdutoNota      VARCHAR(255) NOT NULL,
+    quantidade           DECIMAL(10,3) NOT NULL,
+    valorUnitario        DECIMAL(10,4),
+    valorTotal           DECIMAL(10,2),
+    statusItem           VARCHAR(20)  NOT NULL DEFAULT 'pendente',
 
-    -- Tudo o que cada obra tira do estoque: produtos avulsos + receita dos
-    -- serviços vinculados. Usada na baixa/devolução e nos relatórios.
-    create view vw_consumo_obra as
-        select idObra, idProduto, qtdProdutosObra as quantidade
-        from produtosObras
-        union all
-        select os.idObra, osp.idProduto, osp.quantidade
-        from obraServicoProdutos osp
-        join obraServicos os on os.idObraServico = osp.idObraServico;
-
-    -- ── MIGRAÇÃO (rodar se a tabela já existir) ───────────────────────────────
-    -- CREATE TABLE IF NOT EXISTS obraServicos (
-    --   idObraServico INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-    --   idObra        INT NOT NULL,
-    --   idServico     INT NOT NULL,
-    --   FOREIGN KEY (idObra)    REFERENCES obras(idObra),
-    --   FOREIGN KEY (idServico) REFERENCES servicos(idServico)
-    -- );
-
-    create table notasFiscais(
-        idNotaFiscal   int          primary key NOT NULL AUTO_INCREMENT,
-        chaveAcesso    VARCHAR(44)  NOT NULL UNIQUE,
-        numero         VARCHAR(20)  NOT NULL,
-        serie          VARCHAR(10),
-        idFornecedor   int          NOT NULL,
-        dataEmissao    DATETIME,
-        valorTotal     DECIMAL(10,2) NOT NULL,
-        nomeArquivo    VARCHAR(255),
-        dataImportacao DATETIME     DEFAULT CURRENT_TIMESTAMP,
-
-        FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
-    );
-
-    create table notaFiscalItens(
-        idItem               int          primary key NOT NULL AUTO_INCREMENT,
-        idNotaFiscal         int          NOT NULL,
-        idProduto            int          DEFAULT NULL,
-        codProdutoFornecedor VARCHAR(60),
-        nomeProdutoNota      VARCHAR(255) NOT NULL,
-        quantidade           DECIMAL(10,3) NOT NULL,
-        valorUnitario        DECIMAL(10,4),
-        valorTotal           DECIMAL(10,2),
-        statusItem           VARCHAR(20)  NOT NULL DEFAULT 'pendente',
-
-        FOREIGN KEY (idNotaFiscal) REFERENCES notasFiscais(idNotaFiscal),
-        FOREIGN KEY (idProduto)    REFERENCES produtos(idProduto)
-    );
-
-    -- ── MIGRAÇÃO (rodar se as tabelas já existirem) ───────────────────────────
-    -- CREATE TABLE IF NOT EXISTS notasFiscais (
-    --   idNotaFiscal   int primary key NOT NULL AUTO_INCREMENT,
-    --   chaveAcesso    VARCHAR(44) NOT NULL UNIQUE,
-    --   numero         VARCHAR(20) NOT NULL,
-    --   serie          VARCHAR(10),
-    --   idFornecedor   int NOT NULL,
-    --   dataEmissao    DATETIME,
-    --   valorTotal     DECIMAL(10,2) NOT NULL,
-    --   nomeArquivo    VARCHAR(255),
-    --   dataImportacao DATETIME DEFAULT CURRENT_TIMESTAMP,
-    --   FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor)
-    -- );
-    -- CREATE TABLE IF NOT EXISTS notaFiscalItens (
-    --   idItem                int primary key NOT NULL AUTO_INCREMENT,
-    --   idNotaFiscal          int NOT NULL,
-    --   idProduto             int DEFAULT NULL,
-    --   codProdutoFornecedor  VARCHAR(60),
-    --   nomeProdutoNota       VARCHAR(255) NOT NULL,
-    --   quantidade            DECIMAL(10,3) NOT NULL,
-    --   valorUnitario         DECIMAL(10,4),
-    --   valorTotal            DECIMAL(10,2),
-    --   statusItem            VARCHAR(20) NOT NULL DEFAULT 'pendente',
-    --   FOREIGN KEY (idNotaFiscal) REFERENCES notasFiscais(idNotaFiscal),
-    --   FOREIGN KEY (idProduto)    REFERENCES produtos(idProduto)
-    -- );
-
-
-    SELECT * FROM produtos;
-    SELECT * FROM clientes;
-    SELECT * FROM produtosObras;
-    SELECT * FROM obras;
-    SELECT * FROM obraFuncionarios;
-    SELECT * FROM responsavel;
-    SELECT * FROM servicos;
-    SELECT * FROM servicoProdutos;
-    SELECT * FROM obraServicos;
-    SELECT * FROM notasFiscais;
-    SELECT * FROM notaFiscalItens;
-
-
-    ## para reiniciar o banco
-    SET FOREIGN_KEY_CHECKS = 0;
-
-    TRUNCATE TABLE notaFiscalItens;
-    TRUNCATE TABLE notasFiscais;
-    TRUNCATE TABLE obraServicos;
-    TRUNCATE TABLE servicoProdutos;
-    TRUNCATE TABLE servicos;
-    TRUNCATE TABLE produtosObras;
-    TRUNCATE TABLE obraFuncionarios;
-    TRUNCATE TABLE obras;
-    TRUNCATE TABLE produtos;
-    TRUNCATE TABLE clientes;
-    TRUNCATE TABLE responsavel;
-
-    SET FOREIGN_KEY_CHECKS = 1;
+    FOREIGN KEY (idNotaFiscal) REFERENCES notasFiscais(idNotaFiscal),
+    FOREIGN KEY (idProduto)    REFERENCES produtos(idProduto)
+);

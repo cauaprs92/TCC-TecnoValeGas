@@ -3,28 +3,13 @@ from src.modelo.cliente import Cliente
 
 class ClienteDAO:
 
-    def proximo_id(self) -> int:
-        sql = "SELECT COALESCE(MAX(idCliente), 0) + 1 FROM clientes"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return 1
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql)
-            return cursor.fetchone()[0]
-        except Exception as e:
-            print(f"Erro ao obter próximo ID: {e}")
-            return 1
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
-
     def inserir(self, cliente: Cliente) -> bool:
         sql = """
             INSERT INTO clientes
-                (idCliente, nomeCliente, CNPJCPF, contatoCliente,
+                (nomeCliente, CNPJCPF, contatoCliente,
                  emailCliente, telefone2,
                  cep, rua, numero, complemento, bairro, cidade, estado)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -32,7 +17,6 @@ class ClienteDAO:
         cursor = conexao.cursor()
         try:
             cursor.execute(sql, (
-                cliente._idCliente,
                 cliente._nomeCliente,
                 cliente._CNPJCPF,
                 cliente._contatoCliente,
@@ -47,6 +31,7 @@ class ClienteDAO:
                 cliente._estado,
             ))
             conexao.commit()
+            cliente._idCliente = cursor.lastrowid
             return True
         except Exception as e:
             conexao.rollback()
@@ -95,6 +80,27 @@ class ClienteDAO:
         except Exception as e:
             print(f"Erro ao buscar nomes de clientes: {e}")
             return {}
+        finally:
+            Conexao.fechar_conexao(conexao, cursor)
+
+    def existe_documento(self, digitos: str, excluir_id: int = None) -> bool:
+        """True se outro cliente já usa este CPF/CNPJ (comparado só pelos
+        dígitos, para '123.456.789-00' e '12345678900' contarem como iguais)."""
+        sql = "SELECT 1 FROM clientes WHERE REGEXP_REPLACE(CNPJCPF, '[^0-9]', '') = %s"
+        params = [digitos]
+        if excluir_id:
+            sql += " AND idCliente <> %s"
+            params.append(excluir_id)
+        conexao = Conexao.obter_conexao()
+        if not conexao:
+            return False
+        cursor = conexao.cursor()
+        try:
+            cursor.execute(sql, params)
+            return cursor.fetchone() is not None
+        except Exception as e:
+            print(f"Erro ao verificar CPF/CNPJ: {e}")
+            return False
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 

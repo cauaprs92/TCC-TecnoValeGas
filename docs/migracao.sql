@@ -42,3 +42,20 @@ ALTER TABLE historico MODIFY COLUMN idAdmin INT DEFAULT NULL;
 ALTER TABLE historico
     ADD CONSTRAINT historico_ibfk_1
     FOREIGN KEY (idAdmin) REFERENCES login(idLogin) ON DELETE SET NULL;
+
+-- ── 3. IDs gerados pelo banco, CPF/CNPJ único e valores fechados ────────────
+-- idProduto e idCliente eram calculados com MAX()+1 no Python; dois cadastros
+-- simultâneos pegavam o mesmo ID. As FKs precisam ficar desligadas só durante
+-- o MODIFY (o MySQL não deixa alterar coluna referenciada com elas ligadas).
+SET FOREIGN_KEY_CHECKS = 0;
+ALTER TABLE produtos MODIFY COLUMN idProduto int NOT NULL AUTO_INCREMENT;
+ALTER TABLE clientes MODIFY COLUMN idCliente int NOT NULL AUTO_INCREMENT;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Falha se já houver CPF/CNPJ repetido; nesse caso, corrija antes.
+ALTER TABLE clientes ADD UNIQUE KEY uq_clientes_cnpjcpf (CNPJCPF);
+
+ALTER TABLE login ADD CONSTRAINT ck_login_cargo
+    CHECK (cargoLogin IN ('Administracao', 'Almoxarifado', 'Obra'));
+ALTER TABLE obras ADD CONSTRAINT ck_obras_status
+    CHECK (statusObra IN ('À iniciar', 'Em andamento', 'Concluida', 'Cancelada', 'Pausada'));

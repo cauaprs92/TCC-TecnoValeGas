@@ -4,25 +4,10 @@ from src.modelo.produto import Produto
 
 class ProdutoDAO:
 
-    def proximo_id(self) -> int:
-        sql = "SELECT COALESCE(MAX(idProduto), 0) + 1 FROM produtos"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return 1
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql)
-            return cursor.fetchone()[0]
-        except Exception as e:
-            print(f"Erro ao obter próximo ID: {e}")
-            return 1
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
-
     def inserir(self, produto: Produto) -> bool:
         sql = """
-            INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO produtos (nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """
         conexao = Conexao.obter_conexao()
         if not conexao:
@@ -30,7 +15,6 @@ class ProdutoDAO:
         cursor = conexao.cursor()
         try:
             cursor.execute(sql, (
-                produto._idProduto,
                 produto._nomeProduto,
                 produto._qtdProduto,
                 produto._descProduto,
@@ -39,6 +23,7 @@ class ProdutoDAO:
                 produto._idFornecedor,
             ))
             conexao.commit()
+            produto._idProduto = cursor.lastrowid
             return True
         except Exception as e:
             conexao.rollback()

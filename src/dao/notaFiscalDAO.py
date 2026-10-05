@@ -311,14 +311,11 @@ class NotaFiscalDAO:
 
             elif acao == 'criar':
                 dados = dadosNovoProduto or {}
-                cursor.execute("SELECT COALESCE(MAX(idProduto), 0) + 1 FROM produtos")
-                idProduto = cursor.fetchone()[0]
                 cursor.execute("""
                     INSERT INTO produtos
-                        (idProduto, nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        (nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
-                    idProduto,
                     (dados.get("nomeProduto") or linha[3] or "").strip(),
                     quantidade,
                     (dados.get("descProduto") or "").strip(),
@@ -326,6 +323,7 @@ class NotaFiscalDAO:
                     quantidadeMaxima if quantidadeMaxima is not None else 9999,
                     idFornecedor,
                 ))
+                idProduto = cursor.lastrowid
 
             else:
                 return False, f"Ação inválida: {acao}.", None
