@@ -36,11 +36,8 @@
       <a href="#" class="nav-item" data-page="servicos">
         <i class="fa-solid fa-screwdriver-wrench"></i><span>Serviços</span>
       </a>
-      <a href="#" class="nav-item" data-page="admins">
-        <i class="fa-solid fa-user-shield"></i><span>Usuários</span>
-      </a>
-      <a href="#" class="nav-item" data-page="responsaveis">
-        <i class="fa-solid fa-id-badge"></i><span>Field</span>
+      <a href="#" class="nav-item" data-page="funcionarios">
+        <i class="fa-solid fa-users-gear"></i><span>Funcionários</span>
       </a>
       <a href="#" class="nav-item" data-page="historico">
         <i class="fa-solid fa-clock-rotate-left"></i><span>Histórico</span>
@@ -508,141 +505,115 @@
         </div>
       </section>
 
-      <!-- ===== ADMINISTRADORES ===== -->
-      <section class="page" id="page-admins">
+      <!-- ===== FUNCIONÁRIOS (usuários do sistema + fields) ===== -->
+      <section class="page" id="page-funcionarios">
 
         <div class="page-header">
           <div class="page-header-info">
-            <h1>Usuários</h1>
-            <span class="page-subtitle">Gerencie os usuários do sistema e o cargo de acesso de cada um</span>
+            <h1>Funcionários</h1>
+            <span class="page-subtitle">Usuários do sistema (com cargo de acesso) e fields, os técnicos responsáveis pelas obras</span>
           </div>
           <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
 
-        <!-- Stats bar -->
-        <div class="page-stats" id="statsAdmins">
-          <div class="stat-item">
-            <span class="stat-num" id="stat-admin-total">—</span>
-            <span class="stat-label">Usuários</span>
-          </div>
-        </div>
+        <div class="funcionarios-grid">
 
-        <div class="toolbar-title">Filtros</div>
-        <div class="toolbar">
-          <div class="search-inline">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input
-              type="text"
-              placeholder="Buscar usuário..."
-              id="searchAdmin"
-              oninput="filtrarAdmins(this.value)"
-            />
+          <!-- ── Usuários ── -->
+          <div class="funcionarios-coluna">
+            <div class="funcionarios-cabecalho">
+              <h2><i class="fa-solid fa-user-shield"></i> Usuários <span class="funcionarios-total" id="stat-admin-total">—</span></h2>
+              <div class="funcionarios-acoes">
+                <button class="btn btn-secondary btn-sm" onclick="exportarAdmins()" title="Exportar usuários">
+                  <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="abrirModalNovoAdmin()" data-criar="admins">
+                  <i class="fa-solid fa-plus"></i> Novo Usuário
+                </button>
+              </div>
+            </div>
+            <div class="toolbar">
+              <div class="search-inline">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Buscar usuário..." id="searchAdmin" oninput="filtrarAdmins(this.value)" />
+              </div>
+              <select class="select-filter" id="filtroCargo" onchange="filtrarAdminsCargo(this.value)" title="Filtrar por cargo">
+                <option value="">Todos os cargos</option>
+                <option value="Administracao">Administração</option>
+                <option value="Almoxarifado">Almoxarifado</option>
+                <option value="Obra">Obra</option>
+              </select>
+            </div>
+            <div class="card">
+              <table class="data-table" id="tabelaAdmins">
+                <thead>
+                  <tr>
+                    <th class="col-id sortable" data-sort-key="id"
+                      onclick="ordenarTabela('admins','id')">ID <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-sort-key="nome"
+                      onclick="ordenarTabela('admins','nome')">Usuário <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-sort-key="acesso"
+                      onclick="ordenarTabela('admins','acesso')">Acesso <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-sort-key="cargo"
+                      onclick="ordenarTabela('admins','cargo')">Cargo <span class="sort-arrow"></span></th>
+                    <th class="col-actions"></th>
+                  </tr>
+                </thead>
+                <tbody id="bodyAdmins">
+                  <tr>
+                    <td colspan="5" class="loading-cell">
+                      <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <select class="select-filter" id="filtroCargo" onchange="filtrarAdminsCargo(this.value)" title="Filtrar por cargo">
-            <option value="">Todos os cargos</option>
-            <option value="Administracao">Administração</option>
-            <option value="Almoxarifado">Almoxarifado</option>
-            <option value="Obra">Obra</option>
-          </select>
-          <div class="toolbar-spacer"></div>
-          <button class="btn btn-secondary" onclick="exportarAdmins()">
-            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
-          </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoAdmin()" data-criar="admins">
-            <i class="fa-solid fa-plus"></i> Novo Usuário
-          </button>
-        </div>
 
-        <div class="card">
-          <table class="data-table" id="tabelaAdmins">
-            <thead>
-              <tr>
-                <th class="col-id sortable" data-sort-key="id"
-                  onclick="ordenarTabela('admins','id')">ID <span class="sort-arrow"></span></th>
-                <th class="sortable" data-sort-key="nome"
-                  onclick="ordenarTabela('admins','nome')">Usuário <span class="sort-arrow"></span></th>
-                <th class="sortable" data-sort-key="acesso"
-                  onclick="ordenarTabela('admins','acesso')">Acesso <span class="sort-arrow"></span></th>
-                <th class="sortable" data-sort-key="cargo"
-                  onclick="ordenarTabela('admins','cargo')">Cargo <span class="sort-arrow"></span></th>
-                <th class="col-actions"></th>
-              </tr>
-            </thead>
-            <tbody id="bodyAdmins">
-              <tr>
-                <td colspan="5" class="loading-cell">
-                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <!-- ── Fields ── -->
+          <div class="funcionarios-coluna">
+            <div class="funcionarios-cabecalho">
+              <h2><i class="fa-solid fa-id-badge"></i> Fields <span class="funcionarios-total" id="stat-resp-total">—</span></h2>
+              <div class="funcionarios-acoes">
+                <button class="btn btn-secondary btn-sm" onclick="exportarResponsaveis()" title="Exportar fields">
+                  <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="abrirModalNovoResponsavel()" data-criar="responsaveis">
+                  <i class="fa-solid fa-plus"></i> Novo Field
+                </button>
+              </div>
+            </div>
+            <div class="toolbar">
+              <div class="search-inline">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Buscar field..." id="searchResp" oninput="filtrarResponsaveis(this.value)" />
+              </div>
+            </div>
+            <div class="card">
+              <table class="data-table" id="tabelaResponsaveis">
+                <thead>
+                  <tr>
+                    <th class="col-id sortable" data-sort-key="id"
+                      onclick="ordenarTabela('responsaveis','id')">ID <span class="sort-arrow"></span></th>
+                    <th class="sortable" data-sort-key="nome"
+                      onclick="ordenarTabela('responsaveis','nome')">Field <span class="sort-arrow"></span></th>
+                    <th class="col-actions"></th>
+                  </tr>
+                </thead>
+                <tbody id="bodyResponsaveis">
+                  <tr>
+                    <td colspan="3" class="loading-cell">
+                      <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
 
       </section>
-      <!-- fim page-admins -->
-
-      <!-- ===== RESPONSÁVEIS ===== -->
-      <section class="page" id="page-responsaveis">
-
-        <div class="page-header">
-          <div class="page-header-info">
-            <h1>Field</h1>
-            <span class="page-subtitle">Gerencie os fields do sistema</span>
-          </div>
-          <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
-        </div>
-
-        <!-- Stats bar -->
-        <div class="page-stats" id="statsResponsaveis">
-          <div class="stat-item">
-            <span class="stat-num" id="stat-resp-total">—</span>
-            <span class="stat-label">Fields</span>
-          </div>
-        </div>
-
-        <div class="toolbar-title">Filtros</div>
-        <div class="toolbar">
-          <div class="search-inline">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input
-              type="text"
-              placeholder="Buscar field..."
-              id="searchResp"
-              oninput="filtrarResponsaveis(this.value)"
-            />
-          </div>
-          <div class="toolbar-spacer"></div>
-          <button class="btn btn-secondary" onclick="exportarResponsaveis()">
-            <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
-          </button>
-          <button class="btn btn-primary" onclick="abrirModalNovoResponsavel()" data-criar="responsaveis">
-            <i class="fa-solid fa-plus"></i> Novo Field
-          </button>
-        </div>
-
-        <div class="card">
-          <table class="data-table" id="tabelaResponsaveis">
-            <thead>
-              <tr>
-                <th class="col-id sortable" data-sort-key="id"
-                  onclick="ordenarTabela('responsaveis','id')">ID <span class="sort-arrow"></span></th>
-                <th class="sortable" data-sort-key="nome"
-                  onclick="ordenarTabela('responsaveis','nome')">Field <span class="sort-arrow"></span></th>
-                <th class="col-actions"></th>
-              </tr>
-            </thead>
-            <tbody id="bodyResponsaveis">
-              <tr>
-                <td colspan="3" class="loading-cell">
-                  <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-      </section>
-      <!-- fim page-responsaveis -->
+      <!-- fim page-funcionarios -->
 
 
       <!-- ===== HISTÓRICO ===== -->
@@ -889,6 +860,29 @@
               os produtos dele (consumo médio por dia × prazo + 20% de margem). Um produto pode
               ter prazo próprio no cadastro dele.
             </p>
+
+            <div class="forn-novo">
+              <div class="forn-novo-titulo"><i class="fa-solid fa-plus"></i> Novo fornecedor</div>
+              <div class="forn-novo-campos">
+                <div class="form-group">
+                  <label>Nome<span class="required">*</span></label>
+                  <input type="text" id="fornNovoNome" maxlength="150" placeholder="Ex: Distribuidora Vale Gás" />
+                </div>
+                <div class="form-group">
+                  <label>CNPJ <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                  <input type="text" id="fornNovoCnpj" placeholder="00.000.000/0000-00" oninput="mascaraCpfCnpj(this)" />
+                </div>
+                <div class="form-group">
+                  <label>Prazo (dias)</label>
+                  <input type="number" id="fornNovoPrazo" min="1" max="365" value="7" />
+                </div>
+                <button class="btn btn-primary" id="btnCriarFornecedor" onclick="criarFornecedor()">
+                  <i class="fa-solid fa-plus"></i> Adicionar
+                </button>
+              </div>
+              <span class="field-hint">Com o CNPJ, as notas fiscais desse fornecedor são reconhecidas na importação.</span>
+            </div>
+
             <div class="forn-lista" id="fornLista"></div>
           </div>
           <div class="modal-footer">

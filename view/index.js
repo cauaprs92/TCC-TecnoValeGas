@@ -182,8 +182,7 @@ async function carregarTodos() {
   if (podeVerPagina('estoque'))      cargas.push(carregarFornecedores());
   if (podeVerPagina('obras'))        cargas.push(carregarObras());
   if (podeVerPagina('clientes'))     cargas.push(carregarClientes());
-  if (podeVerPagina('admins'))       cargas.push(carregarAdmins());
-  if (podeVerPagina('responsaveis')) cargas.push(carregarResponsaveis());
+  if (podeVerPagina('funcionarios')) cargas.push(carregarAdmins(), carregarResponsaveis());
   if (podeVerPagina('historico'))    cargas.push(carregarHistorico());
   if (_ehAdministracao())            cargas.push(carregarFuncionariosObra());
 
@@ -213,7 +212,7 @@ function carregarAdministrador() {
 // mas não cria obra nova: uma obra recém-criada não está designada a ninguém.
 const PERMISSOES = {
   Administracao: {
-    paginas: ['dashboard','estoque','obras','clientes','servicos','admins','responsaveis','historico'],
+    paginas: ['dashboard','estoque','obras','clientes','servicos','funcionarios','historico'],
     escrita: ['estoque','obras','clientes','servicos','admins','responsaveis'],
     criacao: ['estoque','obras','clientes','servicos','admins','responsaveis'],
   },
@@ -751,6 +750,9 @@ async function salvarProduto() {
 // ══════════════════════════════════════════════════
 
 async function abrirModalFornecedores() {
+  document.getElementById('fornNovoNome').value  = '';
+  document.getElementById('fornNovoCnpj').value  = '';
+  document.getElementById('fornNovoPrazo').value = 7;
   await carregarFornecedores();
   _renderFornecedores();
   abrirModal('modalFornecedores');
@@ -765,7 +767,7 @@ function _renderFornecedores() {
   lista.innerHTML = cacheFornecedores.map(f => `
     <div class="forn-linha">
       <span class="forn-nome">${escHtml(f.nomeFornecedor)}
-        <span class="forn-qtd">${f.qtdProdutos} produto${f.qtdProdutos === 1 ? '' : 's'}</span>
+        <span class="forn-qtd">${f.qtdProdutos} produto${f.qtdProdutos === 1 ? '' : 's'}${f.cnpjFornecedor ? ' · CNPJ ' + escHtml(_fmtCnpj(f.cnpjFornecedor)) : ''}</span>
       </span>
       <div class="form-group" style="margin:0">
         <input type="number" min="1" max="365" id="fornPrazo-${f.idFornecedor}"
@@ -775,6 +777,39 @@ function _renderFornecedores() {
         <i class="fa-solid fa-floppy-disk"></i> Salvar prazo
       </button>
     </div>`).join('');
+}
+
+// 11222333000144 → 11.222.333/0001-44 (o banco guarda só os dígitos)
+function _fmtCnpj(cnpj) {
+  const d = String(cnpj || '').replace(/\D/g, '');
+  return d.length === 14 ? d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : cnpj;
+}
+
+async function criarFornecedor() {
+  const nome  = document.getElementById('fornNovoNome').value.trim();
+  const cnpj  = document.getElementById('fornNovoCnpj').value.trim();
+  const prazo = parseInt(document.getElementById('fornNovoPrazo').value);
+  if (nome.length < 2) { showToast('Informe o nome do fornecedor.', 'warning'); return; }
+  if (cnpj && cnpj.replace(/\D/g, '').length !== 14) { showToast('CNPJ deve ter 14 dígitos.', 'warning'); return; }
+  if (!Number.isInteger(prazo) || prazo < 1 || prazo > 365) {
+    showToast('O prazo deve ser um número de dias entre 1 e 365.', 'warning');
+    return;
+  }
+  const btn = document.getElementById('btnCriarFornecedor');
+  btn.disabled = true;
+  try {
+    await apiFetch('/fornecedor', 'POST', { nomeFornecedor: nome, cnpjFornecedor: cnpj || null, prazoEntregaDias: prazo });
+    await carregarFornecedores();
+    _renderFornecedores();
+    document.getElementById('fornNovoNome').value = '';
+    document.getElementById('fornNovoCnpj').value = '';
+    document.getElementById('fornNovoPrazo').value = 7;
+    showToast(`Fornecedor "${nome}" cadastrado!`, 'success');
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function salvarPrazoFornecedor(idFornecedor) {
@@ -2281,7 +2316,7 @@ const PER_PAGE  = 10;
 const filtros   = {
   produtos: '', produtosStatus: '', obras: '', obraStatus: '', obraTipo: '', obraDe: '', obraAte: '', clientes: '', clientesStatus: '',
   servicos: '',
-  admins: '', adminCargo: '',
+  admins: '', adminCargo: '', responsaveis: '',
   historicoEntidade: '', historicoQ: '', historicoAdmin: '', historicoAcao: '', historicoDe: '', historicoAte: ''
 };
 const ORDER_STATE = {
@@ -3543,8 +3578,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     item.classList.add('active');
     document.getElementById(`page-${page}`).classList.add('active');
-    const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', servicos: 'Serviços', admins: 'Usuários', responsaveis: 'Field', historico: 'Histórico' };
-    document.getElementById('breadcrumb').textContent = labels[page] || page;
+    document.getElementById('breadcrumb').textContent = ROTULOS_PAGINAS[page] || page;
     if (page === 'historico') carregarHistorico();
     fecharSidebarMobile();
   });
@@ -4000,6 +4034,11 @@ async function recarregarAba() {
   }
 }
 
+const ROTULOS_PAGINAS = {
+  dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes',
+  servicos: 'Serviços', funcionarios: 'Funcionários', historico: 'Histórico',
+};
+
 function navegarPara(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4007,8 +4046,7 @@ function navegarPara(page) {
   const pageEl  = document.getElementById(`page-${page}`);
   if (navItem) navItem.classList.add('active');
   if (pageEl)  pageEl.classList.add('active');
-  const labels = { dashboard: 'Dashboard', estoque: 'Estoque / Produtos', obras: 'Obras / Projetos', clientes: 'Clientes', admins: 'Usuários', responsaveis: 'Field', historico: 'Histórico' };
-  document.getElementById('breadcrumb').textContent = labels[page] || page;
+  document.getElementById('breadcrumb').textContent = ROTULOS_PAGINAS[page] || page;
 }
 
 
@@ -4155,13 +4193,20 @@ function popularSelectResponsaveis() {
 function renderTabelaResponsaveis(lista) {
   const tbody = document.getElementById('bodyResponsaveis');
   if (!tbody) return;
-  const ordenado = ordenarLista(lista, 'responsaveis');
+  const q = filtros.responsaveis;
+  const filtrado = q
+    ? lista.filter(r => `${r.idResponsavel} ${r.nomeResponsavel}`.toLowerCase().includes(q))
+    : lista;
+  const ordenado = ordenarLista(filtrado, 'responsaveis');
   if (!ordenado.length) {
-    tbody.innerHTML = _emptyState(
-      'id-badge', 'Nenhum field cadastrado',
-      'Cadastre os fields do sistema.',
-      'Novo Field', 'abrirModalNovoResponsavel()', 3
-    );
+    tbody.innerHTML = q
+      ? _emptyState('magnifying-glass', 'Nenhum field encontrado',
+                    `A busca por "${escHtml(q)}" não retornou resultados.`, '', '', 3)
+      : _emptyState(
+          'id-badge', 'Nenhum field cadastrado',
+          'Cadastre os fields do sistema.',
+          'Novo Field', 'abrirModalNovoResponsavel()', 3
+        );
     return;
   }
   tbody.innerHTML = ordenado.map(r => {
@@ -4180,14 +4225,11 @@ function renderTabelaResponsaveis(lista) {
   atualizarIndicadoresOrdenacao('responsaveis');
 }
 
+// Guarda o termo e redesenha: assim a busca sobrevive à ordenação e a um
+// recarregamento (antes escondia linhas pela posição, que muda ao ordenar).
 function filtrarResponsaveis(q) {
-  const lower = q.toLowerCase();
-  const tbody = document.getElementById('bodyResponsaveis');
-  cacheResponsaveis.forEach((r, i) => {
-    const row = tbody.rows[i];
-    if (!row) return;
-    row.style.display = `${r.idResponsavel} ${r.nomeResponsavel}`.toLowerCase().includes(lower) ? '' : 'none';
-  });
+  filtros.responsaveis = q.toLowerCase();
+  renderTabelaResponsaveis(cacheResponsaveis);
 }
 
 function abrirModalNovoResponsavel() {
