@@ -73,6 +73,7 @@ let fpInicio, fpFim;
 
 document.addEventListener('DOMContentLoaded', () => {
   verificarAutenticacao();
+  _montarFiltrosPeriodo();
   ajustarFonteKpiMoeda();
   _observarKpiMoeda();
 
@@ -167,6 +168,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const fpFiltroOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true, onChange: filtrarObras };
   flatpickr('#obraFiltroDe',  fpFiltroOpts);
   flatpickr('#obraFiltroAte', fpFiltroOpts);
+
+  // Filtro geral do dashboard
+  const fpFgOpts = { dateFormat: 'd/m/Y', locale: 'pt', allowInput: true, onChange: () => _fgErro('') };
+  _fgPickers = [flatpickr('#fgDe', fpFgOpts), flatpickr('#fgAte', fpFgOpts)];
+  _sincronizarFiltroGlobalUI();
 
 });
 
@@ -1151,8 +1157,8 @@ async function carregarObras() {
     cacheObras = res.obras || [];
     _cacheReady.obras = true;
     renderTabelaObras(cacheObras);
-    renderObrasStatus(cacheObras);
-    if (_cacheConsumo) renderConsumo(_cacheConsumo, document.getElementById('consumoPeriodo')?.value || 'mes');
+    renderObrasStatus();
+    renderConsumoAtual();
     atualizarKPI();
   } catch (e) {
     document.getElementById('bodyObras').innerHTML =
@@ -3013,6 +3019,261 @@ function renderAlertas(produtos) {
   }).join('');
 }
 
+// ══════════════════════════════════════════════════
+// FILTRO GERAL DO DASHBOARD
+// ══════════════════════════════════════════════════
+// Um período só, que vale para os cards e para os três gráficos. Cada gráfico
+// mantém o seu seletor próprio: enquanto ele estiver em "Período geral" (valor
+// vazio) o gráfico segue este filtro; escolhendo um período ali, aquele gráfico
+// passa a ignorar o geral.
+
+const PERIODOS = {
+  tudo:  'Todo o período',
+  mes:   'Este mês',
+  '30d': 'Últimos 30 dias',
+  '3m':  'Últimos 3 meses',
+  '6m':  'Últimos 6 meses',
+  '12m': 'Últimos 12 meses',
+};
+
+// preset 'custom' usa de/ate (ISO); qualquer um dos dois pode ficar vazio —
+// só "de" é "desde tal data", só "até" é tudo até tal data.
+let _filtroGlobal = { preset: 'tudo', de: '', ate: '' };
+let _fgPickers = [];
+
+/** 'YYYY-MM-DD' → Date local à meia-noite (new Date(iso) leria como UTC). */
+function _dataLocal(iso) {
+  if (!iso) return null;
+  const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+
+/** Date → 'YYYY-MM-DD' local (toISOString devolveria o dia em UTC). */
+function _isoLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function _fimDoDia(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
+
+/** Range de um preset: {inicio, fim}, ou null quando é "todo o período". */
+function _rangePreset(preset) {
+  if (!preset || preset === 'tudo') return null;
+  const fim = _fimDoDia(new Date());
+  let inicio;
+  if (preset === 'mes') {
+    inicio = new Date(fim.getFullYear(), fim.getMonth(), 1);
+  } else if (preset === '30d') {
+    inicio = new Date(fim.getFullYear(), fim.getMonth(), fim.getDate() - 29);
+  } else {
+    const meses = { '3m': 3, '6m': 6, '12m': 12 }[preset];
+    if (!meses) return null;
+    inicio = new Date(fim.getFullYear(), fim.getMonth() - (meses - 1), 1);
+  }
+  return { inicio, fim };
+}
+
+/** Período geral em uso: {inicio, fim} (inicio pode ser null = sem limite). */
+function _rangeGlobal() {
+  if (_filtroGlobal.preset !== 'custom') return _rangePreset(_filtroGlobal.preset);
+  if (!_filtroGlobal.de && !_filtroGlobal.ate) return null;
+  return {
+    inicio: _dataLocal(_filtroGlobal.de),
+    fim:    _filtroGlobal.ate ? _fimDoDia(_dataLocal(_filtroGlobal.ate)) : _fimDoDia(new Date()),
+  };
+}
+
+function _dentroDoRange(data, range) {
+  if (!range) return true;
+  if (!data) return false;
+  if (range.inicio && data < range.inicio) return false;
+  if (range.fim    && data > range.fim)    return false;
+  return true;
+}
+
+/** A obra entra no período pela data de início — a mesma referência usada
+ *  pelo gráfico de consumo e pelo filtro da aba Obras. */
+function _obraNoPeriodo(obra, range) {
+  if (!range) return true;
+  return _dentroDoRange(_dataLocal(obra.dataInicio), range);
+}
+
+function _fmtDataBR(iso) {
+  const d = _dataLocal(iso);
+  if (!d) return '';
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+function _rotuloGlobal() {
+  if (_filtroGlobal.preset !== 'custom') return PERIODOS[_filtroGlobal.preset] || PERIODOS.tudo;
+  const de = _fmtDataBR(_filtroGlobal.de), ate = _fmtDataBR(_filtroGlobal.ate);
+  if (de && ate) return `${de} até ${ate}`;
+  if (de)  return `Desde ${de}`;
+  if (ate) return `Até ${ate}`;
+  return PERIODOS.tudo;
+}
+
+/** Período de um gráfico: o do seletor dele, se houver; senão o geral. */
+function _rangeGrafico(idSelect) {
+  const v = document.getElementById(idSelect)?.value || '';
+  return v ? _rangePreset(v) : _rangeGlobal();
+}
+
+function _rotuloGrafico(idSelect) {
+  const v = document.getElementById(idSelect)?.value || '';
+  return v ? (PERIODOS[v] || PERIODOS.tudo) : _rotuloGlobal();
+}
+
+function _filtroGlobalAtivo() { return !!_rangeGlobal(); }
+
+
+// ── Filtro de período de cada gráfico ─────────────────────────────────────────
+// Mesmo dropdown do filtro geral, em vez do <select> nativo. O valor fica num
+// input hidden com o id que o gráfico já usava, então _rangeGrafico() continua
+// lendo do mesmo lugar.
+
+const _REDESENHO_POR_PERIODO = {
+  obrasStatusPeriodo: () => renderObrasStatus(),
+  consumoPeriodo:     () => renderConsumoAtual(),
+  graficoPeriodo:     () => renderGraficoProdutos(),
+};
+
+function _montarFiltrosPeriodo() {
+  document.querySelectorAll('.periodo-filtro[data-periodo]').forEach(wrap => {
+    const id = wrap.dataset.periodo;
+    const opcoes = [
+      `<button type="button" class="fg-opt opt-periodo-geral" data-valor=""
+               onclick="definirPeriodoGrafico('${id}','')">Período geral</button>`,
+      ...Object.entries(PERIODOS).map(([valor, rotulo]) =>
+        `<button type="button" class="fg-opt" data-valor="${valor}"
+                 onclick="definirPeriodoGrafico('${id}','${valor}')">${rotulo}</button>`),
+    ].join('');
+    wrap.innerHTML = `
+      <input type="hidden" id="${id}" value="" />
+      <button type="button" class="periodo-btn" onclick="alternarMenuPeriodo(event,'${id}')">
+        <i class="fa-regular fa-calendar fa-sm"></i>
+        <span class="periodo-btn-label"></span>
+        <i class="fa-solid fa-chevron-down fa-xs"></i>
+      </button>
+      <div class="periodo-menu hidden">
+        <div class="fg-header">Período deste gráfico</div>
+        <div class="fg-opcoes">${opcoes}</div>
+      </div>`;
+  });
+  _sincronizarFiltrosPeriodo();
+}
+
+/** Botão e opções de cada gráfico: rótulo do período em uso, destaque quando
+ *  o gráfico tem período próprio e o "Período geral" mostrando o que herda. */
+function _sincronizarFiltrosPeriodo() {
+  document.querySelectorAll('.periodo-filtro[data-periodo]').forEach(wrap => {
+    const id    = wrap.dataset.periodo;
+    const valor = document.getElementById(id)?.value || '';
+
+    const btn = wrap.querySelector('.periodo-btn');
+    if (btn) {
+      btn.querySelector('.periodo-btn-label').textContent = _rotuloGrafico(id);
+      btn.classList.toggle('proprio', !!valor);
+      btn.title = valor
+        ? 'Período próprio deste gráfico — não segue o filtro geral'
+        : 'Seguindo o filtro geral do dashboard';
+    }
+    wrap.querySelectorAll('.fg-opt').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.valor === valor);
+    });
+    const geral = wrap.querySelector('.opt-periodo-geral');
+    if (geral) geral.textContent = `Período geral (${_rotuloGlobal()})`;
+  });
+}
+
+function fecharMenusPeriodo() {
+  document.querySelectorAll('.periodo-menu').forEach(m => m.classList.add('hidden'));
+}
+
+function alternarMenuPeriodo(e, id) {
+  e?.stopPropagation();
+  const menu = document.querySelector(`.periodo-filtro[data-periodo="${id}"] .periodo-menu`);
+  if (!menu) return;
+  const abrindo = menu.classList.contains('hidden');
+  fecharMenusPeriodo();
+  fecharFiltroGlobal();
+  if (abrindo) { _sincronizarFiltrosPeriodo(); menu.classList.remove('hidden'); }
+}
+
+function definirPeriodoGrafico(id, valor) {
+  const campo = document.getElementById(id);
+  if (campo) campo.value = valor;
+  fecharMenusPeriodo();
+  _sincronizarFiltrosPeriodo();
+  _REDESENHO_POR_PERIODO[id]?.();
+}
+
+function alternarFiltroGlobal(e) {
+  e?.stopPropagation();
+  const menu = document.getElementById('filtroGlobalMenu');
+  if (!menu) return;
+  const abrindo = menu.classList.contains('hidden');
+  fecharMenusPeriodo();
+  menu.classList.toggle('hidden', !abrindo);
+  if (abrindo) _sincronizarFiltroGlobalUI();
+}
+
+function fecharFiltroGlobal() {
+  document.getElementById('filtroGlobalMenu')?.classList.add('hidden');
+  _fgErro('');
+}
+
+function _fgErro(msg) {
+  const el = document.getElementById('fgErro');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+
+function _sincronizarFiltroGlobalUI() {
+  const label = document.getElementById('filtroGlobalLabel');
+  if (label) label.textContent = _rotuloGlobal();
+  document.getElementById('btnFiltroGlobal')?.classList.toggle('ativo', _filtroGlobalAtivo());
+  document.querySelectorAll('#filtroGlobalMenu .fg-opt').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === _filtroGlobal.preset);
+  });
+  // os gráficos em "Período geral" passam a mostrar o período que herdaram
+  _sincronizarFiltrosPeriodo();
+}
+
+function aplicarFiltroGlobal(preset) {
+  _filtroGlobal = { preset, de: '', ate: '' };
+  _fgPickers.forEach(fp => fp?.clear());
+  _sincronizarFiltroGlobalUI();
+  fecharFiltroGlobal();
+  aplicarFiltrosDashboard();
+}
+
+function limparFiltroGlobal() { aplicarFiltroGlobal('tudo'); }
+
+function aplicarFiltroGlobalCustom() {
+  const de  = _brParaIso((document.getElementById('fgDe')?.value  || '').trim());
+  const ate = _brParaIso((document.getElementById('fgAte')?.value || '').trim());
+  if (!de && !ate)           { _fgErro('Informe pelo menos uma das datas.'); return; }
+  if (de && ate && de > ate) { _fgErro('A data inicial não pode ser maior que a final.'); return; }
+  _filtroGlobal = { preset: 'custom', de, ate };
+  _sincronizarFiltroGlobalUI();
+  fecharFiltroGlobal();
+  aplicarFiltrosDashboard();
+}
+
+/** Repinta tudo que depende de período: os cards e os três gráficos. */
+function aplicarFiltrosDashboard() {
+  atualizarKPI();
+  renderObrasStatus();
+  // os dois gráficos de consumo saem do relatório, que é liberado com o estoque
+  if (podeVerPagina('estoque')) {
+    renderConsumoAtual();
+    renderGraficoProdutos();
+  }
+}
+
+
 let _obrasStatusChart = null;
 
 let _mostrarConcluidas = true;
@@ -3026,10 +3287,17 @@ function toggleConcluidas() {
       ? '<i class="fa-solid fa-eye"></i> Concluídas'
       : '<i class="fa-solid fa-eye-slash"></i> Concluídas';
   }
-  renderObrasStatus(cacheObras);
+  renderObrasStatus();
 }
 
-function renderObrasStatus(obras) {
+function renderObrasStatus() {
+  const range  = _rangeGrafico('obrasStatusPeriodo');
+  const rotulo = _rotuloGrafico('obrasStatusPeriodo');
+  const obras  = cacheObras.filter(o => _obraNoPeriodo(o, range));
+
+  const sub = document.getElementById('obrasStatusSub');
+  if (sub) sub.textContent = `Distribuição de obras pelo status atual · ${rotulo}`;
+
   const todasDefs = [
     { key: 'Em andamento', label: 'Em andamento', color: '#22C55E' },
     { key: 'Concluida',    label: 'Concluída',    color: '#9CA3AF' },
@@ -3051,7 +3319,8 @@ function renderObrasStatus(obras) {
   const legendEl = document.getElementById('obrasStatusLegend');
   if (legendEl) {
     if (!total) {
-      legendEl.innerHTML = `<div style="color:var(--gray-400);font-size:.84rem;padding:8px 0">Nenhuma obra cadastrada.</div>`;
+      const vazio = range ? 'Nenhuma obra no período selecionado.' : 'Nenhuma obra cadastrada.';
+      legendEl.innerHTML = `<div style="color:var(--gray-400);font-size:.84rem;padding:8px 0">${vazio}</div>`;
     } else {
       legendEl.innerHTML = statusDefs.map(s => {
         const qty = counts[s.key];
@@ -3108,51 +3377,61 @@ async function carregarConsumo() {
   try {
     const res = await apiFetch('/relatorio/grafico-produtos');
     _cacheConsumo = res.dados || [];
-    renderConsumo(_cacheConsumo, document.getElementById('consumoPeriodo')?.value || 'mes');
+    renderConsumoAtual();
   } catch (_) {}
 }
 
-function _consumoPeriodoRange(periodo) {
-  const hoje = new Date();
-  hoje.setHours(23, 59, 59, 999);
-  let inicio;
-  if (periodo === 'mes') {
-    inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  } else if (periodo === '3m') {
-    inicio = new Date(hoje);
-    inicio.setMonth(inicio.getMonth() - 3);
-    inicio.setDate(1);
-  } else {
-    inicio = new Date(hoje);
-    inicio.setMonth(inicio.getMonth() - 6);
-    inicio.setDate(1);
-  }
-  return { inicio, fim: hoje };
+/** Repinta o gráfico com o período em uso (o do seletor dele ou o geral). */
+function renderConsumoAtual() {
+  if (_cacheConsumo) renderConsumo(_cacheConsumo, _rangeGrafico('consumoPeriodo'));
 }
 
-function renderConsumo(dados, periodo) {
-  const obraMap = {};
-  cacheObras.forEach(o => { if (o.dataInicio) obraMap[o.idObra] = o.dataInicio; });
+/** Range efetivo do eixo X: "todo o período" começa na obra mais antiga, para
+ *  o gráfico não nascer com anos vazios à esquerda. */
+function _consumoPeriodoRange(range, datasObras) {
+  const hoje      = _fimDoDia(new Date());
+  const ordenadas = datasObras.filter(Boolean).sort((a, b) => a - b);
+  const ultima    = ordenadas[ordenadas.length - 1];
+  // sem limite superior o eixo vai até hoje — ou até a obra mais à frente, para
+  // obra com início futuro não ficar de fora da conta
+  let fim    = range?.fim || (ultima && ultima > hoje ? _fimDoDia(ultima) : hoje);
+  let inicio = range?.inicio || null;
+  if (!inicio) inicio = ordenadas[0] || new Date(fim.getFullYear(), fim.getMonth(), 1);
+  if (inicio > fim) inicio = new Date(fim.getFullYear(), fim.getMonth(), 1);
+  return { inicio, fim };
+}
 
-  const { inicio, fim } = _consumoPeriodoRange(periodo);
+function renderConsumo(dados, range) {
+  const obraData = {};
+  cacheObras.forEach(o => {
+    const d = _dataLocal(o.dataInicio);
+    if (d) obraData[o.idObra] = d;
+  });
 
-  // período anterior (mesma duração)
-  const duracaoMs = fim - inicio;
-  const prevFim   = new Date(inicio.getTime() - 1);
-  const prevInicio = new Date(prevFim.getTime() - duracaoMs);
+  const { inicio, fim } = _consumoPeriodoRange(range, Object.values(obraData));
 
-  const totaisPorDia = {};
+  // Só compara com o período anterior quando o período atual tem início próprio
+  // — em "todo o período" não existe um "anterior".
+  const comparar  = !!range?.inicio;
+  const prevFim    = new Date(inicio.getTime() - 1);
+  const prevInicio = new Date(prevFim.getTime() - (fim - inicio));
+
+  // Acima de ~4 meses o eixo diário fica ilegível: agrupa por mês.
+  const porMes = (fim - inicio) / 86400000 > 120;
+  const chave  = d => (porMes ? _isoLocal(d).slice(0, 7) : _isoLocal(d));
+
+  const totais = {};
   let totalAtual = 0, totalAnterior = 0;
 
   dados.forEach(produto => {
     (produto.obras || []).forEach(({ idObra, qtd }) => {
-      const dataStr = obraMap[idObra];
-      if (!dataStr) return;
-      const d = new Date(dataStr);
+      const d = obraData[idObra];
+      if (!d) return;
       if (d >= inicio && d <= fim) {
-        totaisPorDia[dataStr] = (totaisPorDia[dataStr] || 0) + qtd;
+        const k = chave(d);
+        totais[k] = (totais[k] || 0) + qtd;
         totalAtual += qtd;
-      } else if (d >= prevInicio && d <= prevFim) {
+      } else if (comparar && d >= prevInicio && d <= prevFim) {
         totalAnterior += qtd;
       }
     });
@@ -3160,13 +3439,17 @@ function renderConsumo(dados, periodo) {
 
   // Labels e valores para o eixo X
   const labels = [], values = [];
-  const cur = new Date(inicio);
+  const cur = porMes ? new Date(inicio.getFullYear(), inicio.getMonth(), 1) : new Date(inicio);
   while (cur <= fim) {
-    const iso = cur.toISOString().slice(0, 10);
-    labels.push(iso);
-    values.push(totaisPorDia[iso] || 0);
-    cur.setDate(cur.getDate() + 1);
+    const k = chave(cur);
+    labels.push(k);
+    values.push(totais[k] || 0);
+    if (porMes) cur.setMonth(cur.getMonth() + 1);
+    else        cur.setDate(cur.getDate() + 1);
   }
+
+  const labelEl = document.getElementById('consumoTotalLabel');
+  if (labelEl) labelEl.textContent = `Total de unidades consumidas · ${_rotuloGrafico('consumoPeriodo')}`;
 
   // Total
   const totalEl = document.getElementById('consumoTotal');
@@ -3219,7 +3502,10 @@ function renderConsumo(dados, periodo) {
       plugins: { legend: { display: false }, tooltip: {
         callbacks: { title: ([ctx]) => {
           const iso = labels[ctx.dataIndex];
-          return `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+          if (!iso) return '';
+          return porMes
+            ? `${iso.slice(5, 7)}/${iso.slice(0, 4)}`
+            : `${iso.slice(8)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
         }},
       }},
       scales: {
@@ -3230,7 +3516,10 @@ function renderConsumo(dados, periodo) {
             font: { size: 11 },
             callback: (_, idx) => {
               const iso = labels[idx];
-              return iso ? `${iso.slice(8)}/${iso.slice(5, 7)}` : '';
+              if (!iso) return '';
+              return porMes
+                ? `${iso.slice(5, 7)}/${iso.slice(2, 4)}`
+                : `${iso.slice(8)}/${iso.slice(5, 7)}`;
             },
           },
         },
@@ -3244,37 +3533,29 @@ function renderConsumo(dados, periodo) {
   });
 }
 
-function onConsumoPeriodoChange() {
-  if (!_cacheConsumo) return;
-  renderConsumo(_cacheConsumo, document.getElementById('consumoPeriodo').value);
-}
-
 // ── Gráfico: Produtos mais utilizados ─────────────────────────────────────────
 
 let _produtosChart     = null;
 let _todosDadosGrafico = null;
 let _dadosGraficoAtual = [];
 
-function _filtrarPorPeriodo(dados, dias) {
-  if (!dias) return [...dados].sort((a, b) => b.totalConsumido - a.totalConsumido);
+function _filtrarPorPeriodo(dados, range) {
+  if (!range) return [...dados].sort((a, b) => b.totalConsumido - a.totalConsumido);
 
-  const limite = new Date();
-  limite.setDate(limite.getDate() - Number(dias));
-  limite.setHours(0, 0, 0, 0);
+  // Obra sem data ou fora do cache (o cargo pode não ver todas) continua
+  // entrando: o filtro tira o que se sabe estar fora do período.
+  const dentro = new Map();
+  cacheObras.forEach(o => dentro.set(o.idObra, !o.dataInicio || _obraNoPeriodo(o, range)));
 
   return dados.map(produto => {
-    const obrasFiltradas = produto.obras.filter(o => {
-      const c = cacheObras.find(co => co.idObra === o.idObra);
-      if (!c || !c.dataInicio) return true;
-      return new Date(c.dataInicio) >= limite;
-    });
+    const obrasFiltradas = (produto.obras || []).filter(o => dentro.get(o.idObra) !== false);
     const total = obrasFiltradas.reduce((s, o) => s + o.qtd, 0);
     return { ...produto, obras: obrasFiltradas, totalConsumido: total };
   }).filter(p => p.totalConsumido > 0)
     .sort((a, b) => b.totalConsumido - a.totalConsumido);
 }
 
-async function renderGraficoProdutos(dias = '') {
+async function renderGraficoProdutos() {
   const container = document.querySelector('#produtosChartCanvas')?.closest('.chart-container')
     || document.querySelector('.chart-container');
   if (!container) return;
@@ -3288,7 +3569,12 @@ async function renderGraficoProdutos(dias = '') {
     }
   }
 
-  _dadosGraficoAtual = _filtrarPorPeriodo(_todosDadosGrafico, dias).slice(0, 10);
+  const range  = _rangeGrafico('graficoPeriodo');
+  const rotulo = _rotuloGrafico('graficoPeriodo');
+  const sub    = document.getElementById('graficoProdutosSub');
+  if (sub) sub.textContent = `Top 10 produtos mais utilizados · ${rotulo}`;
+
+  _dadosGraficoAtual = _filtrarPorPeriodo(_todosDadosGrafico, range).slice(0, 10);
 
   if (_produtosChart) { _produtosChart.destroy(); _produtosChart = null; }
   document.getElementById('chartTooltipCustom')?.remove();
@@ -3375,11 +3661,6 @@ async function renderGraficoProdutos(dias = '') {
   });
 }
 
-function onGraficoPeriodoChange() {
-  const dias = document.getElementById('graficoPeriodo').value;
-  renderGraficoProdutos(dias);
-}
-
 function renderNotificacoes(produtos) {
   const alertas  = produtos.filter(_produtoEmAlerta);
   const badge = document.getElementById('notifBadge');
@@ -3405,14 +3686,27 @@ function renderNotificacoes(produtos) {
 }
 
 function atualizarKPI() {
+  // Os cards seguem o filtro geral. Produtos e alertas são posição atual do
+  // estoque — não existe "quantos produtos havia em março", então esses dois
+  // continuam mostrando o total de hoje.
+  const range  = _rangeGlobal();
+  const rotulo = _rotuloGlobal();
+
   if (_cacheReady.produtos) {
     document.getElementById('kpi-produtos').textContent = cacheProdutos.length;
     document.getElementById('kpi-alertas').textContent  = cacheProdutos.filter(_produtoEmAlerta).length;
   }
+
+  const obrasPeriodo = _cacheReady.obras ? cacheObras.filter(o => _obraNoPeriodo(o, range)) : [];
+
   if (_cacheReady.obras) {
-    document.getElementById('kpi-obras').textContent = cacheObras.filter(o => o.statusObra === 'Em andamento').length;
+    document.getElementById('kpi-obras').textContent =
+      obrasPeriodo.filter(o => o.statusObra === 'Em andamento').length;
+    // O faturado entra no período em que a obra foi entregue; obra concluída
+    // sem data de fim preenchida cai na data de início.
     const valorFaturado = cacheObras
       .filter(o => o.statusObra === 'Concluida' && o.valorObra != null)
+      .filter(o => _dentroDoRange(_dataLocal(o.dataFim || o.dataInicio), range))
       .reduce((acc, o) => acc + Number(o.valorObra), 0);
     const elFaturado = document.getElementById('kpi-valor-faturado');
     if (elFaturado) {
@@ -3421,8 +3715,38 @@ function atualizarKPI() {
       ajustarFonteKpiMoeda();
     }
   }
-  if (_cacheReady.clientes) document.getElementById('kpi-clientes').textContent = cacheClientes.length;
+
+  if (_cacheReady.clientes) {
+    // Com período filtrado o card passa a contar clientes atendidos nele.
+    const el = document.getElementById('kpi-clientes');
+    if (range && _cacheReady.obras) {
+      el.textContent = new Set(obrasPeriodo.map(o => o.codCliente)).size;
+    } else {
+      el.textContent = cacheClientes.length;
+    }
+  }
+
+  _atualizarRotulosKPI(!!range, rotulo);
   atualizarStats();
+}
+
+function _atualizarRotulosKPI(filtrando, rotulo) {
+  const textos = {
+    'kpi-label-obras':    filtrando ? 'Obras Ativas no Período'      : 'Obras Ativas',
+    'kpi-label-clientes': filtrando ? 'Clientes Atendidos no Período': 'Clientes',
+    'kpi-label-faturado': filtrando ? 'Valor Faturado no Período'    : 'Valor Total Faturado',
+  };
+  const ajuda = {
+    'kpi-label-obras':    'obras com início no período',
+    'kpi-label-clientes': 'clientes com obra no período',
+    'kpi-label-faturado': 'obras concluídas entregues no período',
+  };
+  Object.entries(textos).forEach(([id, texto]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = texto;
+    el.title = filtrando ? `${rotulo} — ${ajuda[id]}` : '';
+  });
 }
 
 
@@ -3610,7 +3934,7 @@ function alternarSidebar() {
 document.getElementById('sidebarToggle').addEventListener('click', alternarSidebar);
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') fecharSidebarMobile();
+  if (e.key === 'Escape') { fecharSidebarMobile(); fecharFiltroGlobal(); fecharMenusPeriodo(); }
 });
 
 // ao voltar para o desktop a gaveta é descartada
@@ -3624,6 +3948,14 @@ document.getElementById('btnNotif').addEventListener('click', e => {
 });
 document.addEventListener('click', () => {
   document.getElementById('notifDropdown').classList.add('hidden');
+});
+
+// Fecha os filtros de período ao clicar fora — o calendário do flatpickr é
+// anexado ao <body>, então clicar nele não conta como "fora".
+document.addEventListener('click', e => {
+  if (e.target.closest('.flatpickr-calendar')) return;
+  if (!e.target.closest('#filtroGlobal'))    fecharFiltroGlobal();
+  if (!e.target.closest('.periodo-filtro'))  fecharMenusPeriodo();
 });
 
 function abrirModal(id)  { document.getElementById(id).classList.remove('hidden'); }

@@ -17,6 +17,18 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
 
 ## Funcionalidades
 
+**Dashboard**
+- **Filtro geral de período** ao lado de "Relatório de Consumo": presets (este
+  mês, 30 dias, 3, 6 ou 12 meses) ou intervalo personalizado
+- Os cards e os três gráficos seguem esse filtro; cada gráfico tem um seletor
+  próprio que começa em "Período geral" e, quando mudado, sobrepõe o geral só
+  naquele gráfico
+- Obras e clientes entram no período pela data de início da obra; o valor
+  faturado entra pela data de fim (ou de início, quando a obra concluída não
+  tem data de fim)
+- Produtos cadastrados e alertas de estoque são posição atual e não variam com
+  o período
+
 **Autenticação**
 - Login com e-mail e senha
 - Token JWT armazenado em `sessionStorage`

@@ -97,6 +97,40 @@
             <span class="page-subtitle"></span>
           </div>
           <div class="page-header-actions">
+            <!-- Filtro geral — vale para os cards e para todos os gráficos.
+                 Cada gráfico tem o seu próprio seletor e pode sobrepor isto. -->
+            <div class="filtro-global" id="filtroGlobal">
+              <button class="btn btn-secondary filtro-global-btn" id="btnFiltroGlobal"
+                      onclick="alternarFiltroGlobal(event)"
+                      title="Filtrar todo o dashboard por período">
+                <i class="fa-solid fa-filter"></i>
+                <span id="filtroGlobalLabel">Todo o período</span>
+                <i class="fa-solid fa-chevron-down fa-xs"></i>
+              </button>
+              <div class="filtro-global-menu hidden" id="filtroGlobalMenu">
+                <div class="fg-header">Período do dashboard</div>
+                <div class="fg-opcoes">
+                  <button type="button" class="fg-opt" data-preset="tudo" onclick="aplicarFiltroGlobal('tudo')">Todo o período</button>
+                  <button type="button" class="fg-opt" data-preset="mes"  onclick="aplicarFiltroGlobal('mes')">Este mês</button>
+                  <button type="button" class="fg-opt" data-preset="30d"  onclick="aplicarFiltroGlobal('30d')">Últimos 30 dias</button>
+                  <button type="button" class="fg-opt" data-preset="3m"   onclick="aplicarFiltroGlobal('3m')">Últimos 3 meses</button>
+                  <button type="button" class="fg-opt" data-preset="6m"   onclick="aplicarFiltroGlobal('6m')">Últimos 6 meses</button>
+                  <button type="button" class="fg-opt" data-preset="12m"  onclick="aplicarFiltroGlobal('12m')">Últimos 12 meses</button>
+                </div>
+                <div class="fg-sep"></div>
+                <div class="fg-header">Personalizado</div>
+                <div class="fg-datas">
+                  <input type="text" id="fgDe" placeholder="dd/mm/aaaa" />
+                  <span class="filtro-sep">até</span>
+                  <input type="text" id="fgAte" placeholder="dd/mm/aaaa" />
+                </div>
+                <div class="fg-erro hidden" id="fgErro"></div>
+                <div class="fg-acoes">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="limparFiltroGlobal()">Limpar</button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="aplicarFiltroGlobalCustom()">Aplicar período</button>
+                </div>
+              </div>
+            </div>
             <button class="btn btn-secondary" onclick="gerarRelatorio()">
               <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
             </button>
@@ -110,46 +144,46 @@
             <div class="kpi-icon orange"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-produtos">—</span>
-              <span class="kpi-label">Produtos Cadastrados</span>
+              <span class="kpi-label" title="Posição atual do estoque — não varia com o período">Produtos Cadastrados</span>
             </div>
           </div>
           <div class="kpi-card kpi-nav" onclick="irParaObrasAtivas()" data-pagina="obras" title="Ir para Obras Ativas">
             <div class="kpi-icon dark"><i class="fa-solid fa-hard-hat"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-obras">—</span>
-              <span class="kpi-label">Obras Ativas</span>
+              <span class="kpi-label" id="kpi-label-obras">Obras Ativas</span>
             </div>
           </div>
           <div class="kpi-card kpi-nav" onclick="navegarPara('clientes')" data-pagina="clientes" title="Ir para Clientes">
             <div class="kpi-icon orange"><i class="fa-solid fa-users"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-clientes">—</span>
-              <span class="kpi-label">Clientes</span>
+              <span class="kpi-label" id="kpi-label-clientes">Clientes</span>
             </div>
           </div>
           <div class="kpi-card kpi-alert kpi-nav" onclick="irParaAlertasEstoque()" data-pagina="estoque" title="Ver alertas no Estoque">
             <div class="kpi-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="kpi-info">
               <span class="kpi-value" id="kpi-alertas">—</span>
-              <span class="kpi-label">Alertas de Estoque</span>
+              <span class="kpi-label" title="Posição atual do estoque — não varia com o período">Alertas de Estoque</span>
             </div>
           </div>
           <div class="kpi-card kpi-nav" onclick="irParaObrasConcluidas()" data-pagina="obras" title="Ver obras concluídas">
             <div class="kpi-icon green"><i class="fa-solid fa-sack-dollar"></i></div>
             <div class="kpi-info">
               <span class="kpi-value kpi-value-money" id="kpi-valor-faturado" title="">—</span>
-              <span class="kpi-label">Valor Total Faturado</span>
+              <span class="kpi-label" id="kpi-label-faturado">Valor Total Faturado</span>
             </div>
           </div>
         </div>
 
         <div class="dashboard-grid">
           <!-- Status das Obras — preenchido por renderObrasStatus() -->
-          <div class="card">
-            <div class="card-header">
+          <div class="card card-com-periodo">
+            <div class="card-header card-header-flex">
               <div>
                 <div style="display:flex;align-items:center;gap:10px">
-                  <h2><i class="fa-solid fa-chart-pie"></i> Status das Obras no Mês</h2>
+                  <h2><i class="fa-solid fa-chart-pie"></i> Status das Obras no Período</h2>
                   <button class="btn btn-ghost btn-sm toggle-concluidas active"
                           id="btnToggleConcluidas"
                           onclick="toggleConcluidas()"
@@ -157,8 +191,10 @@
                     <i class="fa-solid fa-eye"></i> Concluídas
                   </button>
                 </div>
-                <div class="card-header-sub">Distribuição de obras pelo status atual</div>
+                <div class="card-header-sub" id="obrasStatusSub">Distribuição de obras pelo status atual</div>
               </div>
+              <!-- montado por _montarFiltrosPeriodo() -->
+              <div class="periodo-filtro" data-periodo="obrasStatusPeriodo"></div>
             </div>
             <div class="obras-status-wrap">
               <div class="obras-donut-area">
@@ -172,26 +208,18 @@
           </div>
 
           <!-- Consumo de Produtos — preenchido por renderConsumo() -->
-          <div class="card">
+          <div class="card card-com-periodo">
             <div class="card-header consumo-header">
               <div style="display:flex;align-items:center;gap:10px">
                 <div class="chart-icon-box"><i class="fa-solid fa-cube"></i></div>
                 <div class="chart-card-title">Consumo de Produtos</div>
               </div>
-              <div class="chart-period-wrap">
-                <i class="fa-regular fa-calendar fa-sm"></i>
-                <select id="consumoPeriodo" onchange="onConsumoPeriodoChange()">
-                  <option value="mes">Este mês</option>
-                  <option value="3m">Últimos 3 meses</option>
-                  <option value="6m">Últimos 6 meses</option>
-                </select>
-                <i class="fa-solid fa-chevron-down fa-xs" style="pointer-events:none"></i>
-              </div>
+              <div class="periodo-filtro" data-periodo="consumoPeriodo"></div>
             </div>
             <div class="consumo-total-wrap">
               <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
                 <span class="consumo-total" id="consumoTotal">—</span>
-                <span class="consumo-total-label">Total de unidades consumidas</span>
+                <span class="consumo-total-label" id="consumoTotalLabel">Total de unidades consumidas</span>
               </div>
               <span class="consumo-variacao" id="consumoVariacao"></span>
             </div>
@@ -202,28 +230,19 @@
 
 
           <!-- Gráfico Chart.js — preenchido por renderGraficoProdutos() -->
-          <div class="card card-full">
+          <div class="card card-full card-com-periodo">
             <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
               <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
                 <div class="chart-icon-box"><i class="fa-solid fa-cube"></i></div>
                 <div>
                   
                   <div class="chart-card-title">Produtos mais utilizados</div>
-                  <div class="chart-card-sub">Top 10 produtos mais utilizados no período selecionado</div>
+                  <div class="chart-card-sub" id="graficoProdutosSub">Top 10 produtos mais utilizados no período selecionado</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:10px">
                 <button class="btn btn-secondary" onclick="gerarRelatorio()">Ver relatório completo</button>
-                <div class="chart-period-wrap">
-                  <i class="fa-regular fa-calendar fa-sm"></i>
-                  <select id="graficoPeriodo" onchange="onGraficoPeriodoChange()">
-                    <option value="">Geral</option>
-                    <option value="365">Últimos 12 meses</option>
-                    <option value="180">Últimos 6 meses</option>
-                    <option value="30">Últimos 30 dias</option>
-                  </select>
-                  <i class="fa-solid fa-chevron-down fa-xs" style="pointer-events:none"></i>
-                </div>
+                <div class="periodo-filtro" data-periodo="graficoPeriodo"></div>
               </div>
             </div>
             <div class="chart-container" style="padding:0 8px">

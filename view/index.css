@@ -293,6 +293,71 @@ body {
 .card-header h2 { font-size: .875rem; font-weight: 700; color: var(--gray-700); display: flex; align-items: center; gap: 8px; }
 .card-header h2 i { color: var(--gray-500); }
 .card-header-sub { font-size: .78rem; color: var(--gray-500); margin-top: 2px; }
+/* título + seletor de período; o seletor cai para a linha de baixo se faltar
+   largura (o card ocupa meia tela no grid do dashboard) */
+.card-header-flex { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px 12px; }
+.card-header-flex > div:first-child { min-width: 0; }
+
+/* ── FILTRO GERAL DO DASHBOARD ── */
+.filtro-global { position: relative; }
+.filtro-global-btn.ativo {
+  border-color: var(--orange); color: var(--orange-dark); background: var(--orange-pale);
+}
+.filtro-global-btn.ativo:hover { background: #FFE9D9; border-color: var(--orange-dark); }
+.filtro-global-menu,
+.periodo-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
+  width: 268px; background: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-lg);
+  padding: 10px;
+  animation: fadeDown .18s ease;
+}
+.fg-header {
+  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--gray-500); padding: 4px 6px 6px;
+}
+.fg-opcoes { display: flex; flex-direction: column; gap: 2px; }
+.fg-opt {
+  text-align: left; width: 100%; border: none; background: none; cursor: pointer;
+  font-family: var(--font); font-size: .83rem; font-weight: 500; color: var(--gray-700);
+  padding: 8px 10px; border-radius: 8px; transition: background var(--transition);
+}
+.fg-opt:hover { background: var(--gray-100); }
+.fg-opt.active { background: var(--orange-pale); color: var(--orange-dark); font-weight: 600; }
+.fg-sep { height: 1px; background: var(--gray-100); margin: 10px 0 4px; }
+.fg-datas { display: flex; align-items: center; gap: 6px; padding: 0 6px; }
+.fg-datas input {
+  flex: 1; min-width: 0; height: 34px;
+  border: 1.5px solid var(--gray-200); border-radius: 8px; padding: 0 8px;
+  font-family: var(--font); font-size: .8rem; color: var(--gray-700);
+  background: #fff; outline: none; transition: border-color var(--transition);
+}
+.fg-datas input:focus { border-color: var(--gray-400); box-shadow: 0 0 0 3px rgba(100,116,139,.1); }
+.fg-erro { font-size: .75rem; color: #DC2626; padding: 6px 6px 0; }
+.fg-opt.opt-periodo-geral { border-bottom: 1px solid var(--gray-100); border-radius: 8px 8px 0 0; padding-bottom: 10px; margin-bottom: 2px; }
+
+/* ── FILTRO DE PERÍODO DE CADA GRÁFICO ── */
+/* mesmo dropdown do filtro geral; o menu abre alinhado à direita porque o
+   botão fica no canto direito do cabeçalho do card */
+/* o .card recorta o conteúdo (overflow:hidden) e cortaria o menu aberto */
+.card-com-periodo { overflow: visible; }
+.periodo-filtro { position: relative; flex-shrink: 0; }
+.periodo-menu { left: auto; right: 0; width: 240px; }
+.periodo-btn {
+  display: flex; align-items: center; gap: 7px;
+  border: 1.5px solid var(--gray-200); border-radius: 8px;
+  padding: 6px 12px; background: #fff; cursor: pointer;
+  font-family: var(--font); font-size: .83rem; font-weight: 500; color: var(--dark);
+  white-space: nowrap; transition: all var(--transition);
+}
+.periodo-btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
+.periodo-btn i { color: var(--gray-400); }
+.periodo-btn.proprio { border-color: var(--orange); background: var(--orange-pale); color: var(--orange-dark); }
+.periodo-btn.proprio i { color: var(--orange); }
+.periodo-btn.proprio:hover { background: #FFE9D9; border-color: var(--orange-dark); }
+.fg-acoes { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 6px 2px; }
 
 /* ── CONSUMO DE PRODUTOS ── */
 .consumo-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
@@ -851,17 +916,6 @@ body {
 }
 .chart-card-title { font-size: .95rem; font-weight: 700; color: var(--dark); line-height: 1.3; }
 .chart-card-sub   { font-size: .78rem; color: var(--gray-500); margin-top: 2px; }
-.chart-period-wrap {
-  display: flex; align-items: center; gap: 7px;
-  border: 1.5px solid var(--gray-200); border-radius: 8px;
-  padding: 6px 12px; background: #fff; white-space: nowrap; flex-shrink: 0;
-}
-.chart-period-wrap i { color: var(--gray-400); }
-.chart-period-wrap select {
-  border: none; outline: none; background: transparent;
-  color: var(--dark); font-size: .83rem; font-weight: 500;
-  cursor: pointer; appearance: none; -webkit-appearance: none;
-}
 .chart-footer-info {
   display: flex; align-items: center; gap: 8px;
   margin: 4px 20px 16px; padding: 10px 14px;
@@ -1260,6 +1314,10 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
     margin-left: 0;
   }
   .page-header-actions .btn { flex: 1; justify-content: center; }
+  /* o filtro geral é um wrapper, não um .btn: precisa crescer junto */
+  .page-header-actions .filtro-global { flex: 1 1 100%; }
+  .filtro-global-btn { width: 100%; justify-content: center; }
+  .filtro-global-menu { width: 100%; left: 0; right: 0; }
 
   .toolbar { flex-wrap: wrap; }
   .toolbar-spacer { display: none; }
@@ -1426,10 +1484,11 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .card-header { padding: 12px 14px; }
   .card-header h2 { font-size: .84rem; }
 
-  /* cabeçalho do card "Consumo de Produtos" */
+  /* cabeçalho do card "Consumo de Produtos" e do "Status das Obras" */
   .consumo-header { flex-direction: column; align-items: stretch; gap: 10px; }
-  .chart-period-wrap { justify-content: space-between; }
-  .chart-period-wrap select { flex: 1; }
+  .card-header-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+  .periodo-btn { width: 100%; justify-content: space-between; }
+  .periodo-menu { width: 100%; left: 0; right: 0; }
   .consumo-total { font-size: 1.6rem; }
   .consumo-total-wrap { padding: 10px 14px 6px; }
 
@@ -1441,10 +1500,7 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .card-full .card-header { flex-wrap: wrap; }
   .card-full .card-header > div:last-child { flex-wrap: wrap; width: 100%; }
   .card-full .card-header > div:last-child .btn { flex: 1; justify-content: center; }
-  .card-full .card-header > div:last-child .chart-period-wrap {
-    flex: 1 1 100%;
-    justify-content: space-between;
-  }
+  .card-full .card-header > div:last-child .periodo-filtro { flex: 1 1 100%; }
   .chart-footer-info { margin: 4px 14px 14px; font-size: .74rem; }
   .bar-label { width: 96px; }
 }
