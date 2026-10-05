@@ -30,12 +30,9 @@ class NotaFiscalController:
 
         dadosNota["nomeArquivo"] = (nomeArquivo or "").strip() or None
 
-        idNotaFiscal = self.dao.inserir_nota(dadosNota)
+        idNotaFiscal = self.dao.inserir_nota_com_itens(dadosNota)
         if not idNotaFiscal:
             return False, "Erro ao salvar a nota fiscal.", None, False
-
-        if not self.dao.inserir_itens(idNotaFiscal, dadosNota["itens"]):
-            return False, "Erro ao salvar os itens da nota fiscal.", None, False
 
         nota = self.dao.buscar_nota_com_itens(idNotaFiscal)
         if not nota:

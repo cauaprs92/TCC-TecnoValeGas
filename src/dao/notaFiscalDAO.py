@@ -2,7 +2,8 @@ import re
 import unicodedata
 from difflib import SequenceMatcher
 
-from src.dao.conexao import Conexao
+from src.dao.conexao   import Conexao
+from src.dao.transacao import executar_transacao
 from src.modelo.notaFiscal import NotaFiscal, NotaFiscalItem
 
 # similaridade mínima para sugerir um produto já cadastrado na tela de conferência
@@ -123,22 +124,27 @@ class NotaFiscalDAO:
         )
         return cursor.lastrowid
 
-    def inserir_nota(self, dadosNota: dict):
-        """Insere a nota (com upsert do fornecedor) e devolve o idNotaFiscal."""
-        sql = """
+    def inserir_nota_com_itens(self, dadosNota: dict):
+        """Insere a nota (com upsert do fornecedor) e seus itens pendentes numa
+        transação só — se um item falhar, a nota não fica gravada sem itens.
+        Devolve o idNotaFiscal, ou None em caso de erro."""
+        sql_nota = """
             INSERT INTO notasFiscais
                 (chaveAcesso, numero, serie, idFornecedor, dataEmissao, valorTotal, nomeArquivo)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return None
-        cursor = conexao.cursor()
-        try:
+        sql_item = """
+            INSERT INTO notaFiscalItens
+                (idNotaFiscal, idProduto, codProdutoFornecedor, nomeProdutoNota,
+                 quantidade, valorUnitario, valorTotal, statusItem)
+            VALUES (%s, NULL, %s, %s, %s, %s, %s, 'pendente')
+        """
+
+        def operacao(cursor):
             idFornecedor = self._obter_ou_criar_fornecedor(
                 cursor, dadosNota.get("fornecedorNome"), dadosNota.get("fornecedorCNPJ")
             )
-            cursor.execute(sql, (
+            cursor.execute(sql_nota, (
                 dadosNota.get("chaveAcesso"),
                 dadosNota.get("numero"),
                 dadosNota.get("serie"),
@@ -148,30 +154,8 @@ class NotaFiscalDAO:
                 dadosNota.get("nomeArquivo"),
             ))
             idNotaFiscal = cursor.lastrowid
-            conexao.commit()
-            return idNotaFiscal
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao inserir nota fiscal: {e}")
-            return None
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
-
-    def inserir_itens(self, idNotaFiscal: int, itens: list) -> bool:
-        """Insere os itens da nota como pendentes, ainda sem produto vinculado."""
-        sql = """
-            INSERT INTO notaFiscalItens
-                (idNotaFiscal, idProduto, codProdutoFornecedor, nomeProdutoNota,
-                 quantidade, valorUnitario, valorTotal, statusItem)
-            VALUES (%s, NULL, %s, %s, %s, %s, %s, 'pendente')
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False
-        cursor = conexao.cursor()
-        try:
-            for item in itens:
-                cursor.execute(sql, (
+            for item in dadosNota.get("itens", []):
+                cursor.execute(sql_item, (
                     idNotaFiscal,
                     item.get("codProdutoFornecedor"),
                     item.get("nomeProdutoNota"),
@@ -179,14 +163,10 @@ class NotaFiscalDAO:
                     item.get("valorUnitario"),
                     item.get("valorTotal"),
                 ))
-            conexao.commit()
-            return True
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao inserir itens da nota fiscal: {e}")
-            return False
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+            return idNotaFiscal
+
+        sucesso, resultado = executar_transacao(operacao, "Erro ao inserir nota fiscal.")
+        return resultado if sucesso else None
 
     # ─── Consulta ─────────────────────────────────────────────────────────────
 
