@@ -2,8 +2,7 @@ import re
 import unicodedata
 from difflib import SequenceMatcher
 
-from src.dao.conexao   import Conexao
-from src.dao.transacao import executar_transacao
+from src.dao.banco import OperacaoInvalida, consultar, consultar_um, executar_transacao
 from src.modelo.notaFiscal import NotaFiscal, NotaFiscalItem
 
 # similaridade mínima para sugerir um produto já cadastrado na tela de conferência
@@ -37,20 +36,9 @@ class NotaFiscalDAO:
 
     def buscar_id_por_chave(self, chaveAcesso: str):
         """Retorna o idNotaFiscal de uma chave já importada, ou None."""
-        sql = "SELECT idNotaFiscal FROM notasFiscais WHERE chaveAcesso = %s"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return None
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (chaveAcesso,))
-            linha = cursor.fetchone()
-            return linha[0] if linha else None
-        except Exception as e:
-            print(f"Erro ao verificar chave da nota fiscal: {e}")
-            return None
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        linha = consultar_um("SELECT idNotaFiscal FROM notasFiscais WHERE chaveAcesso = %s",
+                             (chaveAcesso,), erro="Erro ao verificar chave da nota fiscal:")
+        return linha[0] if linha else None
 
     def reabrir_itens(self, idNotaFiscal: int) -> int:
         """Devolve para 'pendente' os itens da nota que não afetam mais o estoque.
@@ -62,25 +50,15 @@ class NotaFiscalDAO:
 
         Retorna quantos itens voltaram para a conferência.
         """
-        sql = """
-            UPDATE notaFiscalItens
-            SET statusItem = 'pendente'
-            WHERE idNotaFiscal = %s AND statusItem <> 'pendente' AND idProduto IS NULL
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return 0
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (idNotaFiscal,))
-            conexao.commit()
+        def operacao(cursor):
+            cursor.execute("""
+                UPDATE notaFiscalItens
+                SET statusItem = 'pendente'
+                WHERE idNotaFiscal = %s AND statusItem <> 'pendente' AND idProduto IS NULL
+            """, (idNotaFiscal,))
             return cursor.rowcount
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao reabrir itens da nota fiscal: {e}")
-            return 0
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        sucesso, reabertos = executar_transacao(operacao, "Erro ao reabrir itens da nota fiscal:")
+        return reabertos if sucesso else 0
 
     def _obter_ou_criar_fornecedor(self, cursor, nome: str, cnpj: str):
         """Resolve o fornecedor da nota pelo CNPJ do <emit>, criando-o se necessário.
@@ -185,27 +163,13 @@ class NotaFiscalDAO:
         """
         sql_produtos = "SELECT idProduto, nomeProduto, qtdProduto FROM produtos"
 
-        conexao = Conexao.obter_conexao()
-        if not conexao:
+        linha = consultar_um(sql_nota, (idNotaFiscal,), erro="Erro ao buscar nota fiscal:")
+        if not linha:
             return None
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql_nota, (idNotaFiscal,))
-            linha = cursor.fetchone()
-            if not linha:
-                return None
-            nota = self._linha_para_nota(linha)
-
-            cursor.execute(sql_itens, (idNotaFiscal,))
-            itens = [self._linha_para_item(l) for l in cursor.fetchall()]
-
-            cursor.execute(sql_produtos)
-            produtos = cursor.fetchall()
-        except Exception as e:
-            print(f"Erro ao buscar nota fiscal com itens: {e}")
-            return None
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        nota     = self._linha_para_nota(linha)
+        itens    = [self._linha_para_item(l) for l in consultar(sql_itens, (idNotaFiscal,),
+                                                                 erro="Erro ao buscar itens da nota:")]
+        produtos = consultar(sql_produtos, erro="Erro ao buscar produtos:")
 
         for item in itens:
             item._sugestao = self._sugerir_produto(item, produtos)
@@ -233,25 +197,13 @@ class NotaFiscalDAO:
                 "qtdProduto": melhor[2], "similaridade": round(melhorScore, 2)}
 
     def buscar_item_por_id(self, idItem: int):
-        sql = """
+        linha = consultar_um("""
             SELECT idItem, idNotaFiscal, idProduto, codProdutoFornecedor, nomeProdutoNota,
                    quantidade, valorUnitario, valorTotal, statusItem
             FROM notaFiscalItens
             WHERE idItem = %s
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return None
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (idItem,))
-            linha = cursor.fetchone()
-            return self._linha_para_item(linha) if linha else None
-        except Exception as e:
-            print(f"Erro ao buscar item da nota fiscal: {e}")
-            return None
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, (idItem,), erro="Erro ao buscar item da nota fiscal:")
+        return self._linha_para_item(linha) if linha else None
 
     # ─── Conferência ──────────────────────────────────────────────────────────
 
@@ -266,45 +218,36 @@ class NotaFiscalDAO:
 
         Retorna (sucesso, mensagem, idProduto).
         """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False, "Não foi possível conectar ao banco de dados.", None
-        cursor = conexao.cursor()
-        try:
+        def operacao(cursor):
+            # FOR UPDATE: duas confirmações simultâneas do mesmo item não somam
+            # o estoque duas vezes — a segunda espera e já vê o item conferido.
             cursor.execute("""
-                SELECT i.idItem, i.idNotaFiscal, i.quantidade, i.nomeProdutoNota, i.statusItem,
-                       n.idFornecedor
+                SELECT i.quantidade, i.nomeProdutoNota, i.statusItem, n.idFornecedor
                 FROM notaFiscalItens i
                 JOIN notasFiscais n ON n.idNotaFiscal = i.idNotaFiscal
                 WHERE i.idItem = %s
+                FOR UPDATE
             """, (idItem,))
             linha = cursor.fetchone()
             if not linha:
-                return False, "Item da nota fiscal não encontrado.", None
-
-            if linha[4] != 'pendente':
-                return False, "Este item já foi conferido anteriormente.", None
-
-            quantidade   = int(round(float(linha[2] or 0)))
-            idFornecedor = linha[5]
+                raise OperacaoInvalida("Item da nota fiscal não encontrado.")
+            quantidade_nota, nome_nota, status, idFornecedor = linha
+            if status != 'pendente':
+                raise OperacaoInvalida("Este item já foi conferido anteriormente.")
+            quantidade = int(round(float(quantidade_nota or 0)))
 
             if acao == 'ignorar':
-                cursor.execute(
-                    "UPDATE notaFiscalItens SET statusItem = 'ignorado' WHERE idItem = %s",
-                    (idItem,)
-                )
-                conexao.commit()
-                return True, "Item ignorado.", None
+                cursor.execute("UPDATE notaFiscalItens SET statusItem = 'ignorado' WHERE idItem = %s", (idItem,))
+                return "Item ignorado.", None
 
+            id_produto = idProduto
             if acao == 'repor':
-                cursor.execute("SELECT idProduto FROM produtos WHERE idProduto = %s", (idProduto,))
-                if not cursor.fetchone():
-                    return False, f"Produto ID {idProduto} não encontrado.", None
                 cursor.execute(
                     "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
-                    (quantidade, idProduto)
+                    (quantidade, id_produto)
                 )
-
+                if cursor.rowcount == 0:
+                    raise OperacaoInvalida(f"Produto ID {id_produto} não encontrado.")
             elif acao == 'criar':
                 dados = dadosNovoProduto or {}
                 cursor.execute("""
@@ -312,30 +255,28 @@ class NotaFiscalDAO:
                         (nomeProduto, qtdProduto, descProduto, qtdMinima, qtdMaxima, idFornecedor)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """, (
-                    (dados.get("nomeProduto") or linha[3] or "").strip(),
+                    (dados.get("nomeProduto") or nome_nota or "").strip(),
                     quantidade,
                     (dados.get("descProduto") or "").strip(),
                     quantidadeMinima if quantidadeMinima is not None else 0,
                     quantidadeMaxima if quantidadeMaxima is not None else 9999,
                     idFornecedor,
                 ))
-                idProduto = cursor.lastrowid
-
+                id_produto = cursor.lastrowid
             else:
-                return False, f"Ação inválida: {acao}.", None
+                raise OperacaoInvalida(f"Ação inválida: {acao}.")
 
             cursor.execute(
                 "UPDATE notaFiscalItens SET idProduto = %s, statusItem = 'confirmado' WHERE idItem = %s",
-                (idProduto, idItem)
+                (id_produto, idItem)
             )
-            conexao.commit()
-            return True, "Item confirmado com sucesso!", idProduto
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao confirmar item da nota fiscal: {e}")
-            return False, "Erro ao confirmar item da nota fiscal.", None
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+            return "Item confirmado com sucesso!", id_produto
+
+        sucesso, resultado = executar_transacao(operacao, "Erro ao confirmar item da nota fiscal.")
+        if not sucesso:
+            return False, resultado, None
+        mensagem, id_produto = resultado
+        return True, mensagem, id_produto
 
     # ─── Conversão ────────────────────────────────────────────────────────────
 

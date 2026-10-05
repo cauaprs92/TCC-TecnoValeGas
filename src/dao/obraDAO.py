@@ -1,5 +1,4 @@
-from src.dao.conexao            import Conexao
-from src.dao.transacao          import OperacaoInvalida, executar_transacao
+from src.dao.banco              import OperacaoInvalida, executar_transacao, consultar, consultar_um
 from src.dao.produtosObrasDAO   import ProdutosObrasDAO, STATUS_CANCELADA
 from src.dao.obraFuncionarioDAO import ObraFuncionarioDAO
 
@@ -102,31 +101,9 @@ class ObraDAO:
     # ─── Consulta ─────────────────────────────────────────────────────────────
 
     def buscar_todas(self) -> list:
-        sql = f"SELECT {_COLS_SELECT} FROM obras ORDER BY dataInicio DESC"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return []
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql)
-            return cursor.fetchall()
-        except Exception as e:
-            print(f"Erro ao buscar obras: {e}")
-            return []
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        return consultar(f"SELECT {_COLS_SELECT} FROM obras ORDER BY dataInicio DESC",
+                         erro="Erro ao buscar obras:")
 
     def buscar_por_id(self, id_obra: int):
-        sql = f"SELECT {_COLS_SELECT} FROM obras WHERE idObra = %s"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return None
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (id_obra,))
-            return cursor.fetchone()
-        except Exception as e:
-            print(f"Erro ao buscar obra por ID: {e}")
-            return None
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        return consultar_um(f"SELECT {_COLS_SELECT} FROM obras WHERE idObra = %s", (id_obra,),
+                            erro="Erro ao buscar obra por ID:")

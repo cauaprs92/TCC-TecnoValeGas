@@ -1,5 +1,4 @@
-from src.dao.conexao   import Conexao
-from src.dao.transacao import OperacaoInvalida, executar_transacao
+from src.dao.banco import OperacaoInvalida, executar_transacao, consultar
 
 STATUS_CANCELADA = "Cancelada"
 
@@ -224,47 +223,19 @@ class ProdutosObrasDAO:
     # ─── Consulta ─────────────────────────────────────────────────────────────
 
     def buscar_produtos_da_obra(self, id_obra: int) -> list:
-        sql = """
+        linhas = consultar("""
             SELECT p.idProduto, p.nomeProduto, po.qtdProdutosObra
             FROM produtosObras po
             JOIN produtos p ON po.idProduto = p.idProduto
             WHERE po.idObra = %s
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return []
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (id_obra,))
-            return [
-                {"idProduto": l[0], "nomeProduto": l[1], "qtdProdutosObra": l[2]}
-                for l in cursor.fetchall()
-            ]
-        except Exception as e:
-            print(f"Erro ao buscar produtos da obra: {e}")
-            return []
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, (id_obra,), erro="Erro ao buscar produtos da obra:")
+        return [{"idProduto": l[0], "nomeProduto": l[1], "qtdProdutosObra": l[2]} for l in linhas]
 
     def buscar_servicos_da_obra(self, id_obra: int) -> list:
-        sql = """
+        linhas = consultar("""
             SELECT s.idServico, s.nomeServico, s.precoServico
             FROM obraServicos os
             JOIN servicos s ON s.idServico = os.idServico
             WHERE os.idObra = %s
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return []
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (id_obra,))
-            return [
-                {"idServico": l[0], "nomeServico": l[1], "precoServico": float(l[2])}
-                for l in cursor.fetchall()
-            ]
-        except Exception as e:
-            print(f"Erro ao buscar serviços da obra: {e}")
-            return []
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, (id_obra,), erro="Erro ao buscar serviços da obra:")
+        return [{"idServico": l[0], "nomeServico": l[1], "precoServico": float(l[2])} for l in linhas]

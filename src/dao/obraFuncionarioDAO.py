@@ -1,4 +1,4 @@
-from src.dao.conexao import Conexao
+from src.dao.banco import consultar, consultar_um
 
 
 class ObraFuncionarioDAO:
@@ -9,90 +9,42 @@ class ObraFuncionarioDAO:
     """
 
     def listar_por_obra(self, id_obra: int) -> list:
-        sql = """
+        linhas = consultar("""
             SELECT l.idLogin, l.nomeLogin, l.email
             FROM obraFuncionarios ofu
             JOIN login l ON l.idLogin = ofu.idLogin
             WHERE ofu.idObra = %s
             ORDER BY l.nomeLogin
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return []
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (id_obra,))
-            return [
-                {"idLogin": r[0], "nomeLogin": r[1], "email": r[2]}
-                for r in cursor.fetchall()
-            ]
-        except Exception as e:
-            print(f"Erro ao listar equipe da obra {id_obra}: {e}")
-            return []
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, (id_obra,), erro=f"Erro ao listar equipe da obra {id_obra}:")
+        return [{"idLogin": r[0], "nomeLogin": r[1], "email": r[2]} for r in linhas]
 
     def listar_por_obras(self, ids_obras: list) -> dict:
         """Equipe de várias obras de uma vez, no formato {idObra: [funcionários]}.
         Evita uma consulta por obra ao montar a listagem geral."""
         if not ids_obras:
             return {}
-
         marcadores = ", ".join(["%s"] * len(ids_obras))
-        sql = f"""
+        linhas = consultar(f"""
             SELECT ofu.idObra, l.idLogin, l.nomeLogin
             FROM obraFuncionarios ofu
             JOIN login l ON l.idLogin = ofu.idLogin
             WHERE ofu.idObra IN ({marcadores})
             ORDER BY l.nomeLogin
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return {}
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, tuple(ids_obras))
-            equipes = {}
-            for id_obra, id_login, nome_login in cursor.fetchall():
-                equipes.setdefault(id_obra, []).append(
-                    {"idLogin": id_login, "nomeLogin": nome_login}
-                )
-            return equipes
-        except Exception as e:
-            print(f"Erro ao listar equipes das obras: {e}")
-            return {}
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, tuple(ids_obras), erro="Erro ao listar equipes das obras:")
+        equipes = {}
+        for id_obra, id_login, nome_login in linhas:
+            equipes.setdefault(id_obra, []).append({"idLogin": id_login, "nomeLogin": nome_login})
+        return equipes
 
     def listar_ids_obras_do_funcionario(self, id_login: int) -> list:
-        sql = "SELECT idObra FROM obraFuncionarios WHERE idLogin = %s"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return []
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (id_login,))
-            return [r[0] for r in cursor.fetchall()]
-        except Exception as e:
-            print(f"Erro ao listar obras do funcionário {id_login}: {e}")
-            return []
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        linhas = consultar("SELECT idObra FROM obraFuncionarios WHERE idLogin = %s", (id_login,),
+                           erro=f"Erro ao listar obras do funcionário {id_login}:")
+        return [r[0] for r in linhas]
 
     def pertence_a_obra(self, id_obra: int, id_login: int) -> bool:
-        sql = "SELECT 1 FROM obraFuncionarios WHERE idObra = %s AND idLogin = %s"
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (id_obra, id_login))
-            return cursor.fetchone() is not None
-        except Exception as e:
-            print(f"Erro ao verificar equipe da obra {id_obra}: {e}")
-            return False
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        return consultar_um(
+            "SELECT 1 FROM obraFuncionarios WHERE idObra = %s AND idLogin = %s", (id_obra, id_login),
+            erro=f"Erro ao verificar equipe da obra {id_obra}:") is not None
 
     def salvar_equipe(self, cursor, id_obra: int, ids_login: list):
         """Troca a equipe inteira da obra pela lista informada, dentro da

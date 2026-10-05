@@ -1,55 +1,25 @@
-from src.dao.conexao import Conexao
+from src.dao.banco import consultar, executar
 from src.modelo.historico import Historico
 
 
 class HistoricoDAO:
 
     def inserir(self, idAdmin: int, nomeAdmin: str, acao: str, entidade: str, descricao: str) -> bool:
-        sql = """
+        return executar("""
             INSERT INTO historico (idAdmin, nomeAdmin, acao, entidade, descricao)
             VALUES (%s, %s, %s, %s, %s)
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return False
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql, (idAdmin, nomeAdmin, acao, entidade, descricao))
-            conexao.commit()
-            return True
-        except Exception as e:
-            conexao.rollback()
-            print(f"Erro ao inserir historico: {e}")
-            return False
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, (idAdmin, nomeAdmin, acao, entidade, descricao), erro="Erro ao inserir histórico:")
 
     def buscar_todos(self) -> list:
-        sql = """
+        linhas = consultar("""
             SELECT idHistorico, idAdmin, nomeAdmin, acao, entidade, descricao, dataHora
             FROM historico
             ORDER BY dataHora DESC
-        """
-        conexao = Conexao.obter_conexao()
-        if not conexao:
-            return []
-        cursor = conexao.cursor()
-        try:
-            cursor.execute(sql)
-            return [self._linha_para_historico(l) for l in cursor.fetchall()]
-        except Exception as e:
-            print(f"Erro ao buscar historico: {e}")
-            return []
-        finally:
-            Conexao.fechar_conexao(conexao, cursor)
+        """, erro="Erro ao buscar histórico:")
+        return [self._linha_para_historico(l) for l in linhas]
 
     def _linha_para_historico(self, linha) -> Historico:
         h = Historico()
-        h._idHistorico = linha[0]
-        h._idAdmin     = linha[1]
-        h._nomeAdmin   = linha[2]
-        h._acao        = linha[3]
-        h._entidade    = linha[4]
-        h._descricao   = linha[5]
-        h._dataHora    = linha[6]
+        (h._idHistorico, h._idAdmin, h._nomeAdmin, h._acao,
+         h._entidade, h._descricao, h._dataHora) = linha
         return h
