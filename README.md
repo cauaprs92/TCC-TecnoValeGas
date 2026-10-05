@@ -47,19 +47,22 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
 TCC-TecnoValeGas/
 ├── app.py                   # Entry point — Flask + registro de blueprints
 ├── docs/
-│   └── codigo.sql           # Schema completo do banco de dados
+│   ├── codigo.sql           # Schema completo (recria o banco do zero)
+│   ├── inserts.sql          # Dados de exemplo
+│   └── migracao.sql         # Atualiza um banco já existente
 ├── view/                    # Frontend (SPA)
 │   ├── login.html
 │   ├── index.html
 │   ├── index.css
-│   └── index.js
+│   ├── index.js
+│   └── *-obra*.html         # Documentos imprimíveis da obra
 └── src/
     ├── modelo/              # Entidades (Cliente, Produto, Obra...)
     ├── dao/                 # Acesso ao banco (SQL puro via mysql-connector)
     ├── controller/          # Regras de negócio
     ├── routers/             # Blueprints Flask — definição das rotas
-    ├── middleware/          # Validação de body, params e token JWT
-    ├── http/                # Geração e validação do token JWT
+    ├── middleware/          # Validação de body e token JWT / cargo
+    ├── service/             # Leitura do XML de NF-e
     └── error_response.py    # Classe de erro padronizada
 ```
 
@@ -85,10 +88,13 @@ Frontend → Router → Middleware → Controller → DAO → MySQL
 | DELETE | `/cliente/:id` | Remove cliente |
 | GET | `/obra` | Lista todas as obras |
 | POST | `/obra` | Cadastra obra + produtos + baixa no estoque |
-| PUT | `/obra/:id` | Edita obra (dados + adiciona novos produtos) |
-| DELETE | `/obra/:id` | Remove obra |
+| PUT | `/obra/:id` | Edita obra (dados, status, equipe e material novo) |
+| DELETE | `/obra/:id` | Remove obra e devolve o estoque |
 | GET | `/obra/:id/produtos` | Lista produtos de uma obra |
-| PATCH | `/obra/:id/status` | Atualiza apenas o status |
+| GET | `/obra/:id/servicos` | Lista serviços de uma obra |
+
+As demais rotas (serviços, fotos, usuários, fields, histórico, relatórios e
+importação de NF-e) seguem o mesmo padrão — ver `src/routers/`.
 
 ---
 
@@ -108,16 +114,23 @@ cd TCC-TecnoValeGas
 ### 2. Instalar dependências
 
 ```bash
-pip install flask flask-cors mysql-connector-python PyJWT
+pip install -r requirements.txt
 ```
 
 ### 3. Criar o banco de dados
 
-Abra o phpMyAdmin (ou qualquer client MySQL) e execute o script:
+Abra o phpMyAdmin (ou qualquer client MySQL) e execute, nesta ordem:
 
 ```
-docs/codigo.sql
+docs/codigo.sql    -- cria o banco do zero (apaga o banco 'tcc' se existir)
+docs/inserts.sql   -- opcional: dados de exemplo
 ```
+
+Já tem um banco `tcc` com dados de uma versão anterior? Em vez de recriar,
+rode `docs/migracao.sql` para atualizá-lo.
+
+A conexão usa as variáveis de ambiente `DB_HOST`, `DB_PORT`, `DB_USER`,
+`DB_PASSWORD` e `DB_NAME` (padrão: `localhost`, `3306`, `root`, sem senha, `tcc`).
 
 ### 4. Iniciar o servidor
 
@@ -142,14 +155,24 @@ Senha:  adm123
 ## Banco de Dados
 
 ```sql
-login          -- usuários do sistema
-clientes       -- cadastro de clientes (CPF/CNPJ + endereço completo)
-produtos       -- estoque com qtdMinima e qtdMaxima por produto
-obras          -- obras com dataInicio, dataFim, responsável e status
-produtosObras  -- relação N:N entre obras e produtos (quantidade utilizada)
-fornecedores    -- fornecedores (nome + CNPJ, usado na importação de NF-e)
-notasFiscais    -- NF-e importadas por XML (chave de acesso única)
-notaFiscalItens -- itens da nota aguardando conferência (pendente/confirmado/ignorado)
+login               -- usuários do sistema e cargo (Administracao, Almoxarifado, Obra)
+clientes            -- cadastro de clientes (CPF/CNPJ único + endereço completo)
+produtos            -- estoque com qtdMinima e qtdMaxima por produto
+obras               -- obras com datas, status, field responsável e valorObra
+produtosObras       -- produtos avulsos usados em cada obra
+servicos            -- catálogo de serviços (preço fixo)
+servicoProdutos     -- receita de produtos de cada serviço
+obraServicos        -- serviços vinculados a cada obra
+obraServicoProdutos -- receita do serviço no momento do vínculo (o que saiu do estoque)
+vw_consumo_obra     -- view: tudo o que cada obra consome do estoque
+obraFuncionarios    -- equipe de cada obra (define o que o cargo Obra enxerga)
+responsavel         -- fields (técnicos responsáveis)
+historico           -- registro das ações dos usuários
+produto_fotos       -- fotos e notas fiscais anexadas aos produtos
+obra_fotos          -- fotos das obras
+fornecedores        -- fornecedores (nome + CNPJ, usado na importação de NF-e)
+notasFiscais        -- NF-e importadas por XML (chave de acesso única)
+notaFiscalItens     -- itens da nota aguardando conferência (pendente/confirmado/ignorado)
 ```
 
 ---
