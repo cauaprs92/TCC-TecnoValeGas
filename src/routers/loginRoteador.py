@@ -9,11 +9,6 @@ controller = LoginController()
 middleware = LoginMiddleware()
 
 
-@login_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 # ─── POST /login ──────────────────────────────────────────────────────────────
 @login_bp.route("", methods=["POST"])
 @middleware.validate_body

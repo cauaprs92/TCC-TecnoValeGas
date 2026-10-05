@@ -22,11 +22,6 @@ def _extensao_permitida(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in _ALLOWED_EXT
 
 
-@produto_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 def _serializar(p) -> dict:
     return {
         "idProduto":      p._idProduto,
@@ -86,7 +81,6 @@ def listar():
 @produto_bp.route("/<int:idProduto>", methods=["GET"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
-@middleware.validate_id_param
 def buscar_por_id(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
 
@@ -100,7 +94,6 @@ def buscar_por_id(idProduto: int):
 @produto_bp.route("/<int:idProduto>", methods=["PUT"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
-@middleware.validate_id_param
 @middleware.validate_body
 def editar(idProduto: int):
     produto = request.get_json()["produto"]
@@ -135,7 +128,6 @@ def editar(idProduto: int):
 @produto_bp.route("/<int:idProduto>", methods=["DELETE"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
-@middleware.validate_id_param
 def deletar(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
     nome    = produto._nomeProduto if produto else str(idProduto)

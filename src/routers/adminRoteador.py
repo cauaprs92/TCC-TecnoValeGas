@@ -12,11 +12,6 @@ middleware     = AdminMiddleware()
 jwt            = JwtMiddleware()
 
 
-@admin_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 # ─── GET /admin ───────────────────────────────────────────────────────────────
 @admin_bp.route("", methods=["GET"])
 @jwt.validate_token
@@ -57,7 +52,6 @@ def criar():
 # ─── PUT /admin/<idLogin> ─────────────────────────────────────────────────────
 @admin_bp.route("/<int:idLogin>", methods=["PUT"])
 @jwt.validate_token
-@middleware.validate_id_param
 @middleware.validate_update_body
 def atualizar(idLogin: int):
     logged_id   = g.get("admin_id")
@@ -112,7 +106,6 @@ def atualizar(idLogin: int):
 @admin_bp.route("/<int:idLogin>", methods=["DELETE"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
-@middleware.validate_id_param
 def deletar(idLogin: int):
     logged_id = g.get("admin_id")
     if logged_id and int(logged_id) == idLogin:

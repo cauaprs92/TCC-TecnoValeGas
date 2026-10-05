@@ -25,11 +25,6 @@ jwt            = JwtMiddleware()
 foto_dao       = FotoObraDAO()
 
 
-@obra_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 def _serializar(o, equipe=None, nome_cliente=None):
     dados = {
         "idObra":         o[0],
@@ -140,7 +135,6 @@ def listar_funcionarios():
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def buscar_por_id(idObra: int):
     obra = controller.buscar_por_id(idObra)
 
@@ -159,7 +153,6 @@ def buscar_por_id(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def buscar_cliente_da_obra(idObra: int):
     cliente = controller.buscar_cliente_da_obra(idObra)
     if not cliente:
@@ -188,7 +181,6 @@ def buscar_cliente_da_obra(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def buscar_produtos_da_obra(idObra: int):
     obra = controller.buscar_por_id(idObra)
     if not obra:
@@ -203,7 +195,6 @@ def buscar_produtos_da_obra(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def buscar_servicos_da_obra(idObra: int):
     obra = controller.buscar_por_id(idObra)
     if not obra:
@@ -218,7 +209,6 @@ def buscar_servicos_da_obra(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def listar_fotos(idObra: int):
     fotos = foto_dao.buscar_por_obra(idObra)
     return jsonify({"status": True, "fotos": fotos}), 200
@@ -229,7 +219,6 @@ def listar_fotos(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def upload_foto(idObra: int):
     obra = controller.buscar_por_id(idObra)
     if not obra:
@@ -272,7 +261,6 @@ def upload_foto(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def deletar_foto(idObra: int, idFoto: int):
     nome = foto_dao.deletar(idFoto, idObra)
     if not nome:
@@ -290,7 +278,6 @@ def deletar_foto(idObra: int, idFoto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 @middleware.validate_update_body
 def atualizar(idObra: int):
     body           = request.get_json()
@@ -329,7 +316,6 @@ def atualizar(idObra: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def atualizar_produto_obra(idObra: int, idProduto: int):
     body     = request.get_json() or {}
     nova_qtd = body.get("quantidade")
@@ -346,7 +332,6 @@ def atualizar_produto_obra(idObra: int, idProduto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def remover_produto_obra(idObra: int, idProduto: int):
     sucesso, mensagem = controller.remover_produto_obra(idObra, idProduto)
     if not sucesso:
@@ -359,7 +344,6 @@ def remover_produto_obra(idObra: int, idProduto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def atualizar_servico_obra(idObra: int, idServico: int):
     body           = request.get_json() or {}
     id_servico_novo = body.get("idServicoNovo")
@@ -376,7 +360,6 @@ def atualizar_servico_obra(idObra: int, idServico: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def remover_servico_obra(idObra: int, idServico: int):
     sucesso, mensagem = controller.remover_servico_obra(idObra, idServico)
     if not sucesso:
@@ -389,7 +372,6 @@ def remover_servico_obra(idObra: int, idServico: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
-@middleware.validate_id_param
 def deletar(idObra: int):
     obra = controller.buscar_por_id(idObra)
     desc = obra[2] if obra else str(idObra)

@@ -38,12 +38,3 @@ class AdminMiddleware:
                 raise ErrorResponse(400, "Validação falhou.", {"message": "Campo 'cargo' é obrigatório."})
             return f(*args, **kwargs)
         return decorated
-
-    def validate_id_param(self, f):
-        @wraps(f)
-        def decorated(*args, **kwargs):
-            id_login = kwargs.get("idLogin")
-            if id_login is None or id_login <= 0:
-                raise ErrorResponse(400, "ID inválido.", {"message": "O ID deve ser um inteiro positivo."})
-            return f(*args, **kwargs)
-        return decorated

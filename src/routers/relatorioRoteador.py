@@ -1,15 +1,9 @@
 from flask import Blueprint, jsonify
 from src.middleware.jwtMiddleware import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO
 from src.dao.conexao              import Conexao
-from src.error_response           import ErrorResponse
 
 relatorio_bp = Blueprint("relatorio", __name__, url_prefix="/relatorio")
 jwt          = JwtMiddleware()
-
-
-@relatorio_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
 # ─── GET /relatorio/produtos-consumidos ───────────────────────────────────────

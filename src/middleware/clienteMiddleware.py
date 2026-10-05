@@ -24,14 +24,3 @@ class ClienteMiddleware:
 
             return f(*args, **kwargs)
         return decorated_function
-
-    def validate_id_param(self, f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'idCliente' not in kwargs:
-                raise ErrorResponse(
-                    400, "Erro na validação de dados",
-                    {"message": "O parâmetro 'idCliente' é obrigatório!"}
-                )
-            return f(*args, **kwargs)
-        return decorated_function

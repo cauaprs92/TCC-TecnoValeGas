@@ -12,11 +12,6 @@ middleware     = ClienteMiddleware()
 jwt            = JwtMiddleware()
 
 
-@cliente_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 def _serializar(c) -> dict:
     return {
         "idCliente":      c._idCliente,
@@ -84,7 +79,6 @@ def listar():
 @cliente_bp.route("/<int:idCliente>", methods=["GET"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
-@middleware.validate_id_param
 def buscar_por_id(idCliente: int):
     cliente = controller.buscar_por_id(idCliente)
 
@@ -98,7 +92,6 @@ def buscar_por_id(idCliente: int):
 @cliente_bp.route("/<int:idCliente>", methods=["PUT"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
-@middleware.validate_id_param
 @middleware.validate_body
 def editar(idCliente: int):
     cliente = request.get_json()["cliente"]
@@ -136,7 +129,6 @@ def editar(idCliente: int):
 @cliente_bp.route("/<int:idCliente>", methods=["DELETE"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
-@middleware.validate_id_param
 def deletar(idCliente: int):
     cliente = controller.buscar_por_id(idCliente)
     nome    = cliente._nomeCliente if cliente else str(idCliente)

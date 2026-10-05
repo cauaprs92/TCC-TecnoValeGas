@@ -10,11 +10,6 @@ historico_ctrl = HistoricoController()
 jwt            = JwtMiddleware()
 
 
-@nota_fiscal_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 def _fmt_data(valor):
     return valor.strftime("%Y-%m-%d %H:%M:%S") if valor else None
 

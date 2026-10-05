@@ -12,11 +12,6 @@ middleware     = ServicoMiddleware()
 jwt            = JwtMiddleware()
 
 
-@servico_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
-
-
 def _serializar(s) -> dict:
     return {
         "idServico":         s._idServico,
@@ -68,7 +63,6 @@ def listar():
 @servico_bp.route("/<int:idServico>", methods=["GET"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
-@middleware.validate_id_param
 def buscar_por_id(idServico: int):
     servico = controller.buscar_por_id(idServico)
 
@@ -82,7 +76,6 @@ def buscar_por_id(idServico: int):
 @servico_bp.route("/<int:idServico>", methods=["PUT"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
-@middleware.validate_id_param
 @middleware.validate_body
 def editar(idServico: int):
     servico = request.get_json()["servico"]
@@ -112,7 +105,6 @@ def editar(idServico: int):
 @servico_bp.route("/<int:idServico>", methods=["DELETE"])
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO)
-@middleware.validate_id_param
 def deletar(idServico: int):
     servico = controller.buscar_por_id(idServico)
     nome    = servico._nomeServico if servico else str(idServico)

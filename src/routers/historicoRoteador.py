@@ -1,16 +1,10 @@
 from flask import Blueprint, jsonify
 from src.controller.historicoController import HistoricoController
 from src.middleware.jwtMiddleware import JwtMiddleware, CARGO_ADMINISTRACAO
-from src.error_response import ErrorResponse
 
 historico_bp = Blueprint("historico", __name__, url_prefix="/historico")
 controller   = HistoricoController()
 jwt          = JwtMiddleware()
-
-
-@historico_bp.errorhandler(ErrorResponse)
-def handle_error(e: ErrorResponse):
-    return jsonify({"status": False, "msg": e.args[0], "error": e.error}), e.httpCode
 
 
 def _serializar(h) -> dict:

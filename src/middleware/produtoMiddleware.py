@@ -50,19 +50,3 @@ class ProdutoMiddleware:
 
             return f(*args, **kwargs)
         return decorated_function
-
-    def validate_id_param(self, f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'idProduto' not in kwargs:
-                raise ErrorResponse(400, "Erro na validação de dados",
-                                    {"message": "O parâmetro 'idProduto' é obrigatório!"})
-            try:
-                val = int(kwargs['idProduto'])
-                if val <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                raise ErrorResponse(400, "Erro na validação de dados",
-                                    {"message": "O parâmetro 'idProduto' deve ser um número inteiro positivo!"})
-            return f(*args, **kwargs)
-        return decorated_function

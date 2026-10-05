@@ -263,23 +263,3 @@ class ObraMiddleware:
 
             return f(*args, **kwargs)
         return decorated_function
-
-    def validate_id_param(self, f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'idObra' not in kwargs:
-                raise ErrorResponse(
-                    400, "Erro na validação de dados",
-                    {"message": "O parâmetro 'idObra' é obrigatório!"}
-                )
-            try:
-                val = int(kwargs['idObra'])
-                if val <= 0:
-                    raise ValueError
-            except (ValueError, TypeError):
-                raise ErrorResponse(
-                    400, "Erro na validação de dados",
-                    {"message": "O parâmetro 'idObra' deve ser um número inteiro positivo!"}
-                )
-            return f(*args, **kwargs)
-        return decorated_function
