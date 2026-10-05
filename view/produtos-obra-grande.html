@@ -359,7 +359,7 @@
         document.title = `Produtos Obra Grande ${obra.idObra}`;
 
         if (obra.codCliente) {
-          const { cliente } = await _api(`/cliente/${obra.codCliente}`, token);
+          const { cliente } = await _api(`/obra/${idObra}/cliente`, token);
           _txt('f-cliente', cliente.nomeCliente);
           _txt('f-cidade',  cliente.cidade);
         }

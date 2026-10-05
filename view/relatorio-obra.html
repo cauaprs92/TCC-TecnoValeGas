@@ -401,7 +401,7 @@
         document.title = `Relatório de Obra ${obra.idObra}`;
 
         if (obra.codCliente) {
-          const { cliente } = await _api(`/cliente/${obra.codCliente}`, token);
+          const { cliente } = await _api(`/obra/${idObra}/cliente`, token);
           _txt('f-cliente',  cliente.nomeCliente);
           _txt('f-endereco', cliente.rua);
           _txt('f-numero',   cliente.numero);
