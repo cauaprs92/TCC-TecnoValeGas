@@ -145,6 +145,7 @@
 
   </div>
 
+  <script src="/impressao.js"></script>
   <script>
     const SECOES = [
       {
@@ -242,40 +243,11 @@
     const grid = document.getElementById('grid');
     SECOES.forEach(sec => grid.appendChild(montarTabela(sec)));
 
-    function _txt(id, valor) {
-      if (valor !== null && valor !== undefined && valor !== '') {
-        document.getElementById(id).textContent = valor;
-      }
-    }
-
-    async function _api(endpoint, token) {
-      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!res.ok) throw new Error(`Erro ${res.status} em ${endpoint}`);
-      return res.json();
-    }
-
-    async function carregar() {
-      const token  = sessionStorage.getItem('token');
-      const idObra = new URLSearchParams(location.search).get('id');
-
-      if (!token)  { document.body.innerHTML = '<p style="color:#fff;padding:20px">Sessão expirada. Faça login novamente.</p>'; return; }
-      if (!idObra) { document.body.innerHTML = '<p style="color:#fff;padding:20px">Obra não informada.</p>'; return; }
-
-      try {
-        const { obra } = await _api(`/obra/${idObra}`, token);
-        document.title = `Produtos Obra ${obra.idObra}`;
-
-        if (obra.codCliente) {
-          const { cliente } = await _api(`/obra/${idObra}/cliente`, token);
-          _txt('f-cliente', cliente.nomeCliente);
-          _txt('f-cidade',  cliente.cidade);
-        }
-      } catch (e) {
-        alert('Erro ao carregar os dados da obra: ' + e.message);
-      }
-    }
-
-    carregar();
+    carregarObraDaUrl('Produtos Obra', (obra, cliente) => {
+      if (!cliente) return;
+      _txt('f-cliente', cliente.nomeCliente);
+      _txt('f-cidade',  cliente.cidade);
+    });
   </script>
 </body>
 </html>
