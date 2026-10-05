@@ -168,6 +168,9 @@ def listar_fotos(idProduto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def upload_foto(idProduto: int):
+    if not controller.buscar_por_id(idProduto):
+        raise ErrorResponse(404, "Produto não encontrado.", {"message": f"Nenhum produto com ID {idProduto}."})
+
     if 'arquivo' not in request.files:
         raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
 
@@ -190,6 +193,7 @@ def upload_foto(idProduto: int):
 
     idFoto = foto_dao.inserir(idProduto, tipoFoto, nome_unico, arquivo.filename)
     if not idFoto:
+        os.remove(os.path.join(UPLOADS_DIR, nome_unico))
         raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
 
     return jsonify({
@@ -209,7 +213,7 @@ def upload_foto(idProduto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def deletar_foto(idProduto: int, idFoto: int):
-    nome = foto_dao.deletar(idFoto)
+    nome = foto_dao.deletar(idFoto, idProduto)
     if not nome:
         raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
 

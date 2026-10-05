@@ -281,6 +281,7 @@ def upload_foto(idObra: int):
 
     idFoto = foto_dao.inserir(idObra, nome_unico, arquivo.filename)
     if not idFoto:
+        os.remove(os.path.join(UPLOADS_DIR, nome_unico))
         raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
 
     return jsonify({
@@ -301,7 +302,7 @@ def upload_foto(idObra: int):
 @exigir_acesso_obra
 @middleware.validate_id_param
 def deletar_foto(idObra: int, idFoto: int):
-    nome = foto_dao.deletar(idFoto)
+    nome = foto_dao.deletar(idFoto, idObra)
     if not nome:
         raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
 

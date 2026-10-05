@@ -52,14 +52,14 @@ class FotoProdutoDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def _buscar_nome_arquivo(self, idFoto: int):
-        sql = "SELECT nomeArquivo FROM produto_fotos WHERE idFoto = %s"
+    def _buscar_nome_arquivo(self, idFoto: int, idProduto: int):
+        sql = "SELECT nomeArquivo FROM produto_fotos WHERE idFoto = %s AND idProduto = %s"
         conexao = Conexao.obter_conexao()
         if not conexao:
             return None
         cursor = conexao.cursor()
         try:
-            cursor.execute(sql, (idFoto,))
+            cursor.execute(sql, (idFoto, idProduto))
             row = cursor.fetchone()
             return row[0] if row else None
         except Exception as e:
@@ -68,8 +68,9 @@ class FotoProdutoDAO:
         finally:
             Conexao.fechar_conexao(conexao, cursor)
 
-    def deletar(self, idFoto: int):
-        nome = self._buscar_nome_arquivo(idFoto)
+    def deletar(self, idFoto: int, idProduto: int):
+        """Só apaga a foto se ela pertencer ao idProduto informado."""
+        nome = self._buscar_nome_arquivo(idFoto, idProduto)
         if not nome:
             return None
         sql = "DELETE FROM produto_fotos WHERE idFoto = %s"
