@@ -9,8 +9,8 @@ from src.controller.produtoController import ProdutoController
 CARGO_OBRA = "Obra"
 
 class ObraController:
-
-    STATUS_VALIDOS = ["À iniciar", "Em andamento", "Concluida", "Cancelada", "Pausada"]
+    """Regras de negócio da obra. O formato do corpo (campos obrigatórios,
+    datas, status) já chega validado pelo ObraMiddleware."""
 
     def __init__(self):
         self.dao          = ObraDAO()
@@ -20,12 +20,6 @@ class ObraController:
         self.daoEquipe    = ObraFuncionarioDAO()
         self.daoAdmin     = AdminDAO()
         self.ctrlProduto  = ProdutoController()
-
-    def _validar_status(self, status: str) -> tuple:
-        if status not in self.STATUS_VALIDOS:
-            opcoes = ", ".join(self.STATUS_VALIDOS)
-            return False, f"Status invalido. Use: {opcoes}."
-        return True, ""
 
     def _validar_equipe(self, funcionarios: list) -> tuple:
         """Cada id da equipe precisa existir e ter cargo 'Obra' — é esse cargo
@@ -68,28 +62,11 @@ class ObraController:
         if not clienteExistente:
             return False, "Cliente nao encontrado. Cadastre o cliente antes de criar a obra."
 
-        if not dadosObra.get("descObra", "").strip():
-            return False, "Descricao da obra nao pode ser vazia."
-
-        if not dadosObra.get("dataInicio", "").strip():
-            return False, "Data de inicio da obra nao pode ser vazia."
-
-        if not dadosObra.get("respObra", "").strip():
-            return False, "Responsavel pela obra e obrigatorio."
-
-        valido, mensagem = self._validar_status(dadosObra.get("statusObra", ""))
-        if not valido:
-            return False, mensagem
-
         valido, mensagem = self._validar_equipe(funcionarios)
         if not valido:
             return False, mensagem
 
         servicosVinculados = servicosVinculados or []
-
-        if not produtosUsados and not servicosVinculados:
-            return False, "Informe pelo menos um produto ou servico para a obra."
-
         avisos = self._avisos_de_estoque(dadosObra, produtosUsados, servicosVinculados)
 
         sucesso, resultado = self.dao.cadastrar(
@@ -109,13 +86,6 @@ class ObraController:
         clienteExistente = self.daoCliente.buscar_por_id(dadosObra["codCliente"])
         if not clienteExistente:
             return False, "Cliente nao encontrado."
-
-        if not dadosObra.get("descObra", "").strip():
-            return False, "Descricao da obra nao pode ser vazia."
-
-        valido, mensagem = self._validar_status(dadosObra.get("statusObra", ""))
-        if not valido:
-            return False, mensagem
 
         if funcionarios is not None:
             valido, mensagem = self._validar_equipe(funcionarios)
