@@ -257,7 +257,6 @@ function permissoes() {
 
 function podeVerPagina(pagina) { return permissoes().paginas.includes(pagina); }
 function podeEscrever(recurso) { return permissoes().escrita.includes(recurso); }
-function podeCriar(recurso)    { return permissoes().criacao.includes(recurso); }
 
 function aplicarPermissoesUI() {
   const perm = permissoes();
@@ -1833,36 +1832,6 @@ function buscarClienteObra(input) {
   set('obraCelular2',           c.telefone2);
 }
 
-function buscarProdutoObra(input) {
-  const row       = input.closest('.produto-obra-row');
-  const nomeEl    = row.querySelector('.prod-nome-input');
-  const estoqueEl = row.querySelector('.prod-estoque-input');
-  const id        = parseInt(input.value);
-
-  if (!id || id <= 0) {
-    nomeEl.value          = '';
-    estoqueEl.value       = '';
-    estoqueEl.style.color = '';
-    return;
-  }
-
-  const p = cacheProdutos.find(x => x.idProduto === id);
-  if (!p) {
-    nomeEl.value          = 'Produto não encontrado';
-    estoqueEl.value       = '';
-    estoqueEl.style.color = '';
-    return;
-  }
-
-  const cor = p.qtdProduto <= 0        ? '#DC2626'
-            : (p.qtdMinima > 0 && p.qtdProduto < p.qtdMinima) ? '#D97706'
-            : '#16A34A';
-
-  nomeEl.value          = p.nomeProduto;
-  estoqueEl.value       = `${p.qtdProduto} em estoque`;
-  estoqueEl.style.color = cor;
-}
-
 async function salvarObra() {
   const idEdicao   = document.getElementById('obraIdEdicao').value;
   const status     = document.getElementById('obraStatus').value;
@@ -2160,19 +2129,6 @@ function mascaraTelefone(input) {
   input.value = v;
 }
 
-function mascaraData(input) {
-  let v = input.value.replace(/\D/g, '').slice(0, 8);
-  if (v.length > 4) v = v.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3');
-  else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,2})/, '$1/$2');
-  input.value = v;
-}
-
-function _isoParaBr(d) {
-  if (!d) return '';
-  const [y, m, dia] = d.split('-');
-  return `${dia}/${m}/${y}`;
-}
-
 function _brParaIso(d) {
   if (!d || d.length < 10) return '';
   const [dia, m, y] = d.split('/');
@@ -2349,13 +2305,6 @@ async function carregarClientes() {
       `<tr><td colspan="6" class="empty-row">Erro ao carregar clientes: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarClientes:', e);
   }
-}
-
-function _enderecoCliente(c) {
-  const linha1 = [c.rua, c.numero ? `nº ${c.numero}` : null].filter(Boolean).join(', ');
-  const linha2 = [c.bairro, c.cidade && c.estado ? `${c.cidade}/${c.estado}` : c.cidade].filter(Boolean).join(', ');
-  if (!linha1 && !linha2) return '—';
-  return [linha1, linha2].filter(Boolean).join('<br>');
 }
 
 function renderTabelaClientes(clientes) {
@@ -3974,14 +3923,6 @@ function irParaProduto(idProduto) {
   }, 80);
 }
 
-function irParaObra(idObra) {
-  navegarPara('obras');
-  if (_cacheReady.obras) { abrirModalEditarObra(idObra); return; }
-  const t = setInterval(() => {
-    if (_cacheReady.obras) { clearInterval(t); abrirModalEditarObra(idObra); }
-  }, 80);
-}
-
 function irParaAlertasEstoque() {
   navegarPara('estoque');
   if (_cacheReady.produtos) { filtrarProdutosStatus('alerta'); return; }
@@ -4004,19 +3945,6 @@ function irParaObrasConcluidas() {
   const t = setInterval(() => {
     if (_cacheReady.obras) { clearInterval(t); filtrarStatusObra('Concluida'); }
   }, 80);
-}
-
-
-// ══════════════════════════════════════════════════
-// SUB-TABS (Admins / Responsáveis)
-// ══════════════════════════════════════════════════
-
-function mudarSubtab(section, btn) {
-  const panel = btn.dataset.subtab;
-  document.querySelectorAll(`#page-${section} .subtab`).forEach(b => b.classList.remove('active'));
-  document.querySelectorAll(`#page-${section} .subtab-panel`).forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(panel).classList.add('active');
 }
 
 

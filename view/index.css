@@ -635,28 +635,6 @@ body {
 .kpi-card.kpi-nav { cursor: pointer; }
 .kpi-card.kpi-nav:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); border-color: var(--gray-300); }
 
-/* ── SUBTABS ── */
-.subtabs {
-  display: flex; gap: 4px;
-  margin-bottom: 18px;
-  border-bottom: 2px solid var(--gray-200);
-  padding-bottom: 0;
-}
-.subtab {
-  display: flex; align-items: center; gap: 7px;
-  padding: 9px 18px;
-  background: none; border: none; cursor: pointer;
-  font-family: var(--font); font-size: .85rem; font-weight: 600;
-  color: var(--gray-500);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color var(--transition), border-color var(--transition);
-}
-.subtab:hover { color: var(--dark); }
-.subtab.active { color: var(--dark); border-bottom-color: var(--dark); }
-.subtab-panel { display: none; }
-.subtab-panel.active { display: block; animation: fadeIn .18s ease; }
-
 /* ── ADMIN PASSWORD TOGGLE ── */
 .input-pwd-wrap { position: relative; }
 .input-pwd-wrap input { padding-right: 44px; }
@@ -1085,10 +1063,6 @@ body {
 /* ── KPI CARD REDESIGN ── */
 .kpi-value { font-size: 1.7rem; }
 .kpi-label { font-size: .74rem; }
-
-/* ── SUBTABS ── */
-.subtabs { margin-bottom: 20px; padding-bottom: 0; }
-.subtab  { font-size: .84rem; padding: 10px 18px; }
 
 /* ── QTY BADGE SIZE ── */
 .qty-badge { font-size: .8rem; padding: 3px 9px; }
