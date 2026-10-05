@@ -342,7 +342,8 @@ function renderTabelaProdutos(produtos) {
       const { cls, label } = statusEstoque(p);
       const nomeSafe = _esc(p.nomeProduto);
       const limites  = [
-        p.qtdMinima ? `Mín: ${p.qtdMinima}` : null,
+        p.origemMinimo === 'sem_dados' ? 'Mín: aguardando uso'
+          : `Mín: ${p.qtdMinima} (${p.origemMinimo === 'manual' ? 'manual' : 'auto'})`,
         p.qtdMaxima && p.qtdMaxima < 9999 ? `Máx: ${p.qtdMaxima}` : null,
       ].filter(Boolean).join(' · ');
       return `
@@ -405,28 +406,82 @@ function _vProdQtd(show = true) {
   return !msg;
 }
 
-function _vProdQtdMin(show = true) {
-  const vMin = document.getElementById('prodQtdMin').value.trim();
-  const vMax = document.getElementById('prodQtdMax').value.trim();
-  let msg = '';
-  if (vMin === '')                                        msg = 'A quantidade mínima é obrigatória.';
-  else if (!Number.isInteger(Number(vMin)) || Number(vMin) < 0) msg = 'A quantidade mínima deve ser um número inteiro positivo.';
-  else if (vMax !== '' && Number(vMin) > Number(vMax))   msg = 'A quantidade mínima não pode ser maior que a máxima.';
-  if (msg && show) _erroProd('prodQtdMin', msg);
-  else if (!msg)   _erroProd('prodQtdMin', '');
-  return !msg;
-}
-
 function _vProdQtdMax(show = true) {
   const vMax = document.getElementById('prodQtdMax').value.trim();
-  const vMin = document.getElementById('prodQtdMin').value.trim();
   let msg = '';
   if (vMax === '')                                         msg = 'A quantidade máxima é obrigatória.';
   else if (!Number.isInteger(Number(vMax)) || Number(vMax) <= 0) msg = 'A quantidade máxima deve ser um número inteiro positivo.';
-  else if (vMin !== '' && Number(vMax) <= Number(vMin))    msg = 'A quantidade máxima deve ser maior que a mínima.';
   if (msg && show) _erroProd('prodQtdMax', msg);
   else if (!msg)   _erroProd('prodQtdMax', '');
   return !msg;
+}
+
+// ── Ajustes opcionais do estoque mínimo automático ──
+
+function _vProdPrazo(show = true) {
+  const v = document.getElementById('prodPrazo').value.trim();
+  let msg = '';
+  if (v !== '' && (!Number.isInteger(Number(v)) || Number(v) <= 0 || Number(v) > 365))
+    msg = 'O prazo deve ser um número inteiro de dias, entre 1 e 365.';
+  if (msg && show) _erroProd('prodPrazo', msg);
+  else if (!msg)   _erroProd('prodPrazo', '');
+  return !msg;
+}
+
+function _vProdConsumo(show = true) {
+  const v = document.getElementById('prodConsumo').value.trim();
+  const msg = (v !== '' && !(Number(v) > 0)) ? 'O uso aproximado deve ser maior que zero.' : '';
+  if (msg && show) _erroProd('prodConsumo', msg);
+  else if (!msg)   _erroProd('prodConsumo', '');
+  return !msg;
+}
+
+function _vProdMinManual(show = true) {
+  if (!document.getElementById('prodMinManualChk').checked) { _erroProd('prodQtdMinManual', ''); return true; }
+  const v    = document.getElementById('prodQtdMinManual').value.trim();
+  const vMax = document.getElementById('prodQtdMax').value.trim();
+  let msg = '';
+  if (v === '')                                            msg = 'Informe o mínimo ou desmarque a opção manual.';
+  else if (!Number.isInteger(Number(v)) || Number(v) < 0)  msg = 'O mínimo deve ser um número inteiro positivo.';
+  else if (vMax !== '' && Number(v) > Number(vMax))        msg = 'O mínimo não pode ser maior que a quantidade máxima.';
+  if (msg && show) _erroProd('prodQtdMinManual', msg);
+  else if (!msg)   _erroProd('prodQtdMinManual', '');
+  return !msg;
+}
+
+function _toggleMinimoManual() {
+  const manual = document.getElementById('prodMinManualChk').checked;
+  document.getElementById('prodMinManualGroup').classList.toggle('hidden', !manual);
+  if (!manual) _erroProd('prodQtdMinManual', '');
+}
+
+const _ORIGEM_MINIMO_BADGE = {
+  historico:       'badge-green',
+  historico_curto: 'badge-yellow',
+  estimativa:      'badge-blue',
+  manual:          'badge-gray',
+  sem_dados:       'badge-gray',
+};
+
+// Resumo do cálculo no topo da seção: valor, de onde veio e a conta.
+function _renderResumoMinimo(p) {
+  const el = document.getElementById('prodMinimoResumo');
+  if (!p) {
+    el.innerHTML = 'Calculado automaticamente: <strong>consumo médio por dia × prazo de entrega + 20% de margem</strong>. '
+      + 'O consumo vem do uso do produto nas obras; enquanto não houver histórico, informe o uso aproximado abaixo.';
+    return;
+  }
+  el.innerHTML = `<span class="minimo-valor">${escHtml(p.qtdMinima)} un.</span>`
+    + `<span class="badge ${_ORIGEM_MINIMO_BADGE[p.origemMinimo] || 'badge-gray'}">${escHtml(p.descricaoOrigem)}</span>`
+    + `<span class="minimo-conta">${escHtml(p.explicacaoMinimo)}</span>`;
+}
+
+function _prazoHintProduto(p) {
+  const hint = document.getElementById('prodPrazoHint');
+  const fornecedor = p && p.idFornecedor ? cacheFornecedores.find(f => f.idFornecedor === p.idFornecedor) : null;
+  hint.textContent = fornecedor
+    ? `Vazio = usa o prazo de ${fornecedor.nomeFornecedor} (${fornecedor.prazoEntregaDias} dias).`
+    : 'Vazio = usa o prazo do fornecedor (ou 7 dias, sem fornecedor).';
 }
 
 function _vProdDesc(show = true) {
@@ -438,7 +493,8 @@ function _vProdDesc(show = true) {
 }
 
 function _validarFormProduto() {
-  return [_vProdNome(), _vProdQtd(), _vProdQtdMin(), _vProdQtdMax(), _vProdDesc()].every(Boolean);
+  return [_vProdNome(), _vProdQtd(), _vProdQtdMax(), _vProdDesc(),
+          _vProdPrazo(), _vProdConsumo(), _vProdMinManual()].every(Boolean);
 }
 
 function _setupValidacaoProduto() {
@@ -450,13 +506,16 @@ function _setupValidacaoProduto() {
   };
   bind('prodNome',   _vProdNome);
   bind('prodQtd',    _vProdQtd);
-  bind('prodQtdMin', _vProdQtdMin, [_vProdQtdMax]);
-  bind('prodQtdMax', _vProdQtdMax, [_vProdQtdMin]);
+  bind('prodQtdMax', _vProdQtdMax, [_vProdMinManual]);
   bind('prodDesc',   _vProdDesc);
+  bind('prodPrazo',  _vProdPrazo);
+  bind('prodConsumo', _vProdConsumo);
+  bind('prodQtdMinManual', _vProdMinManual);
 }
 
 function _resetErrosProduto() {
-  ['prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc'].forEach(id => _erroProd(id, ''));
+  ['prodNome','prodQtd','prodQtdMax','prodDesc','prodPrazo','prodConsumo','prodQtdMinManual']
+    .forEach(id => _erroProd(id, ''));
 }
 
 // ── Fotos do Produto ──────────────────────────────────────────────────────────
@@ -596,8 +655,14 @@ async function _uploadFotosPendentes(idProduto) {
 // ── Modal abrir / fechar ───────────────────────────────────────────────────────
 
 function abrirModalNovoProduto() {
-  ['prodIdEdicao','prodNome','prodQtd','prodQtdMin','prodQtdMax','prodDesc','prodFornecedor']
+  ['prodIdEdicao','prodNome','prodQtd','prodQtdMax','prodDesc','prodFornecedor',
+   'prodPrazo','prodConsumo','prodQtdMinManual']
     .forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('prodPeriodo').value = 'mes';
+  document.getElementById('prodMinManualChk').checked = false;
+  _toggleMinimoManual();
+  _renderResumoMinimo(null);
+  _prazoHintProduto(null);
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-boxes-stacked"></i> Novo Produto';
   _resetErrosProduto();
@@ -612,8 +677,15 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('prodIdEdicao').value = p.idProduto;
   document.getElementById('prodNome').value     = p.nomeProduto;
   document.getElementById('prodQtd').value      = p.qtdProduto;
-  document.getElementById('prodQtdMin').value   = p.qtdMinima ?? '';
   document.getElementById('prodQtdMax').value   = p.qtdMaxima ?? '';
+  document.getElementById('prodPrazo').value    = p.prazoEntregaProduto ?? '';
+  document.getElementById('prodConsumo').value  = p.consumoEstimado ?? '';
+  document.getElementById('prodPeriodo').value  = p.periodoEstimativa || 'mes';
+  document.getElementById('prodMinManualChk').checked = p.qtdMinimaManual != null;
+  document.getElementById('prodQtdMinManual').value   = p.qtdMinimaManual ?? '';
+  _toggleMinimoManual();
+  _renderResumoMinimo(p);
+  _prazoHintProduto(p);
   document.getElementById('prodDesc').value     = p.descProduto || '';
   document.getElementById('prodFornecedor').value = p.nomeFornecedor || '';
   document.getElementById('modalProdutoTitle').innerHTML =
@@ -637,13 +709,22 @@ async function salvarProduto() {
   const idEdicao = document.getElementById('prodIdEdicao').value;
   const nome   = document.getElementById('prodNome').value.trim();
   const qtd    = parseInt(document.getElementById('prodQtd').value);
-  const qtdMin = parseInt(document.getElementById('prodQtdMin').value);
   const qtdMax = parseInt(document.getElementById('prodQtdMax').value);
   const desc   = document.getElementById('prodDesc').value.trim();
   const fornecedor = document.getElementById('prodFornecedor').value.trim() || null;
+  // Campos vazios = deixar o sistema calcular (prazo do fornecedor, sem estimativa, mínimo automático).
+  const prazo   = document.getElementById('prodPrazo').value.trim();
+  const consumo = document.getElementById('prodConsumo').value.trim();
+  const manual  = document.getElementById('prodMinManualChk').checked;
 
   const payload = {
-    produto: { nomeProduto: nome, qtdProduto: qtd, qtdMinima: qtdMin, qtdMaxima: qtdMax, descProduto: desc, fornecedor }
+    produto: {
+      nomeProduto: nome, qtdProduto: qtd, qtdMaxima: qtdMax, descProduto: desc, fornecedor,
+      prazoEntregaDias:  prazo   ? parseInt(prazo) : null,
+      consumoEstimado:   consumo ? Number(consumo) : null,
+      periodoEstimativa: consumo ? document.getElementById('prodPeriodo').value : null,
+      qtdMinimaManual:   manual  ? parseInt(document.getElementById('prodQtdMinManual').value) : null,
+    }
   };
 
   try {
@@ -659,6 +740,55 @@ async function salvarProduto() {
     await Promise.all([carregarProdutos(), carregarFornecedores()]);
     if (res?.aviso) showToast(res.aviso, 'warning');
     else showToast(idEdicao ? 'Produto atualizado!' : `Produto "${nome}" cadastrado!`, 'success');
+  } catch (e) {
+    showToast(`Erro: ${e.message}`, 'error');
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// FORNECEDORES  →  GET /fornecedor, PATCH /fornecedor/:id/prazo
+// ══════════════════════════════════════════════════
+
+async function abrirModalFornecedores() {
+  await carregarFornecedores();
+  _renderFornecedores();
+  abrirModal('modalFornecedores');
+}
+
+function _renderFornecedores() {
+  const lista = document.getElementById('fornLista');
+  if (!cacheFornecedores.length) {
+    lista.innerHTML = '<div class="empty-row">Nenhum fornecedor cadastrado. Eles são criados ao informar o fornecedor de um produto ou importar uma nota fiscal.</div>';
+    return;
+  }
+  lista.innerHTML = cacheFornecedores.map(f => `
+    <div class="forn-linha">
+      <span class="forn-nome">${escHtml(f.nomeFornecedor)}
+        <span class="forn-qtd">${f.qtdProdutos} produto${f.qtdProdutos === 1 ? '' : 's'}</span>
+      </span>
+      <div class="form-group" style="margin:0">
+        <input type="number" min="1" max="365" id="fornPrazo-${f.idFornecedor}"
+               value="${f.prazoEntregaDias}" title="Prazo de entrega em dias" />
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="salvarPrazoFornecedor(${f.idFornecedor})">
+        <i class="fa-solid fa-floppy-disk"></i> Salvar prazo
+      </button>
+    </div>`).join('');
+}
+
+async function salvarPrazoFornecedor(idFornecedor) {
+  const prazo = parseInt(document.getElementById(`fornPrazo-${idFornecedor}`).value);
+  if (!Number.isInteger(prazo) || prazo < 1 || prazo > 365) {
+    showToast('O prazo deve ser um número de dias entre 1 e 365.', 'warning');
+    return;
+  }
+  try {
+    await apiFetch(`/fornecedor/${idFornecedor}/prazo`, 'PATCH', { prazoEntregaDias: prazo });
+    // O prazo muda o mínimo calculado dos produtos desse fornecedor.
+    await Promise.all([carregarFornecedores(), carregarProdutos()]);
+    _renderFornecedores();
+    showToast('Prazo atualizado — estoque mínimo recalculado.', 'success');
   } catch (e) {
     showToast(`Erro: ${e.message}`, 'error');
   }
@@ -857,8 +987,8 @@ function _nfItemHTML(item) {
       </div>
       <div class="form-row" style="margin-bottom:12px">
         <div class="form-group" style="margin-bottom:0">
-          <label>Qtd. Mínima</label>
-          <input type="number" class="nf-np-min" min="0" placeholder="0" />
+          <label>Qtd. Mínima <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+          <input type="number" class="nf-np-min" min="0" placeholder="Automático" />
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label>Qtd. Máxima</label>

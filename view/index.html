@@ -281,6 +281,9 @@
           <button class="btn btn-secondary" onclick="exportarProdutos()">
             <i class="fa-solid fa-arrow-down-to-line"></i> Exportar
           </button>
+          <button class="btn btn-secondary" onclick="abrirModalFornecedores()" data-escrita="estoque">
+            <i class="fa-solid fa-truck-field"></i> Fornecedores
+          </button>
           <button class="btn btn-secondary" onclick="abrirModalImportarNF()" data-criar="estoque">
             <i class="fa-solid fa-file-arrow-up"></i> Importar Nota Fiscal
           </button>
@@ -772,11 +775,6 @@
                 <span class="field-error" id="err-prodQtd"></span>
               </div>
               <div class="form-group">
-                <label>Qtd. Mínima<span class="required">*</span></label>
-                <input type="number" id="prodQtdMin" placeholder="10" min="0" />
-                <span class="field-error" id="err-prodQtdMin"></span>
-              </div>
-              <div class="form-group" style="grid-column:1/-1">
                 <label>Qtd. Máxima<span class="required">*</span></label>
                 <input type="number" id="prodQtdMax" placeholder="500" min="0" />
                 <span class="field-error" id="err-prodQtdMax"></span>
@@ -800,6 +798,44 @@
                   onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
                   autocomplete="off" />
                 <div class="prod-dropdown hidden"></div>
+              </div>
+            </div>
+
+            <!-- ── Estoque mínimo automático ── -->
+            <div class="form-group minimo-section">
+              <label>Estoque Mínimo <span class="badge badge-blue minimo-tag">automático</span></label>
+              <div class="minimo-resumo" id="prodMinimoResumo"></div>
+
+              <div class="form-row" style="grid-template-columns:1fr 1fr">
+                <div class="form-group">
+                  <label>Prazo de entrega <span style="font-weight:400;opacity:.6">(dias, opcional)</span></label>
+                  <input type="number" id="prodPrazo" min="1" placeholder="Do fornecedor" />
+                  <span class="field-hint" id="prodPrazoHint">Vazio = usa o prazo do fornecedor.</span>
+                  <span class="field-error" id="err-prodPrazo"></span>
+                </div>
+                <div class="form-group">
+                  <label>Uso aproximado <span style="font-weight:400;opacity:.6">(opcional)</span></label>
+                  <div class="minimo-uso">
+                    <input type="number" id="prodConsumo" min="0" step="0.1" placeholder="Ex: 20" />
+                    <select id="prodPeriodo">
+                      <option value="dia">por dia</option>
+                      <option value="semana">por semana</option>
+                      <option value="mes" selected>por mês</option>
+                    </select>
+                  </div>
+                  <span class="field-hint">Usado enquanto o produto não tem 30 dias de uso registrados.</span>
+                  <span class="field-error" id="err-prodConsumo"></span>
+                </div>
+              </div>
+
+              <label class="minimo-manual-toggle">
+                <input type="checkbox" id="prodMinManualChk" onchange="_toggleMinimoManual()" />
+                Definir o mínimo manualmente
+              </label>
+              <div class="form-group hidden" id="prodMinManualGroup">
+                <input type="number" id="prodQtdMinManual" min="0" placeholder="Ex: 10" />
+                <span class="field-hint">Substitui o valor calculado até você desmarcar esta opção.</span>
+                <span class="field-error" id="err-prodQtdMinManual"></span>
               </div>
             </div>
 
@@ -836,6 +872,27 @@
             <button class="btn btn-primary" id="btnSalvarProduto" onclick="salvarProduto()">
               <i class="fa-solid fa-floppy-disk"></i> Salvar
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MODAL: FORNECEDORES (prazo de entrega) ===== -->
+      <div class="modal-overlay hidden" id="modalFornecedores">
+        <div class="modal">
+          <div class="modal-header">
+            <h2><i class="fa-solid fa-truck-field"></i> Fornecedores</h2>
+            <button class="modal-close" onclick="fecharModal('modalFornecedores')"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="modal-body">
+            <p class="field-hint" style="margin:0 0 12px">
+              O prazo de entrega de cada fornecedor entra no cálculo do estoque mínimo de todos
+              os produtos dele (consumo médio por dia × prazo + 20% de margem). Um produto pode
+              ter prazo próprio no cadastro dele.
+            </p>
+            <div class="forn-lista" id="fornLista"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="fecharModal('modalFornecedores')">Fechar</button>
           </div>
         </div>
       </div>

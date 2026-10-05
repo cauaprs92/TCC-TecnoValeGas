@@ -1569,3 +1569,39 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   /* o botão de recarregar continua ao lado do botão de ação, não numa linha só sua */
   .page-header-actions .btn { flex: 1 1 auto; min-width: 0; }
 }
+/* ── Estoque mínimo automático (modal de produto) ── */
+.minimo-section {
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: var(--gray-50);
+}
+.minimo-section > label .minimo-tag { margin-left: 6px; text-transform: none; letter-spacing: 0; }
+.minimo-section .form-row { margin-top: 6px; }
+.minimo-resumo { font-size: .82rem; color: var(--gray-700); line-height: 1.45; }
+.minimo-resumo .minimo-valor { font-size: 1.5rem; font-weight: 700; color: var(--dark); margin-right: 8px; }
+.minimo-resumo .minimo-conta { display: block; color: var(--gray-500); font-size: .78rem; margin-top: 2px; }
+.minimo-section .form-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) !important; }
+.minimo-uso { display: flex; gap: 6px; min-width: 0; }
+.minimo-uso input  { flex: 1 1 auto; min-width: 0; width: auto !important; }
+.minimo-uso select { flex: 0 0 118px; width: 118px !important; min-width: 0; }
+.minimo-manual-toggle {
+  display: flex; align-items: center; gap: 8px; margin-top: 4px;
+  font-size: .82rem !important; font-weight: 500 !important; text-transform: none !important;
+  letter-spacing: 0 !important; color: var(--gray-700); cursor: pointer;
+}
+.minimo-manual-toggle input { width: 16px; height: 16px; accent-color: var(--orange); }
+
+/* ── Modal de fornecedores (prazo de entrega) ── */
+.forn-lista { display: flex; flex-direction: column; gap: 8px; }
+.forn-linha {
+  display: grid; grid-template-columns: 1fr 110px auto; gap: 10px; align-items: center;
+  padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: 8px; background: #fff;
+}
+.forn-linha .forn-nome { font-weight: 600; font-size: .86rem; color: var(--dark); }
+.forn-linha .forn-qtd  { display: block; font-size: .74rem; color: var(--gray-500); font-weight: 400; }
+.forn-linha input { width: 100%; }
+@media (max-width: 520px) {
+  .forn-linha { grid-template-columns: 1fr 90px; }
+  .forn-linha .btn { grid-column: 1 / -1; }
+}
