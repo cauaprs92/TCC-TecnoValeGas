@@ -25,6 +25,15 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
 **Estoque / Produtos**
 - Cadastro, edição e exclusão de produtos
 - Controle de quantidade com alertas de estoque mínimo e máximo por produto
+- **Estoque mínimo calculado automaticamente** (ponto de pedido):
+  `consumo médio diário × prazo de entrega + 20% de margem`
+  - o consumo médio vem do histórico de saídas para obras (últimos 90 dias,
+    descontadas as devoluções), registrado em `movimentacoesEstoque`
+  - sem histórico suficiente, usa a estimativa de uso informada no cadastro
+    (por dia, semana ou mês), depois o histórico curto; sem nada, mínimo 0
+  - prazo de entrega por fornecedor, com prazo próprio opcional por produto
+  - o mínimo pode ser definido manualmente quando necessário
+  - regra isolada em `src/service/estoqueMinimo.py`
 - Dashboard com gráfico dos produtos com menor estoque e notificações de alerta
 
 **Clientes**
@@ -165,6 +174,7 @@ servicoProdutos     -- receita de produtos de cada serviço
 obraServicos        -- serviços vinculados a cada obra
 obraServicoProdutos -- receita do serviço no momento do vínculo (o que saiu do estoque)
 vw_consumo_obra     -- view: tudo o que cada obra consome do estoque
+movimentacoesEstoque -- entradas e saídas de estoque com data (base do consumo médio)
 obraFuncionarios    -- equipe de cada obra (define o que o cargo Obra enxerga)
 responsavel         -- fields (técnicos responsáveis)
 historico           -- registro das ações dos usuários
