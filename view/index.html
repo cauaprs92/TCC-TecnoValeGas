@@ -131,7 +131,7 @@
                 </div>
               </div>
             </div>
-            <button class="btn btn-secondary" onclick="gerarRelatorio()">
+            <button class="btn btn-secondary" id="btnRelatorioConsumo" onclick="gerarRelatorio('geral')">
               <i class="fa-solid fa-file-chart-column"></i> Relatório de Consumo
             </button>
             <button class="btn-reload" onclick="recarregarAba()" title="Atualizar"><i class="fa-solid fa-rotate-right"></i></button>
@@ -241,7 +241,7 @@
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:10px">
-                <button class="btn btn-secondary" onclick="gerarRelatorio()">Ver relatório completo</button>
+                <button class="btn btn-secondary" onclick="gerarRelatorio('grafico')">Ver relatório completo</button>
                 <div class="periodo-filtro" data-periodo="graficoPeriodo"></div>
               </div>
             </div>

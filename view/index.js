@@ -262,7 +262,7 @@ function aplicarPermissoesUI() {
   });
 
   // O relatório de consumo lê o estoque inteiro.
-  document.querySelector('[onclick="gerarRelatorio()"]')?.classList
+  document.getElementById('btnRelatorioConsumo')?.classList
     .toggle('hidden', !perm.paginas.includes('estoque'));
 
   // Cai numa página que o cargo enxerga: a inicial é o Dashboard, que
@@ -5002,16 +5002,35 @@ function exportarHistorico() {
 // RELATÓRIO DE CONSUMO
 // ══════════════════════════════════════════════════
 
-async function gerarRelatorio() {
+// escopo 'geral'  → segue o filtro geral do dashboard
+// escopo 'grafico'→ segue o filtro do card "Produtos mais utilizados"
+async function gerarRelatorio(escopo = 'geral') {
   try {
-    const res  = await apiFetch('/relatorio/produtos-consumidos');
-    const data = res.dados || [];
-    if (!data.length) { showToast('Nenhum dado de consumo registrado.', 'warning'); return; }
+    // Mesma fonte dos gráficos (consumo por produto, com quebra por obra), para
+    // o relatório refletir exatamente o período filtrado na tela. O estoque
+    // atual e o mínimo vêm do cache de produtos.
+    if (!_todosDadosGrafico) {
+      const res = await apiFetch('/relatorio/grafico-produtos');
+      _todosDadosGrafico = res.dados || [];
+    }
 
-    const cabecalhos = ['ID', 'Produto', 'Total Consumido', 'Estoque Atual', 'Qtd. Mínima'];
-    const linhas = data.map(d => [d.idProduto, d.nomeProduto, d.totalConsumido, d.estoqueAtual, d.qtdMinima]);
+    const range  = escopo === 'grafico' ? _rangeGrafico('graficoPeriodo') : _rangeGlobal();
+    const rotulo = escopo === 'grafico' ? _rotuloGrafico('graficoPeriodo') : _rotuloGlobal();
+    const dados  = _filtrarPorPeriodo(_todosDadosGrafico, range);
+
+    if (!dados.length) {
+      showToast('Nenhum consumo no período selecionado.', 'warning');
+      return;
+    }
+
+    const cabecalhos = ['ID', 'Produto', 'Total Consumido', 'Estoque Atual', 'Qtd. Mínima', 'Período'];
+    const linhas = dados.map(d => {
+      const p = cacheProdutos.find(x => x.idProduto === d.idProduto);
+      return [d.idProduto, d.nomeProduto, d.totalConsumido,
+              p?.qtdProduto ?? '—', p?.qtdMinima ?? '—', rotulo];
+    });
     _downloadXLSX(`relatorio_consumo_${_dataHoje()}.xlsx`, cabecalhos, linhas);
-    showToast('Relatório exportado com sucesso!', 'success');
+    showToast(`Relatório exportado — ${rotulo}.`, 'success');
   } catch (e) {
     showToast(`Erro ao gerar relatório: ${e.message}`, 'error');
   }
