@@ -2043,6 +2043,12 @@ async function salvarObra() {
     if (!bairro)     { _obraSetError('obraClienteBairro',      'Bairro é obrigatório.');            temErro = true; }
   }
   if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');     temErro = true; }
+  // Obra "À iniciar" é obra que ainda vai começar: a data de início não pode
+  // ser no passado.
+  else if (status === 'À iniciar' && dataInicio < _isoLocal(new Date())) {
+    _obraSetError('obraDataInicio', 'Para o status "À iniciar", a data de início não pode ser anterior a hoje.');
+    temErro = true;
+  }
   if (!desc)       { _obraSetError('obraDesc',        'A descrição da obra é obrigatória.'); temErro = true; }
   if (temErro) {
     _mostrarBanner('banner-modalObra');
