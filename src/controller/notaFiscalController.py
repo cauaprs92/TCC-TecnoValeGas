@@ -1,7 +1,15 @@
 from src.dao.notaFiscalDAO import NotaFiscalDAO
 from src.service.nfeParser import parse_nfe, NFeParserError
+from src.service.danfeParser import parse_danfe_pdf
 
 _ACOES_VALIDAS = ('repor', 'criar', 'ignorar')
+
+# Formatos aceitos na importação: o XML da NF-e ou o PDF do DANFE. Os dois
+# parsers devolvem o mesmo dicionário, então daqui para frente o fluxo é um só.
+_PARSERS = {
+    ".xml": parse_nfe,
+    ".pdf": parse_danfe_pdf,
+}
 
 
 class NotaFiscalController:
@@ -11,16 +19,27 @@ class NotaFiscalController:
 
     # ─── Importação ───────────────────────────────────────────────────────────
 
-    def importar_xml(self, conteudoXml, nomeArquivo: str = None) -> tuple:
-        """Lê o XML, grava a nota e seus itens e devolve a nota pronta para conferência.
+    @staticmethod
+    def formato_suportado(nomeArquivo: str) -> bool:
+        return any((nomeArquivo or "").lower().endswith(ext) for ext in _PARSERS)
+
+    def importar_arquivo(self, conteudo, nomeArquivo: str) -> tuple:
+        """Lê o arquivo (XML ou PDF), grava a nota e seus itens e devolve a nota
+        pronta para conferência.
 
         Se a chave já existe, reabre a nota em vez de recusar o arquivo — um
-        produto excluído por engano precisa poder ser conferido de novo.
+        produto excluído por engano precisa poder ser conferido de novo. Vale
+        também entre formatos: a mesma nota importada por PDF e depois por XML
+        tem a mesma chave e não duplica.
 
         Retorna (sucesso, mensagem, nota, reaberta).
         """
+        extensao = next((ext for ext in _PARSERS if (nomeArquivo or "").lower().endswith(ext)), None)
+        if not extensao:
+            return False, "Formato não suportado. Envie o XML ou o PDF (DANFE) da NF-e.", None, False
+
         try:
-            dadosNota = parse_nfe(conteudoXml)
+            dadosNota = _PARSERS[extensao](conteudo)
         except NFeParserError as e:
             return False, str(e), None, False
 

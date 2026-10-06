@@ -919,8 +919,8 @@
           </div>
           <div class="modal-body">
             <p class="nf-intro">
-              Envie o arquivo <strong>XML</strong> da NF-e para dar entrada nos produtos em massa.
-              Depois do envio você confere item por item antes de mexer no estoque.
+              Envie o <strong>XML</strong> ou o <strong>PDF (DANFE)</strong> da NF-e para dar entrada
+              nos produtos em massa. Depois do envio você confere item por item antes de mexer no estoque.
             </p>
 
             <div class="foto-dropzone" id="nfDropzone"
@@ -929,11 +929,22 @@
                  ondragleave="this.classList.remove('drag-over')"
                  ondrop="_onDropNF(event)">
               <i class="fa-solid fa-cloud-arrow-up"></i>
-              <span>Clique ou arraste o XML aqui</span>
-              <span class="foto-hint">Apenas arquivos .xml de NF-e — máx. 10 MB</span>
+              <span>Clique ou arraste o XML ou PDF aqui</span>
+              <div class="nf-formatos">
+                <span class="nf-formato"><i class="fa-solid fa-file-code"></i> XML</span>
+                <span class="nf-formato"><i class="fa-solid fa-file-pdf"></i> PDF (DANFE)</span>
+              </div>
+              <span class="foto-hint">Máx. 10 MB por arquivo</span>
             </div>
-            <input type="file" id="nfInput" accept=".xml,text/xml,application/xml"
+            <input type="file" id="nfInput"
+                   accept=".xml,.pdf,text/xml,application/xml,application/pdf"
                    style="display:none" onchange="_onSelecionarNF(this.files)" />
+
+            <p class="nf-dica">
+              <i class="fa-solid fa-circle-info"></i>
+              O XML é a fonte mais exata. No PDF os dados são lidos do texto do DANFE —
+              PDFs digitalizados (foto ou scanner) não podem ser lidos.
+            </p>
 
             <div class="nf-loading hidden" id="nfLoading">
               <i class="fa-solid fa-spinner fa-spin"></i>

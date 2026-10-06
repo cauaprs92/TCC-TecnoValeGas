@@ -1035,6 +1035,20 @@ body {
 
 /* ── IMPORTAÇÃO / CONFERÊNCIA DE NOTA FISCAL ── */
 .nf-intro { font-size: .84rem; color: var(--gray-700); line-height: 1.5; margin-bottom: 16px; }
+/* formatos aceitos na importação da nota (XML / PDF) */
+.nf-formatos { display: flex; gap: 6px; justify-content: center; margin: 2px 0; }
+.nf-formato {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .72rem !important; font-weight: 600 !important;
+  padding: 3px 9px; border-radius: 99px;
+  background: #fff; border: 1px solid var(--gray-200); color: var(--gray-700);
+}
+.nf-formato i { font-size: .78rem !important; color: var(--orange); }
+.nf-dica {
+  display: flex; gap: 7px; align-items: flex-start;
+  margin-top: 12px; font-size: .76rem; color: var(--gray-500); line-height: 1.45;
+}
+.nf-dica i { margin-top: 2px; color: var(--gray-400); }
 .nf-loading {
   display: flex; align-items: center; justify-content: center; gap: 9px;
   margin-top: 14px; font-size: .84rem; font-weight: 500; color: var(--orange);

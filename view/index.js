@@ -842,7 +842,7 @@ async function salvarPrazoFornecedor(idFornecedor) {
 
 let _nfNotaAtual = null;
 
-// ── Importação do XML ─────────────────────────────────────────────────────────
+// ── Importação da nota (XML ou PDF do DANFE) ──────────────────────────────────
 
 function abrirModalImportarNF() {
   const inp = document.getElementById('nfInput');
@@ -862,8 +862,9 @@ function _onSelecionarNF(files) {
   const arquivo = files && files[0];
   if (!arquivo) return;
 
-  if (!arquivo.name.toLowerCase().endsWith('.xml')) {
-    showToast('Envie o arquivo XML da NF-e.', 'warning');
+  const nome = arquivo.name.toLowerCase();
+  if (!nome.endsWith('.xml') && !nome.endsWith('.pdf')) {
+    showToast('Envie o XML ou o PDF (DANFE) da NF-e.', 'warning');
     return;
   }
   if (arquivo.size > 10 * 1024 * 1024) {

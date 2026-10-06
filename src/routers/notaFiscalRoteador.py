@@ -58,15 +58,18 @@ def importar():
     if not arquivo.filename:
         raise ErrorResponse(400, "Arquivo inválido.", {"message": "Nome de arquivo vazio."})
 
-    if not arquivo.filename.lower().endswith('.xml'):
-        raise ErrorResponse(400, "Tipo de arquivo não permitido.", {"message": "Envie o XML da NF-e."})
+    if not controller.formato_suportado(arquivo.filename):
+        raise ErrorResponse(400, "Tipo de arquivo não permitido.",
+                            {"message": "Envie o XML ou o PDF (DANFE) da NF-e."})
 
     conteudo = arquivo.read()
 
-    sucesso, mensagem, nota, reaberta = controller.importar_xml(conteudo, arquivo.filename)
+    sucesso, mensagem, nota, reaberta = controller.importar_arquivo(conteudo, arquivo.filename)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
+
+    formato = "PDF" if arquivo.filename.lower().endswith(".pdf") else "XML"
 
     if reaberta:
         historico_ctrl.registrar(
@@ -80,7 +83,7 @@ def importar():
             g.admin_id, g.jwt_payload.get("nomeLogin"),
             "Importou", "Nota Fiscal",
             f"Importou a nota fiscal nº {nota._numero} de '{nota._nomeFornecedor}' "
-            f"({len(nota._itens)} itens)",
+            f"via {formato} ({len(nota._itens)} itens)",
         )
 
     return jsonify({

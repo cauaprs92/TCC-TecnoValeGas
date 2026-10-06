@@ -46,6 +46,16 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
   - prazo de entrega por fornecedor, com prazo próprio opcional por produto
   - o mínimo pode ser definido manualmente quando necessário
   - regra isolada em `src/service/estoqueMinimo.py`
+- **Importação de NF-e por XML ou PDF (DANFE)**, com conferência item a item
+  antes de mexer no estoque
+  - XML: leitura exata das tags da nota (`src/service/nfeParser.py`)
+  - PDF: lê o texto do DANFE (`src/service/danfeParser.py`). A chave de acesso
+    (validada pelo dígito verificador) dá CNPJ, série e número; os itens são
+    ancorados em NCM + CST + CFOP + unidade e conferidos por
+    `quantidade × valor unitário ≈ total`. Funciona com DANFEs de emissores
+    diferentes (descrição em várias linhas, colunas extras de impostos, valores
+    quebrados na célula); PDF digitalizado (imagem) não tem texto e é recusado
+  - a mesma nota importada por PDF e por XML não duplica (mesma chave)
 - Dashboard com gráfico dos produtos com menor estoque e notificações de alerta
 
 **Clientes**
@@ -83,7 +93,7 @@ TCC-TecnoValeGas/
     ├── controller/          # Regras de negócio
     ├── routers/             # Blueprints Flask — definição das rotas
     ├── middleware/          # Validação de body e token JWT / cargo
-    ├── service/             # Leitura do XML de NF-e
+    ├── service/             # Leitura de NF-e (XML e PDF) e cálculo do estoque mínimo
     └── error_response.py    # Classe de erro padronizada
 ```
 
@@ -193,7 +203,7 @@ historico           -- registro das ações dos usuários
 produto_fotos       -- fotos e notas fiscais anexadas aos produtos
 obra_fotos          -- fotos das obras
 fornecedores        -- fornecedores (nome + CNPJ, usado na importação de NF-e)
-notasFiscais        -- NF-e importadas por XML (chave de acesso única)
+notasFiscais        -- NF-e importadas por XML ou PDF (chave de acesso única)
 notaFiscalItens     -- itens da nota aguardando conferência (pendente/confirmado/ignorado)
 ```
 
