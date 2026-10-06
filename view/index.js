@@ -3956,6 +3956,21 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { fecharSidebarMobile(); fecharFiltroGlobal(); fecharMenusPeriodo(); }
 });
 
+// ── Campos numéricos: nunca aceitam negativo ──────────────────────────────────
+// O domínio só tem quantidades, preços, prazos e IDs — todos >= 0. Bloqueia o
+// sinal de menos ao digitar e remove qualquer '-' colado.
+document.addEventListener('keydown', e => {
+  if (e.target.matches?.('input[type="number"]') && (e.key === '-' || e.key === 'Subtract')) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.matches?.('input[type="number"]') && el.value.includes('-')) {
+    el.value = el.value.replace(/-/g, '');
+  }
+});
+
 // ao voltar para o desktop a gaveta é descartada
 window.addEventListener('resize', () => {
   if (!_sidebarModoGaveta()) fecharSidebarMobile();
