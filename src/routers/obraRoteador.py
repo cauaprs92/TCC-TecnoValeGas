@@ -193,7 +193,11 @@ def buscar_servicos_da_obra(idObra: int):
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 @exigir_acesso_obra
 def historico_da_obra(idObra: int):
-    registros = historico_ctrl.listar_por_entidade("Obra", idObra)
+    obra = controller.buscar_por_id(idObra)
+    if not obra:
+        raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
+
+    registros = historico_ctrl.listar_historico_obra(idObra, obra[2])
     historico = [{
         "idHistorico": h._idHistorico,
         "nomeAdmin":   h._nomeAdmin,

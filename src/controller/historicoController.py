@@ -20,3 +20,6 @@ class HistoricoController:
 
     def listar_por_entidade(self, entidade: str, idEntidade: int) -> list:
         return self.dao.buscar_por_entidade(entidade, idEntidade)
+
+    def listar_historico_obra(self, id_obra: int, desc_obra: str = None) -> list:
+        return self.dao.buscar_historico_obra(id_obra, desc_obra)
