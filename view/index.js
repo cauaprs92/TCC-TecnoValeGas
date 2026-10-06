@@ -1693,26 +1693,30 @@ async function _renderHistoricoObra(idObra) {
     return;
   }
 
+  // Mesmo visual da tabela de Histórico global: data-table, badge de ação e
+  // as classes de célula do sistema (cell-secondary / cell-primary).
   el.innerHTML = `
-    <table class="data-table" style="margin-top:8px">
-      <thead>
-        <tr>
-          <th style="white-space:nowrap">Data / Hora</th>
-          <th>Usuário</th>
-          <th>Ação</th>
-          <th>Descrição</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${registros.map(h => `
+    <div class="card hist-obra-card">
+      <table class="data-table">
+        <thead>
           <tr>
-            <td style="white-space:nowrap;font-size:.82rem">${escHtml(h.dataHora)}</td>
-            <td style="font-size:.82rem">${escHtml(h.nomeAdmin)}</td>
-            <td style="font-size:.82rem">${escHtml(h.acao)}</td>
-            <td style="font-size:.82rem">${escHtml(h.descricao)}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>`;
+            <th class="col-nowrap">Data / Hora</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${registros.map(h => `
+            <tr>
+              <td class="col-nowrap"><span class="cell-secondary">${escHtml(h.dataHora || '—')}</span></td>
+              <td><span class="cell-primary">${escHtml(h.nomeAdmin)}</span></td>
+              <td>${_badgeAcao(h.acao)}</td>
+              <td>${escHtml(h.descricao)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
   _marcarCelulasTabela(el.querySelector('table'));
 }
 
