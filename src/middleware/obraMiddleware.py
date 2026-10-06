@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from functools import wraps
 from flask import request
 from src.error_response import ErrorResponse
@@ -53,6 +53,10 @@ class ObraMiddleware:
 
         if obra.get("statusObra") not in STATUS_VALIDOS:
             _erro(f"Status inválido. Use: {', '.join(STATUS_VALIDOS)}!", "statusObra")
+
+        # Obra "À iniciar" ainda vai começar: a data de início não pode ser no passado.
+        if obra.get("statusObra") == "À iniciar" and inicio.date() < date.today():
+            _erro('Para o status "À iniciar", a data de início não pode ser anterior a hoje!', "dataInicio")
 
         resp = obra.get("respObra")
         if not isinstance(resp, str) or not resp.strip():

@@ -105,3 +105,22 @@ SELECT v.idProduto, v.idObra, 'saida', 'obra', v.quantidade, LEAST(o.dataInicio,
 FROM vw_consumo_obra v
 JOIN obras o ON o.idObra = v.idObra
 WHERE o.statusObra <> 'Cancelada';
+
+-- ── 5. Histórico por item (idEntidade) ───────────────────────────────────────
+-- O histórico de uma obra era filtrado procurando o ID dentro do texto da
+-- descrição — frágil e, no caso do cadastro, impossível (a linha não tinha o
+-- ID). Agora cada registro guarda o ID do item afetado em idEntidade.
+ALTER TABLE historico ADD COLUMN idEntidade INT DEFAULT NULL AFTER entidade;
+ALTER TABLE historico ADD INDEX ix_hist_entidade (entidade, idEntidade);
+
+-- Backfill das obras: extrai o ID das descrições antigas que já o traziam, nos
+-- formatos "(ID: 4)" e "... obra ID 4 ...". O número é ancorado em "ID" para
+-- não pegar algum número que esteja na descrição da obra. Os cadastros antigos
+-- não têm ID e ficam com idEntidade NULL (não há como recuperá-lo com segurança).
+SET SQL_SAFE_UPDATES = 0;
+UPDATE historico
+SET idEntidade = CAST(REGEXP_SUBSTR(REGEXP_SUBSTR(descricao, 'ID:? [0-9]+'), '[0-9]+') AS UNSIGNED)
+WHERE entidade = 'Obra'
+  AND idEntidade IS NULL
+  AND descricao REGEXP 'ID:? [0-9]+';
+SET SQL_SAFE_UPDATES = 1;

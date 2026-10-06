@@ -60,11 +60,11 @@ class ObraController:
                   servicosVinculados: list = None, funcionarios: list = None) -> tuple:
         clienteExistente = self.daoCliente.buscar_por_id(dadosObra["codCliente"])
         if not clienteExistente:
-            return False, "Cliente nao encontrado. Cadastre o cliente antes de criar a obra."
+            return False, "Cliente nao encontrado. Cadastre o cliente antes de criar a obra.", None
 
         valido, mensagem = self._validar_equipe(funcionarios)
         if not valido:
-            return False, mensagem
+            return False, mensagem, None
 
         servicosVinculados = servicosVinculados or []
         avisos = self._avisos_de_estoque(dadosObra, produtosUsados, servicosVinculados)
@@ -73,8 +73,9 @@ class ObraController:
             dadosObra, produtosUsados, servicosVinculados, funcionarios
         )
         if not sucesso:
-            return False, resultado
-        return True, "\n".join(["Obra cadastrada com sucesso!"] + avisos)
+            return False, resultado, None
+        # resultado é o idObra recém-criado (ver obraDAO.cadastrar)
+        return True, "\n".join(["Obra cadastrada com sucesso!"] + avisos), resultado
 
     def atualizar(self, idObra: int, dadosObra: dict,
                   produtosNovos: list = None, servicosNovos: list = None,

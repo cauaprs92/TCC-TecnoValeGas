@@ -860,6 +860,12 @@ body {
 .empty-state-desc { font-size: .83rem; color: var(--gray-500); max-width: 260px; line-height: 1.55; margin-bottom: 18px; }
 
 /* ── RICH TABLE CELLS ── */
+.col-nowrap { white-space: nowrap; }
+/* Histórico dentro do modal de obra: mesma tabela do sistema, só sem a sombra
+   forte do card (já está dentro de outro container) */
+.hist-obra-card { margin-top: 4px; box-shadow: none; }
+/* a última coluna aqui é a Descrição (texto), não ações: mantém à esquerda */
+.hist-obra-card .data-table td:last-child { text-align: left; }
 .cell-stack { display: flex; flex-direction: column; gap: 2px; }
 .cell-primary { font-weight: 600; font-size: .875rem; color: var(--dark); }
 .cell-secondary { font-size: .775rem; color: var(--gray-500); line-height: 1.4; }

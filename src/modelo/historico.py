@@ -5,5 +5,6 @@ class Historico:
         self._nomeAdmin   = None
         self._acao        = None
         self._entidade    = None
+        self._idEntidade  = None
         self._descricao   = None
         self._dataHora    = None

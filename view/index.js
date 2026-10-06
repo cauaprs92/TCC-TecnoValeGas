@@ -1669,43 +1669,54 @@ function _parseDateBR(str) {
   return new Date(`${y}-${m}-${d}T${timePart}`);
 }
 
-function _renderHistoricoObra(idObra) {
+async function _renderHistoricoObra(idObra) {
   const el = document.getElementById('abaHistorico');
   if (!el) return;
 
-  const registros = cacheHistorico
-    .filter(h => h.entidade === 'Obra' && (
-      h.descricao.includes(`(ID: ${idObra})`) ||
-      h.descricao.includes(`ID ${idObra} `) ||
-      h.descricao.includes(`ID ${idObra}'`)
-    ))
-    .sort((a, b) => _parseDateBR(b.dataHora) - _parseDateBR(a.dataHora));
+  el.innerHTML = '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando histórico...</div>';
+
+  // Endpoint dedicado: traz só o histórico desta obra (via idEntidade) e
+  // funciona para qualquer cargo com acesso à obra — a aba Histórico global é
+  // restrita à Administração.
+  let registros;
+  try {
+    const res = await apiFetch(`/obra/${idObra}/historico`);
+    registros = (res.historico || [])
+      .sort((a, b) => _parseDateBR(b.dataHora) - _parseDateBR(a.dataHora));
+  } catch (e) {
+    el.innerHTML = `<div class="empty-row" style="padding:32px 0;text-align:center">Erro ao carregar histórico: ${escHtml(e.message)}</div>`;
+    return;
+  }
 
   if (!registros.length) {
     el.innerHTML = '<div class="empty-row" style="padding:32px 0;text-align:center">Nenhum registro de histórico para esta obra.</div>';
     return;
   }
 
+  // Mesmo visual da tabela de Histórico global: data-table, badge de ação e
+  // as classes de célula do sistema (cell-secondary / cell-primary).
   el.innerHTML = `
-    <table class="data-table" style="margin-top:8px">
-      <thead>
-        <tr>
-          <th style="white-space:nowrap">Data / Hora</th>
-          <th>Usuário</th>
-          <th>Ação</th>
-          <th>Descrição</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${registros.map(h => `
+    <div class="card hist-obra-card">
+      <table class="data-table">
+        <thead>
           <tr>
-            <td style="white-space:nowrap;font-size:.82rem">${escHtml(h.dataHora)}</td>
-            <td style="font-size:.82rem">${escHtml(h.nomeAdmin)}</td>
-            <td style="font-size:.82rem">${escHtml(h.acao)}</td>
-            <td style="font-size:.82rem">${escHtml(h.descricao)}</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>`;
+            <th class="col-nowrap">Data / Hora</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${registros.map(h => `
+            <tr>
+              <td class="col-nowrap"><span class="cell-secondary">${escHtml(h.dataHora || '—')}</span></td>
+              <td><span class="cell-primary">${escHtml(h.nomeAdmin)}</span></td>
+              <td>${_badgeAcao(h.acao)}</td>
+              <td>${escHtml(h.descricao)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
   _marcarCelulasTabela(el.querySelector('table'));
 }
 
@@ -1828,7 +1839,6 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Obra';
   _renderHistoricoObra(o.idObra);
-  if (podeVerPagina('historico')) carregarHistorico().then(() => _renderHistoricoObra(o.idObra));
   _resetAbasObra();
   _definirModoLeituraObra();
   abrirModal('modalObra');
@@ -2033,6 +2043,12 @@ async function salvarObra() {
     if (!bairro)     { _obraSetError('obraClienteBairro',      'Bairro é obrigatório.');            temErro = true; }
   }
   if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');     temErro = true; }
+  // Obra "À iniciar" é obra que ainda vai começar: a data de início não pode
+  // ser no passado.
+  else if (status === 'À iniciar' && dataInicio < _isoLocal(new Date())) {
+    _obraSetError('obraDataInicio', 'Para o status "À iniciar", a data de início não pode ser anterior a hoje.');
+    temErro = true;
+  }
   if (!desc)       { _obraSetError('obraDesc',        'A descrição da obra é obrigatória.'); temErro = true; }
   if (temErro) {
     _mostrarBanner('banner-modalObra');
@@ -2392,7 +2408,10 @@ function _getSortValue(item, table, key) {
       return item.nomeResponsavel || '';
     case 'historico':
       if (key === 'id') return item.idHistorico;
-      if (key === 'dataHora') return item.dataHora || '';
+      // dataHora vem como "dd/mm/aaaa HH:MM:SS"; ordenar como texto colocaria
+      // o dia do mês antes do ano (05/10/2026 cairia abaixo de 31/.../2024).
+      // Converte para timestamp para a ordenação ser cronológica de verdade.
+      if (key === 'dataHora') return item.dataHora ? _parseDateBR(item.dataHora).getTime() : 0;
       if (key === 'nomeAdmin') return item.nomeAdmin || '';
       if (key === 'acao') return item.acao || '';
       if (key === 'entidade') return item.entidade || '';
@@ -3935,6 +3954,21 @@ document.getElementById('sidebarToggle').addEventListener('click', alternarSideb
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { fecharSidebarMobile(); fecharFiltroGlobal(); fecharMenusPeriodo(); }
+});
+
+// ── Campos numéricos: nunca aceitam negativo ──────────────────────────────────
+// O domínio só tem quantidades, preços, prazos e IDs — todos >= 0. Bloqueia o
+// sinal de menos ao digitar e remove qualquer '-' colado.
+document.addEventListener('keydown', e => {
+  if (e.target.matches?.('input[type="number"]') && (e.key === '-' || e.key === 'Subtract')) {
+    e.preventDefault();
+  }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.matches?.('input[type="number"]') && el.value.includes('-')) {
+    el.value = el.value.replace(/-/g, '');
+  }
 });
 
 // ao voltar para o desktop a gaveta é descartada
