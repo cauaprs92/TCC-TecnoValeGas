@@ -69,14 +69,16 @@ ALTER TABLE fornecedores
     ADD COLUMN prazoEntregaDias int NOT NULL DEFAULT 7,
     ADD CONSTRAINT ck_fornecedor_prazo CHECK (prazoEntregaDias > 0);
 
+-- CHANGE COLUMN em vez de RENAME COLUMN: o RENAME só existe a partir do
+-- MariaDB 10.5, e o XAMPP traz o 10.4 — lá a migração parava aqui e o banco
+-- ficava sem as colunas novas (a listagem de produtos voltava vazia).
 ALTER TABLE produtos
-    RENAME COLUMN qtdMinima TO qtdMinimaManual,
+    CHANGE COLUMN qtdMinima qtdMinimaManual int DEFAULT NULL,
     ADD COLUMN prazoEntregaDias  int           DEFAULT NULL,
     ADD COLUMN consumoEstimado   DECIMAL(10,2) DEFAULT NULL,
     ADD COLUMN periodoEstimativa VARCHAR(6)    DEFAULT NULL,
     ADD CONSTRAINT ck_produto_periodo CHECK (periodoEstimativa IN ('dia', 'semana', 'mes')),
     ADD CONSTRAINT ck_produto_prazo   CHECK (prazoEntregaDias > 0);
-ALTER TABLE produtos MODIFY COLUMN qtdMinimaManual int DEFAULT NULL;
 SET SQL_SAFE_UPDATES = 0;
 UPDATE produtos SET qtdMinimaManual = NULL;
 SET SQL_SAFE_UPDATES = 1;
