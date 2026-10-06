@@ -82,7 +82,7 @@ def cadastrar():
     funcionarios        = body.get("funcionarios", [])
     desc                = dados_obra.get("descObra", "")
 
-    sucesso, mensagem = controller.cadastrar(
+    sucesso, mensagem, id_obra = controller.cadastrar(
         dados_obra, produtos_usados, servicos_vinculados, funcionarios
     )
 
@@ -92,7 +92,8 @@ def cadastrar():
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Cadastrou", "Obra",
-        f"Cadastrou a obra '{desc}'{_descrever_equipe(funcionarios)}",
+        f"Cadastrou a obra '{desc}' (ID: {id_obra}){_descrever_equipe(funcionarios)}",
+        id_obra,
     )
 
     return jsonify({"status": True, "msg": mensagem}), 201
@@ -184,6 +185,25 @@ def buscar_servicos_da_obra(idObra: int):
     return jsonify({"status": True, "servicos": servicos}), 200
 
 
+# ─── GET /obra/<idObra>/historico ─────────────────────────────────────────────
+# Histórico só desta obra. Diferente de GET /historico (restrito à
+# Administração), aqui qualquer cargo com acesso à obra vê o histórico dela.
+@obra_bp.route("/<int:idObra>/historico", methods=["GET"])
+@jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
+@exigir_acesso_obra
+def historico_da_obra(idObra: int):
+    registros = historico_ctrl.listar_por_entidade("Obra", idObra)
+    historico = [{
+        "idHistorico": h._idHistorico,
+        "nomeAdmin":   h._nomeAdmin,
+        "acao":        h._acao,
+        "descricao":   h._descricao,
+        "dataHora":    h._dataHora.strftime("%d/%m/%Y %H:%M:%S") if h._dataHora else None,
+    } for h in registros]
+    return jsonify({"status": True, "historico": historico}), 200
+
+
 # ─── GET /obra/<idObra>/fotos ─────────────────────────────────────────────────
 @obra_bp.route("/<int:idObra>/fotos", methods=["GET"])
 @jwt.validate_token
@@ -269,6 +289,7 @@ def atualizar(idObra: int):
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Obra",
         f"Editou a obra '{desc}' (ID: {idObra}){equipe_txt}",
+        idObra,
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200
@@ -350,6 +371,7 @@ def deletar(idObra: int):
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Deletou", "Obra",
         f"Deletou a obra '{desc}' (ID: {idObra})",
+        idObra,
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200

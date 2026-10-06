@@ -14,6 +14,7 @@ def _serializar(h) -> dict:
         "nomeAdmin":   h._nomeAdmin,
         "acao":        h._acao,
         "entidade":    h._entidade,
+        "idEntidade":  h._idEntidade,
         "descricao":   h._descricao,
         "dataHora":    h._dataHora.strftime("%d/%m/%Y %H:%M:%S") if h._dataHora else None,
     }

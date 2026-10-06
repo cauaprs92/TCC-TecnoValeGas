@@ -1669,17 +1669,24 @@ function _parseDateBR(str) {
   return new Date(`${y}-${m}-${d}T${timePart}`);
 }
 
-function _renderHistoricoObra(idObra) {
+async function _renderHistoricoObra(idObra) {
   const el = document.getElementById('abaHistorico');
   if (!el) return;
 
-  const registros = cacheHistorico
-    .filter(h => h.entidade === 'Obra' && (
-      h.descricao.includes(`(ID: ${idObra})`) ||
-      h.descricao.includes(`ID ${idObra} `) ||
-      h.descricao.includes(`ID ${idObra}'`)
-    ))
-    .sort((a, b) => _parseDateBR(b.dataHora) - _parseDateBR(a.dataHora));
+  el.innerHTML = '<div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Carregando histórico...</div>';
+
+  // Endpoint dedicado: traz só o histórico desta obra (via idEntidade) e
+  // funciona para qualquer cargo com acesso à obra — a aba Histórico global é
+  // restrita à Administração.
+  let registros;
+  try {
+    const res = await apiFetch(`/obra/${idObra}/historico`);
+    registros = (res.historico || [])
+      .sort((a, b) => _parseDateBR(b.dataHora) - _parseDateBR(a.dataHora));
+  } catch (e) {
+    el.innerHTML = `<div class="empty-row" style="padding:32px 0;text-align:center">Erro ao carregar histórico: ${escHtml(e.message)}</div>`;
+    return;
+  }
 
   if (!registros.length) {
     el.innerHTML = '<div class="empty-row" style="padding:32px 0;text-align:center">Nenhum registro de histórico para esta obra.</div>';
@@ -1828,7 +1835,6 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Obra';
   _renderHistoricoObra(o.idObra);
-  if (podeVerPagina('historico')) carregarHistorico().then(() => _renderHistoricoObra(o.idObra));
   _resetAbasObra();
   _definirModoLeituraObra();
   abrirModal('modalObra');

@@ -146,8 +146,12 @@ create table historico (
     nomeAdmin   VARCHAR(45)  NOT NULL,
     acao        VARCHAR(20)  NOT NULL,
     entidade    VARCHAR(30)  NOT NULL,
+    -- ID do registro afetado (ex.: idObra), quando se aplica. Permite listar o
+    -- histórico de um item específico sem depender do texto da descrição.
+    idEntidade  INT          DEFAULT NULL,
     descricao   TEXT         NOT NULL,
     dataHora    DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    INDEX ix_hist_entidade (entidade, idEntidade),
     -- O nome fica gravado em nomeAdmin, então o registro continua legível
     -- depois que o usuário é excluído. Só o vínculo vira NULL.
     FOREIGN KEY (idAdmin) REFERENCES login(idLogin) ON DELETE SET NULL
