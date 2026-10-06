@@ -69,14 +69,11 @@ body {
 .sidebar.collapsed .sidebar-logo { padding: 16px 0; }
 .sidebar.collapsed .sidebar-logo-img { width: 44px; height: 44px; }
 /* O rodapé (avatar + nome) não cabe em 64px e cortava o botão de sair.
-   Minimizada: esconde os dados do usuário e leva o botão de sair para o
-   topo, acima da logo, centralizado. */
+   Minimizada: esconde os dados do usuário e deixa só o botão de sair,
+   centralizado, no rodapé (posição original). */
 .sidebar.collapsed .sidebar-footer {
-  order: -1;
   justify-content: center;
-  padding: 10px 0;
-  border-top: none;
-  border-bottom: 1px solid rgba(255,255,255,.07);
+  padding: 14px 0;
 }
 .sidebar.collapsed .user-info { display: none; }
 
