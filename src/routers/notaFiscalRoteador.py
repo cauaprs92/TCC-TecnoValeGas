@@ -60,7 +60,7 @@ def importar():
 
     if not controller.formato_suportado(arquivo.filename):
         raise ErrorResponse(400, "Tipo de arquivo não permitido.",
-                            {"message": "Envie o XML ou o PDF (DANFE) da NF-e."})
+                            {"message": "Envie o XML ou o PDF da NF-e."})
 
     conteudo = arquivo.read()
 

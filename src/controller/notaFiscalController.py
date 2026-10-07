@@ -1,6 +1,6 @@
 from src.dao.notaFiscalDAO import NotaFiscalDAO
 from src.service.nfeParser import parse_nfe, NFeParserError
-from src.service.danfeConversor import danfe_pdf_para_nfe_xml
+from src.service.pdfParaXml import pdf_para_nfe_xml
 
 _ACOES_VALIDAS = ('repor', 'criar', 'ignorar')
 _FORMATOS = ('.xml', '.pdf')
@@ -21,7 +21,7 @@ class NotaFiscalController:
         """Lê o arquivo (XML ou PDF), grava a nota e seus itens e devolve a nota
         pronta para conferência.
 
-        O PDF do DANFE é convertido em XML de NF-e antes; daí em diante o
+        O PDF da nota é convertido em XML de NF-e antes; daí em diante o
         caminho é o mesmo do XML (parse_nfe).
 
         Se a chave já existe, reabre a nota em vez de recusar o arquivo — um
@@ -32,11 +32,11 @@ class NotaFiscalController:
         Retorna (sucesso, mensagem, nota, reaberta).
         """
         if not self.formato_suportado(nomeArquivo):
-            return False, "Formato não suportado. Envie o XML ou o PDF (DANFE) da NF-e.", None, False
+            return False, "Formato não suportado. Envie o XML ou o PDF da NF-e.", None, False
 
         try:
             if nomeArquivo.lower().endswith(".pdf"):
-                conteudo = danfe_pdf_para_nfe_xml(conteudo)
+                conteudo = pdf_para_nfe_xml(conteudo)
             dadosNota = parse_nfe(conteudo)
         except NFeParserError as e:
             return False, str(e), None, False

@@ -3,4 +3,4 @@ flask-cors
 mysql-connector-python
 pyjwt
 bcrypt
-pdfminer.six
+pypdf>=4.0

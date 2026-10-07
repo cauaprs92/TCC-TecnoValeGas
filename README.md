@@ -46,13 +46,16 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
   - prazo de entrega por fornecedor, com prazo próprio opcional por produto
   - o mínimo pode ser definido manualmente quando necessário
   - regra isolada em `src/service/estoqueMinimo.py`
-- **Importação de NF-e por XML ou PDF (DANFE)**, com conferência item a item
+- **Importação de NF-e por XML ou PDF**, com conferência item a item
   antes de mexer no estoque
   - XML: leitura das tags da nota (`src/service/nfeParser.py`) — é o único
     caminho de leitura de nota do sistema
-  - PDF: convertido em XML de NF-e antes da leitura (`src/service/danfeConversor.py`):
-    1. a pdfminer.six converte o PDF em XML de layout (cada caractere e cada
-       traço da página com suas coordenadas);
+  - PDF: convertido em XML de NF-e antes da leitura (`src/service/pdfParaXml.py`),
+    usando só `pypdf` e `xml.etree.ElementTree`:
+    1. o pypdf percorre o conteúdo de cada página e o resultado vira um XML de
+       layout (cada palavra, traço e caixa com suas coordenadas). Antes disso,
+       cada trecho de texto posicionado ganha um bloco próprio — senão células
+       escritas no mesmo bloco viriam juntas, sem posição;
     2. das palavras e das bordas das células sai um `<nfeProc>` no layout
        oficial, que segue para o `nfeParser`
   - a chave de acesso (validada pelo dígito verificador) dá CNPJ, série e

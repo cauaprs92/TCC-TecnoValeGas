@@ -1,15 +1,16 @@
-"""Converte o PDF de um DANFE em XML de NF-e.
+"""Converte o PDF de uma NF-e em XML de NF-e, usando só pypdf e
+xml.etree.ElementTree.
 
-São duas etapas, e no fim a nota segue pelo mesmo parser do XML
+São duas etapas, e no fim a nota segue pelo mesmo parser dos arquivos XML
 (nfeParser.parse_nfe) — só existe um caminho de leitura de nota no sistema:
 
-1. PDF → XML de layout, com o conversor nativo da pdfminer.six (o mesmo do
-   `pdf2txt.py -t xml`): cada caractere e cada traço desenhado na página vira
-   um elemento com suas coordenadas.
-2. XML de layout → XML de NF-e: com as palavras e as bordas desenhadas, monta
+1. PDF → XML de layout (pdf_para_xml): o pypdf percorre o conteúdo de cada
+   página e o resultado vira um XML com cada palavra (posição e tamanho) e
+   cada traço ou caixa desenhado.
+2. XML de layout → XML de NF-e (layout_para_nfe): das palavras e das bordas sai
    um <nfeProc> no layout oficial (chave, emitente, itens e total).
 
-O que o DANFE garante e é usado como âncora:
+O que o PDF da nota garante e é usado como âncora:
 - chave de acesso (44 dígitos, validada pelo dígito verificador): dela saem
   CNPJ do emitente, série e número, onde quer que tenham sido impressos;
 - canhoto "RECEBEMOS DE <razão social> OS PRODUTOS..." para o fornecedor;
@@ -23,19 +24,23 @@ uma mensagem clara: nesses casos não há texto para converter.
 """
 
 import io
+import logging
+import math
 import re
 import unicodedata
 import xml.etree.ElementTree as ET
 
-from pdfminer.high_level import extract_text_to_fp
-from pdfminer.layout import LAParams
-from pdfminer.pdfdocument import PDFPasswordIncorrect
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import FloatObject
 
 from src.service.nfeParser import NFeParserError, NS
 
+# avisos de PDF imperfeito ("texto rotacionado", "EOF") não interessam ao log
+logging.getLogger("pypdf").setLevel(logging.ERROR)
+
 _NS = NS["nfe"]
 
-# Um DANFE de 60 páginas já teria mais de mil itens; acima disso não é nota,
+# Uma nota de 60 páginas já teria mais de mil itens; acima disso não é nota,
 # e converter milhares de páginas travaria a requisição.
 _MAX_PAGINAS = 60
 
@@ -45,9 +50,16 @@ _FIM_TABELA = ("DADOS ADICIONAIS", "CALCULO DO ISSQN", "INFORMACOES COMPLEMENTAR
 _UFS = {11, 12, 13, 14, 15, 16, 17, 21, 22, 23, 24, 25, 26, 27, 28, 29,
         31, 32, 33, 35, 41, 42, 43, 50, 51, 52, 53}
 
+_IDENTIDADE = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
 # número no formato brasileiro: 1.234,5670 / 84,87 / 5
 _RE_NUMERO = re.compile(r"\d{1,3}(?:\.\d{3})+(?:,\d+)?|\d+(?:,\d+)?")
 _RE_DATA = re.compile(r"(\d{2})[/.-](\d{2})[/.-](\d{4})")
+
+# caracteres de controle não são válidos em XML
+_RE_CONTROLE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+_OPS_PINTURA = {b"S", b"s", b"f", b"F", b"f*", b"B", b"B*", b"b", b"b*"}
 
 
 # ─── utilitários ──────────────────────────────────────────────────────────────
@@ -78,6 +90,225 @@ def _chave_valida(c: str) -> bool:
             and c[20:22] == "55" and _dv_chave(c[:43]) == c[43])
 
 
+def _mult(m, n):
+    """Produto de matrizes de transformação do PDF ([a b c d e f])."""
+    return (m[0] * n[0] + m[1] * n[2], m[0] * n[1] + m[1] * n[3],
+            m[2] * n[0] + m[3] * n[2], m[2] * n[1] + m[3] * n[3],
+            m[4] * n[0] + m[5] * n[2] + n[4], m[4] * n[1] + m[5] * n[3] + n[5])
+
+
+# ─── etapa 1: PDF → XML de layout ─────────────────────────────────────────────
+
+def _separar_blocos(pagina) -> None:
+    """Deixa cada trecho de texto posicionado num bloco BT/ET próprio.
+
+    Muitos emissores escrevem a linha inteira da tabela num bloco só, movendo
+    o cursor entre as células (Td). O pypdf entrega esse bloco como um texto
+    corrido, e a posição de cada célula se perderia. Aqui, sempre que o texto é
+    reposicionado depois de já ter mostrado algo, o bloco é fechado e reaberto
+    na posição absoluta — só é preciso acompanhar a matriz de linha (Td, TD,
+    Tm, T*), sem depender de fonte.
+    """
+    conteudo = pagina.get_contents()
+    if conteudo is None:
+        return
+    novo, mostrou, tlm, entrelinha = [], False, _IDENTIDADE, 0.0
+    for operandos, op in conteudo.operations:
+        if op == b"BT":
+            tlm, mostrou = _IDENTIDADE, False
+        elif op == b"TL":
+            entrelinha = float(operandos[0])
+        elif op in (b"Td", b"TD", b"Tm", b"T*", b"'", b'"'):
+            if op == b"Tm":
+                tlm = tuple(float(v) for v in operandos)
+            else:
+                if op == b"TD":
+                    entrelinha = -float(operandos[1])
+                tx, ty = ((float(operandos[0]), float(operandos[1])) if op in (b"Td", b"TD")
+                          else (0.0, -entrelinha))
+                tlm = _mult((1.0, 0.0, 0.0, 1.0, tx, ty), tlm)
+            absoluto = ([FloatObject(round(v, 4)) for v in tlm], b"Tm")
+            if op in (b"'", b'"'):
+                # ' e " = próxima linha + mostra o texto
+                if op == b'"':
+                    novo += [([operandos[0]], b"Tw"), ([operandos[1]], b"Tc")]
+                if mostrou:
+                    novo += [([], b"ET"), ([], b"BT")]
+                novo += [absoluto, ([operandos[-1]], b"Tj")]
+                mostrou = True
+                continue
+            if mostrou:
+                novo += [([], b"ET"), ([], b"BT"), absoluto]
+                mostrou = False
+                continue
+        elif op in (b"Tj", b"TJ"):
+            mostrou = True
+        novo.append((operandos, op))
+    conteudo.operations = novo
+    pagina.replace_contents(conteudo)
+
+
+_cache_medidores = {}
+
+
+def _medidor(fonte):
+    """Função que dá a largura de um caractere (em milésimos do tamanho da
+    fonte), pelas larguras declaradas na própria fonte; sem elas, uma média."""
+    chave = id(fonte)
+    if chave in _cache_medidores:
+        return _cache_medidores[chave]
+    larguras, primeiro, nome = None, 0, ""
+    try:
+        if fonte is not None:
+            nome = str(fonte.get("/BaseFont", ""))
+            if "/Widths" in fonte:
+                larguras = [float(v) for v in fonte["/Widths"].get_object()]
+                primeiro = int(fonte.get("/FirstChar", 0))
+    except Exception:
+        larguras = None
+    # sem larguras declaradas: média que tende a subestimar (mais seguro para
+    # achar o vão entre colunas do que superestimar)
+    padrao = 600.0 if "COURIER" in nome.upper() else 500.0
+
+    def largura(c):
+        if larguras:
+            i = ord(c) - primeiro
+            if 0 <= i < len(larguras) and larguras[i] > 0:
+                return larguras[i]
+        return padrao
+
+    _cache_medidores[chave] = largura
+    return largura
+
+
+def _extrair_pagina(pagina) -> tuple:
+    """(palavras, traços, caixas) de uma página, já com coordenadas da página."""
+    palavras, tracos, caixas = [], [], []
+    texto_pos = {"m": None}
+    caminho = {"segs": [], "pts": [], "atual": None, "inicio": None, "fechado": False}
+
+    def ponto(x, y, cm):
+        x, y = float(x), float(y)
+        return (cm[0] * x + cm[2] * y + cm[4], cm[1] * x + cm[3] * y + cm[5])
+
+    def descarregar(pintar):
+        if pintar and caminho["pts"]:
+            for (ax, ay), (bx, by) in caminho["segs"]:
+                tracos.append((min(ax, bx), min(ay, by), max(ax, bx), max(ay, by)))
+            xs = [p[0] for p in caminho["pts"]]
+            ys = [p[1] for p in caminho["pts"]]
+            if caminho["fechado"] and max(xs) - min(xs) > 3 and max(ys) - min(ys) > 3:
+                caixas.append((min(xs), min(ys), max(xs), max(ys)))
+        caminho.update(segs=[], pts=[], atual=None, inicio=None, fechado=False)
+
+    def antes(op, args, cm, tm):
+        try:
+            if op in (b"Tj", b"TJ") and texto_pos["m"] is None:
+                texto_pos["m"] = _mult(tm, cm)
+            elif op == b"m":
+                p = ponto(args[0], args[1], cm)
+                caminho.update(atual=p, inicio=p)
+                caminho["pts"].append(p)
+            elif op == b"l" and caminho["atual"] is not None:
+                p = ponto(args[0], args[1], cm)
+                caminho["segs"].append((caminho["atual"], p))
+                caminho["pts"].append(p)
+                caminho["atual"] = p
+            elif op in (b"c", b"v", b"y"):
+                pts = [ponto(args[i], args[i + 1], cm) for i in range(0, len(args) - 1, 2)]
+                caminho["pts"] += pts
+                caminho["atual"] = pts[-1]
+                caminho["fechado"] = True   # caixa de canto arredondado
+            elif op == b"h" and caminho["atual"] is not None:
+                if caminho["atual"] != caminho["inicio"]:
+                    caminho["segs"].append((caminho["atual"], caminho["inicio"]))
+                caminho.update(atual=caminho["inicio"], fechado=True)
+            elif op == b"re":
+                x, y, w, h = (float(v) for v in args)
+                cantos = [ponto(x, y, cm), ponto(x + w, y, cm), ponto(x + w, y + h, cm), ponto(x, y + h, cm)]
+                caminho["segs"] += list(zip(cantos, cantos[1:] + cantos[:1]))
+                caminho["pts"] += cantos
+                caminho["fechado"] = True
+            elif op in _OPS_PINTURA:
+                descarregar(True)
+            elif op == b"n":
+                descarregar(False)
+        except (ValueError, TypeError, IndexError):
+            pass
+
+    def texto(t, cm, tm, fonte, tamanho):
+        if not t.strip():
+            return
+        m = texto_pos["m"] or _mult(tm, cm)
+        texto_pos["m"] = None
+        escala_x = math.hypot(m[0], m[1]) or 1.0
+        escala_y = math.hypot(m[2], m[3]) or 1.0
+        tam = (tamanho or 1.0) * escala_y
+        vertical = abs(m[1]) > abs(m[0])    # texto girado (canhoto na lateral)
+        largura = _medidor(fonte)
+        for n, linha in enumerate(t.rstrip("\n").split("\n")):
+            y = m[5] - n * tam * 1.2
+            cursor = m[4]
+            for parte in re.split(r"( +)", linha):
+                w = sum(largura(c) for c in parte) / 1000 * (tamanho or 1.0) * escala_x
+                if parte.strip():
+                    palavras.append((cursor, y - 0.2 * tam, cursor + w, y + 0.8 * tam, parte, vertical))
+                cursor += w
+
+    pagina.extract_text(visitor_operand_before=antes, visitor_text=texto)
+    return palavras, tracos, caixas
+
+
+def pdf_para_xml(conteudo: bytes) -> bytes:
+    """Converte o PDF num XML de layout: por página, as linhas de texto
+    corrido e cada palavra, traço e caixa com suas coordenadas."""
+    if not conteudo:
+        raise NFeParserError("Arquivo PDF vazio.")
+    if not conteudo.lstrip()[:5].startswith(b"%PDF"):
+        raise NFeParserError("O arquivo enviado não é um PDF válido.")
+
+    raiz = ET.Element("pdf")
+    try:
+        leitor = PdfReader(io.BytesIO(conteudo))
+        if leitor.is_encrypted and not leitor.decrypt(""):
+            raise NFeParserError("O PDF está protegido por senha. Envie uma versão sem senha ou o XML da nota.")
+        if len(leitor.pages) > _MAX_PAGINAS:
+            raise NFeParserError(f"O PDF tem {len(leitor.pages)} páginas — não parece ser uma nota fiscal.")
+
+        # texto corrido (para chave, canhoto...) sai do PDF como veio; as
+        # posições saem de uma cópia com os blocos de texto separados
+        corridos = [p.extract_text() or "" for p in leitor.pages]
+        copia = PdfWriter(clone_from=leitor)
+        for numero, (pagina, corrido) in enumerate(zip(copia.pages, corridos), 1):
+            _separar_blocos(pagina)
+            palavras, tracos, caixas = _extrair_pagina(pagina)
+
+            pag = ET.SubElement(raiz, "pagina", numero=str(numero))
+            for linha in corrido.split("\n"):
+                if linha.strip():
+                    ET.SubElement(pag, "linha").text = _RE_CONTROLE.sub("", linha.strip())
+            for x0, y0, x1, y1, t, vertical in palavras:
+                e = ET.SubElement(pag, "palavra", x0=f"{x0:.2f}", y0=f"{y0:.2f}",
+                                  x1=f"{x1:.2f}", y1=f"{y1:.2f}")
+                if vertical:
+                    e.set("vertical", "1")
+                e.text = _RE_CONTROLE.sub("", t)
+            for nome, itens in (("traco", tracos), ("caixa", caixas)):
+                for x0, y0, x1, y1 in itens:
+                    ET.SubElement(pag, nome, x0=f"{x0:.2f}", y0=f"{y0:.2f}",
+                                  x1=f"{x1:.2f}", y1=f"{y1:.2f}")
+    except NFeParserError:
+        raise
+    except Exception:
+        # PDF malformado estoura vários tipos de erro dentro do pypdf; o
+        # detalhe técnico não ajuda quem está importando a nota.
+        raise NFeParserError("Não foi possível ler o PDF — o arquivo pode estar corrompido ou incompleto.")
+
+    return ET.tostring(raiz, encoding="utf-8")
+
+
+# ─── leitura do XML de layout ─────────────────────────────────────────────────
+
 class _Palavra:
     __slots__ = ("x0", "y0", "x1", "y1", "texto")
 
@@ -98,15 +329,14 @@ class _Palavra:
 
 
 class _Pagina:
-    """Uma página do XML de layout: palavras, linhas de texto, traços e caixas.
-    Coordenadas do PDF: y cresce para cima."""
+    """Uma página do XML de layout. Coordenadas do PDF: y cresce para cima."""
 
     def __init__(self):
-        self.palavras = []    # _Palavra
-        self.textos = []      # texto de cada <textline>, na ordem da pdfminer
-        self.verticais = []   # (x, y_baixo, y_cima)
+        self.palavras = []     # _Palavra (sem o texto girado)
+        self.textos = []       # linhas de texto corrido
+        self.verticais = []    # (x, y_baixo, y_cima)
         self.horizontais = []  # (y, x_esq, x_dir)
-        self.caixas = []      # (x0, y0, x1, y1) de retângulos e caixas arredondadas
+        self.caixas = []       # (x0, y0, x1, y1)
         self._linhas = None
 
     def linhas(self, palavras=None):
@@ -126,87 +356,34 @@ class _Pagina:
         return [sorted(l, key=lambda p: p.x0) for l in linhas]
 
 
-# ─── etapa 1: PDF → XML de layout ─────────────────────────────────────────────
-
-def pdf_para_xml(conteudo: bytes) -> str:
-    """Converte o PDF no XML de layout da pdfminer.six (texto com coordenadas,
-    retângulos, linhas e curvas de cada página)."""
-    if not conteudo:
-        raise NFeParserError("Arquivo PDF vazio.")
-    if not conteudo.lstrip()[:5].startswith(b"%PDF"):
-        raise NFeParserError("O arquivo enviado não é um PDF válido.")
-
-    saida = io.BytesIO()
-    try:
-        extract_text_to_fp(io.BytesIO(conteudo), saida, output_type="xml", codec="utf-8",
-                           laparams=LAParams(detect_vertical=True),
-                           maxpages=_MAX_PAGINAS + 1)
-    except PDFPasswordIncorrect:
-        raise NFeParserError("O PDF está protegido por senha. Envie uma versão sem senha ou o XML da nota.")
-    except Exception:
-        # PDF malformado estoura vários tipos de erro dentro da biblioteca; o
-        # detalhe técnico não ajuda quem está importando a nota.
-        raise NFeParserError("Não foi possível ler o PDF — o arquivo pode estar corrompido ou incompleto.")
-    return saida.getvalue().decode("utf-8", errors="replace")
-
-
-# ─── leitura do XML de layout ─────────────────────────────────────────────────
-
-def _bbox(elemento):
-    return [float(v) for v in elemento.get("bbox").split(",")]
-
-
-def _ler_layout(xml_layout: str) -> list:
-    try:
-        raiz = ET.fromstring(xml_layout)
-    except ET.ParseError:
-        raise NFeParserError("Não foi possível ler o PDF — o arquivo pode estar corrompido ou incompleto.")
-
+def _ler_layout(xml_layout: bytes) -> list:
+    raiz = ET.fromstring(xml_layout)
+    coord = lambda e: [float(e.get(k)) for k in ("x0", "y0", "x1", "y1")]
     paginas = []
-    for elem_pag in raiz.iter("page"):
+    for elem in raiz.iter("pagina"):
         pag = _Pagina()
-        # Texto rotacionado (canhoto na lateral da página, por exemplo) entra
-        # nas buscas por texto — chave, "RECEBEMOS DE" — mas não na leitura por
-        # posição: atravessaria a página inteira e cairia dentro das colunas.
-        verticais = {id(l) for caixa in elem_pag.iter("textbox") if caixa.get("wmode") == "vertical"
-                     for l in caixa.iter("textline")}
-        for linha in elem_pag.iter("textline"):
-            pag.textos.append("".join(c.text or "" for c in linha.iter("text")).strip())
-            if id(linha) in verticais:
-                continue
-            palavra = None
-            for c in linha.iter("text"):
-                # espaços e quebras vêm sem bbox: separam palavras
-                if c.get("bbox") is None or not (c.text or "").strip():
-                    palavra = None
-                    continue
-                x0, y0, x1, y1 = _bbox(c)
-                altura = max(y1 - y0, 1.0)
-                if palavra and 0 <= x0 - palavra.x1 <= altura * 0.3 and abs(palavra.cy - (y0 + y1) / 2) < altura:
-                    palavra.x1, palavra.texto = x1, palavra.texto + c.text
-                    palavra.y0, palavra.y1 = min(palavra.y0, y0), max(palavra.y1, y1)
-                else:
-                    palavra = _Palavra(x0, y0, x1, y1, c.text)
-                    pag.palavras.append(palavra)
-
-        for elem in elem_pag.iter():
-            if elem.tag not in ("line", "rect", "curve") or elem.get("bbox") is None:
-                continue
-            x0, y0, x1, y1 = _bbox(elem)
-            largura, altura = x1 - x0, y1 - y0
-            if largura < 1.5 and altura > 2:
+        pag.textos = [l.text or "" for l in elem.iter("linha")]
+        for e in elem.iter("palavra"):
+            # texto girado (canhoto na lateral) já está no texto corrido; na
+            # leitura por posição ele atravessaria a página e cairia nas colunas
+            if e.get("vertical") != "1" and e.text:
+                pag.palavras.append(_Palavra(*coord(e), e.text))
+        for e in elem.iter("traco"):
+            x0, y0, x1, y1 = coord(e)
+            if x1 - x0 < 1.5 and y1 - y0 > 2:
                 pag.verticais.append(((x0 + x1) / 2, y0, y1))
-            elif altura < 1.5 and largura > 2:
+            elif y1 - y0 < 1.5 and x1 - x0 > 2:
                 pag.horizontais.append(((y0 + y1) / 2, x0, x1))
-            elif elem.tag in ("rect", "curve") and largura > 3 and altura > 3:
+        for e in elem.iter("caixa"):
+            x0, y0, x1, y1 = coord(e)
+            if x1 - x0 < 1.5 and y1 - y0 > 2:      # retângulo fino = traço
+                pag.verticais.append(((x0 + x1) / 2, y0, y1))
+            elif y1 - y0 < 1.5 and x1 - x0 > 2:
+                pag.horizontais.append(((y0 + y1) / 2, x0, x1))
+            else:
                 pag.caixas.append((x0, y0, x1, y1))
-                if elem.tag == "rect":   # as bordas do retângulo também são traços
-                    pag.verticais += [(x0, y0, y1), (x1, y0, y1)]
-                    pag.horizontais += [(y0, x0, x1), (y1, x0, x1)]
         paginas.append(pag)
 
-    if len(paginas) > _MAX_PAGINAS:
-        raise NFeParserError(f"O PDF tem mais de {_MAX_PAGINAS} páginas — não parece ser um DANFE.")
     if sum(len(p.texto) for pag in paginas for p in pag.palavras) < 50:
         raise NFeParserError(
             "Este PDF não tem texto legível — parece ser uma imagem digitalizada. "
@@ -228,7 +405,7 @@ def _encontrar_chave(textos: list) -> str:
                 return digitos[i:i + 44]
     raise NFeParserError(
         "Não encontrei a chave de acesso (44 dígitos) no PDF. "
-        "Confira se o arquivo é o DANFE de uma NF-e."
+        "Confira se o arquivo é o PDF de uma NF-e."
     )
 
 
@@ -256,9 +433,9 @@ def _rotulo(pagina: _Pagina, padrao: str):
 
 
 def _quadro(pag: _Pagina, rx0, ry0, rx1, ry1):
-    """Quadro do DANFE em volta de um rótulo: a menor caixa desenhada que o
-    contém; senão, a célula formada pelos traços mais próximos; senão, a faixa
-    abaixo dele até o próximo rótulo da mesma linha."""
+    """Quadro em volta de um rótulo: a menor caixa desenhada que o contém;
+    senão, a célula formada pelos traços mais próximos; senão, a faixa abaixo
+    dele até o próximo rótulo da mesma linha."""
     caixas = [c for c in pag.caixas
               if c[0] - 1 <= rx0 and c[2] + 1 >= rx1 and c[1] - 1 <= ry0 and c[3] + 1 >= ry1
               and c[3] - c[1] < 40]
@@ -278,7 +455,7 @@ def _quadro(pag: _Pagina, rx0, ry0, rx1, ry1):
 
 
 def _valor_do_campo(paginas: list, padrao_rotulo: str, padrao_valor) -> str:
-    """Valor impresso no mesmo quadro de um rótulo do DANFE (logo abaixo dele)."""
+    """Valor impresso no mesmo quadro de um rótulo (logo abaixo dele)."""
     for pag in paginas:
         r = _rotulo(pag, padrao_rotulo)
         if not r:
@@ -326,7 +503,7 @@ def _valor_total(paginas: list, textos: list, itens: list) -> float:
         valor = m.group(1) if m else None
     if valor:
         return _numero_br(valor)
-    return round(sum(i["valorTotal"] for i in itens), 2)
+    return round(sum(i["total"] for i in itens), 2)
 
 
 # ─── tabela de produtos ───────────────────────────────────────────────────────
@@ -348,7 +525,7 @@ def _tipo_coluna(titulo: str):
         return "valorUnitario"
     if re.search(r" (QUANT|QTD|QTDE)", t):
         return "quantidade"
-    if re.search(r" (UN|UNID|UNIDADE|UNID\.?) ", t):
+    if re.search(r" (UN|UNID|UNIDADE) ", t):
         return "unidade"
     if re.search(r" (DESC|DESCONTO) ", t):
         return "desconto"
@@ -487,8 +664,9 @@ def _itens_da_pagina(pagina: _Pagina) -> list:
 
     itens = []
     for faixa in faixas:
-        celula = lambda tipo, juntar=" ": (_texto_celula(faixa, *col[tipo], juntar, pagina)
-                                           if tipo in col else "")
+        def celula(tipo, juntar=" "):
+            return _texto_celula(faixa, *col[tipo], juntar, pagina) if tipo in col else ""
+
         # números quebrados dentro da célula voltam a ficar juntos
         qtd = _numero_br(celula("quantidade", "").replace(" ", ""))
         unit = _numero_br(celula("valorUnitario", "").replace(" ", ""))
@@ -554,16 +732,12 @@ def _montar_nfe(chave, data, fornecedor, total, itens) -> bytes:
         filho(prod, "vProd", f"{item['total']:.2f}")
 
     filho(filho(filho(inf, "total"), "ICMSTot"), "vNF", f"{total:.2f}")
-    filho(filho(inf, "infAdic"), "infCpl", "XML gerado a partir do DANFE em PDF")
     return ET.tostring(proc, encoding="utf-8", xml_declaration=True)
 
 
-def danfe_pdf_para_nfe_xml(conteudoPdf: bytes) -> bytes:
-    """PDF do DANFE → XML de NF-e (bytes), pronto para nfeParser.parse_nfe.
-
-    :raises NFeParserError: PDF ilegível, sem chave de acesso ou sem itens
-    """
-    paginas = _ler_layout(pdf_para_xml(conteudoPdf))
+def layout_para_nfe(xml_layout: bytes) -> bytes:
+    """XML de layout (de pdf_para_xml) → XML de NF-e."""
+    paginas = _ler_layout(xml_layout)
     textos = [t for pag in paginas for t in pag.textos]
 
     chave = _encontrar_chave(textos)
@@ -573,11 +747,18 @@ def danfe_pdf_para_nfe_xml(conteudoPdf: bytes) -> bytes:
             "Encontrei a nota no PDF, mas não consegui ler a tabela de produtos. "
             "Envie o XML da nota para importar."
         )
-
     return _montar_nfe(
         chave,
         _data_emissao(paginas, textos, chave),
         _fornecedor(textos),
-        _valor_total(paginas, textos, [{"valorTotal": i["total"]} for i in itens]),
+        _valor_total(paginas, textos, itens),
         itens,
     )
+
+
+def pdf_para_nfe_xml(conteudoPdf: bytes) -> bytes:
+    """PDF da nota → XML de NF-e (bytes), pronto para nfeParser.parse_nfe.
+
+    :raises NFeParserError: PDF ilegível, sem chave de acesso ou sem itens
+    """
+    return layout_para_nfe(pdf_para_xml(conteudoPdf))
