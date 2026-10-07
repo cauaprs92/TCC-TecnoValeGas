@@ -48,13 +48,19 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
   - regra isolada em `src/service/estoqueMinimo.py`
 - **Importação de NF-e por XML ou PDF (DANFE)**, com conferência item a item
   antes de mexer no estoque
-  - XML: leitura exata das tags da nota (`src/service/nfeParser.py`)
-  - PDF: lê o texto do DANFE (`src/service/danfeParser.py`). A chave de acesso
-    (validada pelo dígito verificador) dá CNPJ, série e número; os itens são
-    ancorados em NCM + CST + CFOP + unidade e conferidos por
-    `quantidade × valor unitário ≈ total`. Funciona com DANFEs de emissores
-    diferentes (descrição em várias linhas, colunas extras de impostos, valores
-    quebrados na célula); PDF digitalizado (imagem) não tem texto e é recusado
+  - XML: leitura das tags da nota (`src/service/nfeParser.py`) — é o único
+    caminho de leitura de nota do sistema
+  - PDF: convertido em XML de NF-e antes da leitura (`src/service/danfeConversor.py`):
+    1. a pdfminer.six converte o PDF em XML de layout (cada caractere e cada
+       traço da página com suas coordenadas);
+    2. das palavras e das bordas das células sai um `<nfeProc>` no layout
+       oficial, que segue para o `nfeParser`
+  - a chave de acesso (validada pelo dígito verificador) dá CNPJ, série e
+    número; as colunas da tabela de produtos saem das bordas desenhadas ou,
+    sem bordas, do vão entre os textos — o título pode vir centralizado e o
+    conteúdo começar antes dele. Cobre descrição em várias linhas, código e
+    números centralizados na linha, canhoto lateral e valores quebrados na
+    célula. PDF digitalizado (imagem) não tem texto e é recusado
   - a mesma nota importada por PDF e por XML não duplica (mesma chave)
 - Dashboard com gráfico dos produtos com menor estoque e notificações de alerta
 
