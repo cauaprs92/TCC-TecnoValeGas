@@ -106,8 +106,6 @@ def confirmar_item(idItem: int):
         idItem,
         acao,
         corpo.get("idProduto"),
-        corpo.get("qtdMinima"),
-        corpo.get("qtdMaxima"),
         corpo.get("produto"),
     )
 

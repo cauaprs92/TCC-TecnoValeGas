@@ -659,7 +659,11 @@ async function _uploadFotosPendentes(idProduto) {
 
 // ── Modal abrir / fechar ───────────────────────────────────────────────────────
 
+// idItem da nota fiscal quando o modal foi aberto pela conferência da NF.
+let _nfItemCadastro = null;
+
 function abrirModalNovoProduto() {
+  _modoProdutoNF(false);
   ['prodIdEdicao','prodNome','prodQtd','prodQtdMax','prodDesc','prodFornecedor',
    'prodPrazo','prodConsumo','prodQtdMinManual','prodCusto','prodMargem']
     .forEach(id => { document.getElementById(id).value = ''; });
@@ -680,6 +684,7 @@ function abrirModalNovoProduto() {
 function abrirModalEditarProduto(idProduto) {
   const p = cacheProdutos.find(x => x.idProduto == idProduto);
   if (!p) { showToast('Produto não encontrado.', 'error'); return; }
+  _modoProdutoNF(false);
   document.getElementById('prodIdEdicao').value = p.idProduto;
   document.getElementById('prodNome').value     = p.nomeProduto;
   document.getElementById('prodQtd').value      = p.qtdProduto;
@@ -752,6 +757,21 @@ async function salvarProduto() {
       margemPercentual:  margem  ? Number(margem) : null,
     }
   };
+
+  // Cadastro aberto pela conferência da NF: o produto nasce pela confirmação
+  // do item (estoque e fornecedor vêm da nota), não pelo POST /produto.
+  if (_nfItemCadastro) {
+    const res = await _nfConfirmarItem(_nfItemCadastro, { acao: 'criar', produto: payload.produto });
+    if (!res) return;
+    try {
+      if (res.idProduto) await _uploadFotosPendentes(res.idProduto);
+    } catch (e) {
+      showToast(`Produto cadastrado, mas houve erro nas fotos: ${e.message}`, 'warning');
+    }
+    _modoProdutoNF(false);
+    fecharModal('modalProduto');
+    return;
+  }
 
   try {
     let res;
@@ -1034,44 +1054,12 @@ function _nfItemHTML(item) {
               onclick="_nfRepor(${item.idItem})">
         <i class="fa-solid fa-arrow-up-from-bracket"></i> Repor estoque
       </button>
-      <button class="btn btn-secondary btn-sm" onclick="_nfToggleNovoProduto(${item.idItem})">
+      <button class="btn btn-secondary btn-sm" onclick="_nfAbrirCadastroProduto(${item.idItem})">
         <i class="fa-solid fa-plus"></i> Cadastrar novo produto
       </button>
       <button class="btn btn-ghost btn-sm" onclick="_nfIgnorar(${item.idItem})">
         <i class="fa-solid fa-ban"></i> Ignorar
       </button>
-    </div>
-    <div class="nf-novo-produto hidden">
-      <div class="form-row" style="grid-template-columns:1fr;margin-bottom:12px">
-        <div class="form-group" style="margin-bottom:0">
-          <label>Nome do Produto<span class="required">*</span></label>
-          <input type="text" class="nf-np-nome" value="${escHtml(item.nomeProdutoNota)}" />
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:12px">
-        <div class="form-group" style="margin-bottom:0">
-          <label>Qtd. Mínima <span style="font-weight:400;opacity:.6">(opcional)</span></label>
-          <input type="number" class="nf-np-min" min="0" placeholder="Automático" />
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label>Qtd. Máxima</label>
-          <input type="number" class="nf-np-max" min="0" placeholder="9999" />
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label>Descrição</label>
-        <textarea class="nf-np-desc" rows="2" placeholder="Ex: Saco 50kg, uso em fundações..."></textarea>
-      </div>
-      <div class="nf-np-info">
-        Entrada de <strong>${_nfFmtQtd(item.quantidade)}</strong> unidade(s) como estoque inicial,
-        já vinculado ao fornecedor da nota.
-      </div>
-      <div class="nf-item-acoes">
-        <button class="btn btn-primary btn-sm" onclick="_nfCriarProduto(${item.idItem})">
-          <i class="fa-solid fa-floppy-disk"></i> Cadastrar e dar entrada
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="_nfToggleNovoProduto(${item.idItem})">Cancelar</button>
-      </div>
     </div>
   </div>`;
 }
@@ -1098,9 +1086,37 @@ function _nfOnBuscaInput(input) {
   _nfAtualizarBotaoRepor(row);
 }
 
-function _nfToggleNovoProduto(idItem) {
-  const form = _nfLinha(idItem)?.querySelector('.nf-novo-produto');
-  if (form) form.classList.toggle('hidden');
+// "Cadastrar novo produto" abre o mesmo modal do cadastro normal, por cima da
+// conferência, já com o que a nota informa: nome, quantidade (fixa — é o que
+// entra no estoque), fornecedor (fixo) e custo unitário (editável).
+function _nfAbrirCadastroProduto(idItem) {
+  const item = (_nfNotaAtual?.itens || []).find(i => i.idItem === idItem);
+  if (!item) return;
+  abrirModalNovoProduto();
+
+  const qtd = Math.round(Number(item.quantidade) || 0);
+  _nfItemCadastro = idItem;
+  _modoProdutoNF(true);
+  document.getElementById('prodNome').value       = item.nomeProdutoNota || '';
+  document.getElementById('prodQtd').value        = qtd;
+  document.getElementById('prodFornecedor').value = _nfNotaAtual.nomeFornecedor || '';
+  // custo por unidade de estoque: total do item ÷ quantidade que entra (a da
+  // nota pode ser fracionada e é arredondada) — mesma conta do backend
+  if (qtd > 0 && item.valorTotal) {
+    document.getElementById('prodCusto').value = (Number(item.valorTotal) / qtd).toFixed(2);
+  }
+  _atualizarPrecoVenda();
+  _prazoHintProduto({ idFornecedor: _nfNotaAtual.idFornecedor });
+  document.getElementById('modalProdutoTitle').innerHTML =
+    '<i class="fa-solid fa-file-invoice"></i> Novo Produto da Nota Fiscal';
+}
+
+// Liga/desliga o modo "cadastro a partir da nota" no modal de produto.
+function _modoProdutoNF(ativo) {
+  if (!ativo) _nfItemCadastro = null;
+  document.getElementById('modalProduto').classList.toggle('modal-sobreposto', ativo);
+  ['prodQtd', 'prodFornecedor'].forEach(id => { document.getElementById(id).readOnly = ativo; });
+  document.getElementById('prodNfInfo').classList.toggle('hidden', !ativo);
 }
 
 function _nfAtualizarResumo() {
@@ -1121,29 +1137,11 @@ function _nfRepor(idItem) {
   _nfConfirmarItem(idItem, { acao: 'repor', idProduto: parseInt(idProduto) });
 }
 
-function _nfCriarProduto(idItem) {
-  const linha = _nfLinha(idItem);
-  if (!linha) return;
-
-  const nome = linha.querySelector('.nf-np-nome').value.trim();
-  if (nome.length < 3) { showToast('Nome deve ter pelo menos 3 caracteres.', 'warning'); return; }
-
-  const min  = linha.querySelector('.nf-np-min').value;
-  const max  = linha.querySelector('.nf-np-max').value;
-  const desc = linha.querySelector('.nf-np-desc').value.trim();
-
-  _nfConfirmarItem(idItem, {
-    acao:      'criar',
-    qtdMinima: min !== '' ? parseInt(min) : null,
-    qtdMaxima: max !== '' ? parseInt(max) : null,
-    produto:   { nomeProduto: nome, descProduto: desc },
-  });
-}
-
 function _nfIgnorar(idItem) {
   _nfConfirmarItem(idItem, { acao: 'ignorar' });
 }
 
+// Devolve a resposta da API, ou null se deu erro (o toast já foi mostrado).
 async function _nfConfirmarItem(idItem, payload) {
   try {
     const res = await apiFetch(`/nota-fiscal/item/${idItem}/confirmar`, 'PATCH', payload);
@@ -1161,8 +1159,10 @@ async function _nfConfirmarItem(idItem, payload) {
     await Promise.all([carregarProdutos(), carregarFornecedores(), carregarHistorico()]);
 
     showToast(res.msg || 'Item confirmado!', 'success');
+    return res;
   } catch (e) {
     showToast(`Erro: ${e.message}`, 'error');
+    return null;
   }
 }
 
@@ -1344,6 +1344,7 @@ function fecharDropdownProduto(input) {
 }
 
 function buscarFornecedorInput(input) {
+  if (input.readOnly) return;   // fornecedor fixo (cadastro pela nota fiscal)
   const q    = input.value.toLowerCase().trim();
   const drop = input.closest('.prod-search-wrap').querySelector('.prod-dropdown');
 

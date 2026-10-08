@@ -1,4 +1,5 @@
 from src.dao.notaFiscalDAO import NotaFiscalDAO
+from src.controller.produtoController import ProdutoController
 from src.service.nfeParser import parse_nfe, NFeParserError
 from src.service.pdfParaXml import pdf_para_nfe_xml
 
@@ -9,7 +10,8 @@ _FORMATOS = ('.xml', '.pdf')
 class NotaFiscalController:
 
     def __init__(self):
-        self.dao = NotaFiscalDAO()
+        self.dao          = NotaFiscalDAO()
+        self.produto_ctrl = ProdutoController()
 
     # ─── Importação ───────────────────────────────────────────────────────────
 
@@ -82,8 +84,7 @@ class NotaFiscalController:
 
     # ─── Conferência ──────────────────────────────────────────────────────────
 
-    def confirmar_item(self, idItem, acao, idProduto=None, quantidadeMinima=None,
-                       quantidadeMaxima=None, dadosNovoProduto=None) -> tuple:
+    def confirmar_item(self, idItem, acao, idProduto=None, dadosNovoProduto=None) -> tuple:
         """Valida a decisão do usuário antes de aplicá-la ao estoque.
 
         Retorna (sucesso, mensagem, idProduto).
@@ -115,45 +116,19 @@ class NotaFiscalController:
             return self.dao.confirmar_item(idItem, 'repor', idProduto=idProduto)
 
         if acao == 'criar':
-            dados = dadosNovoProduto or {}
-            nome  = (dados.get("nomeProduto") or item._nomeProdutoNota or "").strip()
-            if not nome:
-                return False, "Nome do produto não pode ser vazio.", None
-            if len(nome) < 3:
-                return False, "Nome deve ter pelo menos 3 caracteres.", None
-
-            # Mínimo vazio = cálculo automático; preenchido = mínimo manual.
-            valido, mensagem, qtdMin = self._validar_limite(quantidadeMinima, None, "mínima")
-            if not valido:
-                return False, mensagem, None
-            valido, mensagem, qtdMax = self._validar_limite(quantidadeMaxima, 9999, "máxima")
-            if not valido:
-                return False, mensagem, None
-            if qtdMin is not None and qtdMax > 0 and qtdMin > qtdMax:
-                return False, "Quantidade mínima não pode ser maior que a máxima.", None
-
             quantidade = int(round(item._quantidade or 0))
             if quantidade <= 0:
                 return False, "A quantidade do item na nota deve ser maior que zero.", None
-            if qtdMax > 0 and quantidade > qtdMax:
-                return False, (f"A quantidade da nota ({quantidade}) passa da quantidade "
-                               f"máxima informada ({qtdMax})."), None
 
-            dados["nomeProduto"] = nome
-            return self.dao.confirmar_item(
-                idItem, 'criar',
-                quantidadeMinima=qtdMin, quantidadeMaxima=qtdMax, dadosNovoProduto=dados
-            )
+            # Mesma validação do cadastro de produto (nome, máximo, estoque
+            # mínimo, custo e margem). Estoque e fornecedor vêm da nota.
+            dados = dict(dadosNovoProduto or {})
+            dados["nomeProduto"] = dados.get("nomeProduto") or item._nomeProdutoNota
+            dados["qtdProduto"]  = quantidade
+            dados["fornecedor"]  = None
+            valido, mensagem, produto = self.produto_ctrl.montar(dados)
+            if not valido:
+                return False, mensagem, None
+            return self.dao.confirmar_item(idItem, 'criar', novoProduto=produto)
 
         return self.dao.confirmar_item(idItem, 'ignorar')
-
-    def _validar_limite(self, valor, padrao: int, rotulo: str) -> tuple:
-        if valor is None or valor == "":
-            return True, "", padrao
-        try:
-            limite = int(valor)
-        except (ValueError, TypeError):
-            return False, f"Quantidade {rotulo} deve ser um número inteiro.", None
-        if limite < 0:
-            return False, f"Quantidade {rotulo} não pode ser negativa.", None
-        return True, "", limite

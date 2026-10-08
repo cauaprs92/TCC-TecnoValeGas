@@ -4,7 +4,9 @@ from difflib import SequenceMatcher
 
 from src.dao.banco import OperacaoInvalida, consultar, consultar_um, executar_transacao
 from src.dao.movimentacaoDAO import registrar_movimentacao
+from src.dao.produtoDAO import CAMPOS_PRODUTO, valores_produto
 from src.modelo.notaFiscal import NotaFiscal, NotaFiscalItem
+from src.modelo.produto import Produto
 from src.service import precificacao
 
 # similaridade mínima para sugerir um produto já cadastrado na tela de conferência
@@ -210,14 +212,14 @@ class NotaFiscalDAO:
     # ─── Conferência ──────────────────────────────────────────────────────────
 
     def confirmar_item(self, idItem: int, acao: str, idProduto: int = None,
-                       quantidadeMinima: int = None, quantidadeMaxima: int = None,
-                       dadosNovoProduto: dict = None) -> tuple:
+                       novoProduto: Produto = None) -> tuple:
         """Aplica a decisão do usuário sobre um item da nota.
 
         acao='repor'   → soma a quantidade do item ao estoque do produto informado
                          e recalcula o custo médio com o valor unitário da nota
-        acao='criar'   → cadastra um produto novo com a quantidade do item como
-                         estoque e o valor unitário da nota como custo
+        acao='criar'   → cadastra `novoProduto` (já validado como no cadastro
+                         normal) com o fornecedor da nota; sem custo digitado,
+                         o custo é o valor unitário da nota
         acao='ignorar' → não mexe no estoque, apenas marca o item
 
         Retorna (sucesso, mensagem, idProduto).
@@ -264,21 +266,17 @@ class NotaFiscalDAO:
                     (quantidade, custo, id_produto)
                 )
             elif acao == 'criar':
-                dados = dadosNovoProduto or {}
-                cursor.execute("""
-                    INSERT INTO produtos
-                        (nomeProduto, qtdProduto, descProduto, qtdMinimaManual, qtdMaxima, idFornecedor,
-                         custoUnitario)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    (dados.get("nomeProduto") or nome_nota or "").strip(),
-                    quantidade,
-                    (dados.get("descProduto") or "").strip(),
-                    quantidadeMinima,  # None = mínimo automático
-                    quantidadeMaxima if quantidadeMaxima is not None else 9999,
-                    idFornecedor,
-                    round(custo_nota, 4) if custo_nota is not None else None,
-                ))
+                if novoProduto is None:
+                    raise OperacaoInvalida("Dados do novo produto não informados.")
+                novoProduto._qtdProduto   = quantidade
+                novoProduto._idFornecedor = idFornecedor
+                if novoProduto._custoUnitario is None and custo_nota is not None:
+                    novoProduto._custoUnitario = round(custo_nota, 4)
+                cursor.execute(
+                    f"INSERT INTO produtos ({', '.join(CAMPOS_PRODUTO)}) "
+                    f"VALUES ({', '.join(['%s'] * len(CAMPOS_PRODUTO))})",
+                    valores_produto(novoProduto)
+                )
                 id_produto = cursor.lastrowid
             else:
                 raise OperacaoInvalida(f"Ação inválida: {acao}.")

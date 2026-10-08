@@ -57,7 +57,7 @@ class ProdutoController:
             return False, f"{rotulo} deve ser menor que {maximo:g}.", None
         return True, "", numero
 
-    def _montar(self, dados: dict) -> tuple:
+    def montar(self, dados: dict) -> tuple:
         """Valida o corpo do cadastro/edição e monta o Produto.
         Retorna (sucesso, mensagem, produto)."""
         nome = (dados.get("nomeProduto") or "").strip()
@@ -127,7 +127,7 @@ class ProdutoController:
         return self._verificar_alerta_estoque(salvo._nomeProduto, salvo._qtdProduto, salvo._qtdMinima)
 
     def cadastrar(self, dados: dict) -> tuple:
-        valido, mensagem, produto = self._montar(dados)
+        valido, mensagem, produto = self.montar(dados)
         if not valido:
             return False, mensagem, None, None
         if not self.dao.inserir(produto):
@@ -141,7 +141,7 @@ class ProdutoController:
         return self.dao.buscar_por_id(idProduto)
 
     def editar(self, idProduto: int, dados: dict) -> tuple:
-        valido, mensagem, produto = self._montar(dados)
+        valido, mensagem, produto = self.montar(dados)
         if not valido:
             return False, mensagem, None
         produto._idProduto = int(idProduto)

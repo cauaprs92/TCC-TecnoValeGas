@@ -521,6 +521,8 @@ body {
 /* ── MODALS ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 500; display: flex; align-items: center; justify-content: center; animation: fadeIn .18s ease; padding: 20px; }
 .modal-overlay.hidden { display: none; }
+/* modal aberto por cima de outro (ex.: produto a partir da conferência da NF) */
+.modal-overlay.modal-sobreposto { z-index: 510; }
 .modal { background: #fff; border-radius: 12px; width: 100%; max-width: 520px; box-shadow: var(--shadow-lg); animation: slideUp .22s ease; max-height: 90vh; display: flex; flex-direction: column; }
 .modal-large { max-width: 680px; }
 .modal-small { max-width: 380px; }
@@ -1106,10 +1108,6 @@ body {
 }
 .nf-item.ignorado .nf-item-status { color: var(--gray-500); }
 
-.nf-novo-produto {
-  margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--gray-200);
-}
-.nf-novo-produto.hidden { display: none; }
 .nf-np-info {
   font-size: .78rem; color: var(--gray-700); background: var(--orange-pale);
   border-radius: 6px; padding: 8px 12px;

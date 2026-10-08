@@ -3,7 +3,7 @@ from src.dao.movimentacaoDAO import registrar_movimentacao
 from src.modelo.produto import Produto
 from src.service import estoqueMinimo
 
-_CAMPOS = [
+CAMPOS_PRODUTO = [
     "nomeProduto", "qtdProduto", "descProduto", "qtdMaxima", "idFornecedor",
     "qtdMinimaManual", "prazoEntregaDias", "consumoEstimado", "periodoEstimativa",
     "custoUnitario", "margemPercentual",
@@ -31,8 +31,8 @@ _SELECT = f"""
 """
 
 
-def _valores(produto: Produto) -> list:
-    return [getattr(produto, f"_{c}") for c in _CAMPOS]
+def valores_produto(produto: Produto) -> list:
+    return [getattr(produto, f"_{c}") for c in CAMPOS_PRODUTO]
 
 
 class ProdutoDAO:
@@ -40,8 +40,8 @@ class ProdutoDAO:
     def inserir(self, produto: Produto) -> bool:
         def operacao(cursor):
             cursor.execute(
-                f"INSERT INTO produtos ({', '.join(_CAMPOS)}) VALUES ({', '.join(['%s'] * len(_CAMPOS))})",
-                _valores(produto)
+                f"INSERT INTO produtos ({', '.join(CAMPOS_PRODUTO)}) VALUES ({', '.join(['%s'] * len(CAMPOS_PRODUTO))})",
+                valores_produto(produto)
             )
             produto._idProduto = cursor.lastrowid
             registrar_movimentacao(cursor, produto._idProduto, "entrada", "ajuste", produto._qtdProduto)
@@ -63,9 +63,9 @@ class ProdutoDAO:
             cursor.execute("SELECT qtdProduto FROM produtos WHERE idProduto = %s FOR UPDATE",
                            (produto._idProduto,))
             row = cursor.fetchone()
-            sets = ", ".join(f"{c} = %s" for c in _CAMPOS)
+            sets = ", ".join(f"{c} = %s" for c in CAMPOS_PRODUTO)
             cursor.execute(f"UPDATE produtos SET {sets} WHERE idProduto = %s",
-                           _valores(produto) + [produto._idProduto])
+                           valores_produto(produto) + [produto._idProduto])
             diferenca = produto._qtdProduto - (row[0] if row else 0)
             tipo = "entrada" if diferenca > 0 else "saida"
             registrar_movimentacao(cursor, produto._idProduto, tipo, "ajuste", abs(diferenca))
