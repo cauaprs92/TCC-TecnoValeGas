@@ -111,6 +111,7 @@ class RelatorioDAO:
                 "idProduto": id_produto, "nomeProduto": nome,
                 "custoUnitario":    float(custo)  if custo  is not None else None,
                 "margemPercentual": float(margem) if margem is not None else None,
+                "margemEfetiva":    precificacao.margem_efetiva(margem),
                 "precoVenda":       precificacao.preco_venda(custo, margem),
                 "qtdVendida": int(qtd), "receita": receita, "custoTotal": custo_total,
                 **(precificacao.lucro(receita, custo_total) if qtd else {"lucro": None, "margemReal": None}),

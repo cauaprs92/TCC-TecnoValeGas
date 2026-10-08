@@ -36,7 +36,8 @@ def _serializar(p) -> dict:
     # Custo e margem são informação financeira: o funcionário de obra não recebe.
     if g.get("cargo") != CARGO_OBRA:
         dados["custoUnitario"]    = p._custoUnitario
-        dados["margemPercentual"] = p._margemPercentual
+        dados["margemPercentual"] = p._margemPercentual   # None = usa a margem padrão
+        dados["margemEfetiva"]    = precificacao.margem_efetiva(p._margemPercentual)
         dados["precoVenda"]       = precificacao.preco_venda(p._custoUnitario, p._margemPercentual)
     return dados
 
@@ -73,7 +74,10 @@ def cadastrar():
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA)
 def listar():
     produtos = controller.listar()
-    return jsonify({"status": True, "produtos": [_serializar(p) for p in produtos]}), 200
+    resposta = {"status": True, "produtos": [_serializar(p) for p in produtos]}
+    if g.get("cargo") != CARGO_OBRA:
+        resposta["margemPadrao"] = precificacao.MARGEM_PADRAO
+    return jsonify(resposta), 200
 
 
 # ─── GET /produto/<idProduto> ─────────────────────────────────────────────────

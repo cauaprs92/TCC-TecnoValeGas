@@ -294,6 +294,7 @@ async function carregarProdutos() {
   try {
     const res = await apiFetch('/produto');
     cacheProdutos = res.produtos || [];
+    if (res.margemPadrao != null) margemPadrao = res.margemPadrao;
     _cacheReady.produtos = true;
     // Quem só carrega o catálogo para lançar material na obra não acompanha
     // estoque — a tabela, os alertas e o sino ficariam fora do contexto dele.
@@ -454,6 +455,26 @@ function _vProdMinManual(show = true) {
   return !msg;
 }
 
+// ── Margem: padrão do sistema, ou manual quando a opção está marcada ──
+
+function _vProdMargem(show = true) {
+  if (!document.getElementById('prodMargemManualChk').checked) { _erroProd('prodMargem', ''); return true; }
+  const v = document.getElementById('prodMargem').value.trim();
+  let msg = '';
+  if (v === '')                                   msg = 'Informe a margem ou desmarque a opção manual.';
+  else if (!(Number(v) >= 0 && Number(v) < 100))  msg = 'A margem deve ficar entre 0 e 99,9%.';
+  if (msg && show) _erroProd('prodMargem', msg);
+  else if (!msg)   _erroProd('prodMargem', '');
+  return !msg;
+}
+
+function _toggleMargemManual() {
+  const manual = document.getElementById('prodMargemManualChk').checked;
+  document.getElementById('prodMargemGroup').classList.toggle('hidden', !manual);
+  if (!manual) _erroProd('prodMargem', '');
+  _atualizarPrecoVenda();
+}
+
 function _toggleMinimoManual() {
   const manual = document.getElementById('prodMinManualChk').checked;
   document.getElementById('prodMinManualGroup').classList.toggle('hidden', !manual);
@@ -499,7 +520,7 @@ function _vProdDesc(show = true) {
 
 function _validarFormProduto() {
   return [_vProdNome(), _vProdQtd(), _vProdQtdMax(), _vProdDesc(),
-          _vProdPrazo(), _vProdConsumo(), _vProdMinManual()].every(Boolean);
+          _vProdPrazo(), _vProdConsumo(), _vProdMinManual(), _vProdMargem()].every(Boolean);
 }
 
 function _setupValidacaoProduto() {
@@ -516,10 +537,11 @@ function _setupValidacaoProduto() {
   bind('prodPrazo',  _vProdPrazo);
   bind('prodConsumo', _vProdConsumo);
   bind('prodQtdMinManual', _vProdMinManual);
+  bind('prodMargem', _vProdMargem);
 }
 
 function _resetErrosProduto() {
-  ['prodNome','prodQtd','prodQtdMax','prodDesc','prodPrazo','prodConsumo','prodQtdMinManual']
+  ['prodNome','prodQtd','prodQtdMax','prodDesc','prodPrazo','prodConsumo','prodQtdMinManual','prodMargem']
     .forEach(id => _erroProd(id, ''));
 }
 
@@ -661,13 +683,16 @@ async function _uploadFotosPendentes(idProduto) {
 
 // idItem da nota fiscal quando o modal foi aberto pela conferência da NF.
 let _nfItemCadastro = null;
+// Margem usada por produto sem margem própria (MARGEM_PADRAO no backend).
+let margemPadrao = 30;
 
 function abrirModalNovoProduto() {
   _modoProdutoNF(false);
   ['prodIdEdicao','prodNome','prodQtd','prodQtdMax','prodDesc','prodFornecedor',
    'prodPrazo','prodConsumo','prodQtdMinManual','prodCusto','prodMargem']
     .forEach(id => { document.getElementById(id).value = ''; });
-  _atualizarPrecoVenda();
+  document.getElementById('prodMargemManualChk').checked = false;
+  _toggleMargemManual();
   document.getElementById('prodPeriodo').value = 'mes';
   document.getElementById('prodMinManualChk').checked = false;
   _toggleMinimoManual();
@@ -696,7 +721,8 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('prodQtdMinManual').value   = p.qtdMinimaManual ?? '';
   document.getElementById('prodCusto').value  = p.custoUnitario ?? '';
   document.getElementById('prodMargem').value = p.margemPercentual ?? '';
-  _atualizarPrecoVenda();
+  document.getElementById('prodMargemManualChk').checked = p.margemPercentual != null;
+  _toggleMargemManual();
   _toggleMinimoManual();
   _renderResumoMinimo(p);
   _prazoHintProduto(p);
@@ -713,16 +739,40 @@ function abrirModalEditarProduto(idProduto) {
 }
 
 // Mesma conta de src/service/precificacao.py: margem sobre a venda, não markup.
+// Margem null = margem padrão (o valor vem do backend em GET /produto).
 function _precoVenda(custo, margem) {
-  if (custo == null || margem == null || margem < 0 || margem >= 100) return null;
-  return custo / (1 - margem / 100);
+  const m = margem ?? margemPadrao;
+  if (custo == null || m < 0 || m >= 100) return null;
+  return custo / (1 - m / 100);
 }
 
+const _fmtPct = v => `${Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
+
+// Resumo no topo da seção de preço: valor, de onde veio a margem e a conta.
 function _atualizarPrecoVenda() {
-  const custo  = document.getElementById('prodCusto').value.trim();
-  const margem = document.getElementById('prodMargem').value.trim();
-  const preco  = (custo && margem) ? _precoVenda(Number(custo), Number(margem)) : null;
-  document.getElementById('prodPrecoVenda').value = preco != null ? _fmtMoeda(preco) : '';
+  const el     = document.getElementById('prodPrecoResumo');
+  const custoV = document.getElementById('prodCusto').value.trim();
+  const manual = document.getElementById('prodMargemManualChk').checked;
+  const margV  = document.getElementById('prodMargem').value.trim();
+  const rotuloCusto = _nfItemCadastro ? 'Custo da nota' : 'Custo';
+
+  if (manual && !(margV !== '' && Number(margV) >= 0 && Number(margV) < 100)) {
+    el.innerHTML = 'Informe a margem abaixo para calcular o preço de venda.';
+    return;
+  }
+  const margem = manual ? Number(margV) : margemPadrao;
+  const badge  = manual
+    ? `<span class="badge badge-gray">margem manual ${_fmtPct(margem)}</span>`
+    : `<span class="badge badge-blue">margem padrão ${_fmtPct(margem)}</span>`;
+
+  if (custoV === '') {
+    el.innerHTML = `${badge}<span class="minimo-conta">Sem custo informado — o preço de venda aparece quando
+      houver custo (digitado ou pela nota fiscal).</span>`;
+    return;
+  }
+  const custo = Number(custoV);
+  el.innerHTML = `<span class="minimo-valor">${_fmtMoeda(_precoVenda(custo, margem))}</span>${badge}`
+    + `<span class="minimo-conta">${rotuloCusto} ${_fmtMoeda(custo)} ÷ (1 − ${_fmtPct(margem)})</span>`;
 }
 
 async function salvarProduto() {
@@ -743,8 +793,11 @@ async function salvarProduto() {
   const prazo   = document.getElementById('prodPrazo').value.trim();
   const consumo = document.getElementById('prodConsumo').value.trim();
   const manual  = document.getElementById('prodMinManualChk').checked;
-  const custo   = document.getElementById('prodCusto').value.trim();
-  const margem  = document.getElementById('prodMargem').value.trim();
+  // Pela nota fiscal o custo não vai: o backend usa o valor unitário da nota.
+  const custo   = _nfItemCadastro ? '' : document.getElementById('prodCusto').value.trim();
+  // Margem desmarcada = null = margem padrão do sistema.
+  const margem  = document.getElementById('prodMargemManualChk').checked
+    ? document.getElementById('prodMargem').value.trim() : '';
 
   const payload = {
     produto: {
@@ -1117,6 +1170,7 @@ function _modoProdutoNF(ativo) {
   document.getElementById('modalProduto').classList.toggle('modal-sobreposto', ativo);
   ['prodQtd', 'prodFornecedor'].forEach(id => { document.getElementById(id).readOnly = ativo; });
   document.getElementById('prodNfInfo').classList.toggle('hidden', !ativo);
+  document.getElementById('prodCustoGroup').classList.toggle('hidden', ativo);
 }
 
 function _nfAtualizarResumo() {

@@ -52,6 +52,7 @@ create table fornecedores (
 --   custoUnitario    → digitado no cadastro ou atualizado pela nota fiscal
 --                      (média ponderada entre o estoque atual e a entrada)
 --   margemPercentual → margem sobre a venda: preço = custo ÷ (1 − margem).
+--                      NULL = usa a margem padrão (MARGEM_PADRAO em precificacao.py).
 --                      O preço de venda não é gravado; sai sempre do custo atual.
 create table produtos(
     idProduto         int primary key NOT NULL AUTO_INCREMENT,

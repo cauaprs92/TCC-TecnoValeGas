@@ -55,8 +55,9 @@ INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailClie
 -- qtdProduto = estoque atual | o estoque mínimo é calculado (ver docs/codigo.sql)
 -- custoUnitario e margemPercentual são FICTÍCIOS — substituir pelos valores
 -- reais da TecnoVale Gás. Preço de venda = custo ÷ (1 − margem).
--- O produto 45 fica sem custo e sem margem de propósito, para mostrar na tela
--- um produto ainda sem preço de venda.
+-- Margem NULL = margem padrão do sistema (30%): os EPIs 39–42 usam a padrão,
+-- os demais têm margem própria. O produto 45 fica sem custo de propósito,
+-- para mostrar na tela um produto ainda sem preço de venda.
 INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMaxima, custoUnitario, margemPercentual) VALUES
 (1,  'Tubo Aço Galvanizado 1"',           180, 'Tubo rígido galvanizado para rede de gás', 500,   22.00, 35),
 (2,  'Registro de Esfera 3/4"',            95, 'Registro de esfera para gás com vedação reforçada', 300,   32.00, 40),
@@ -96,10 +97,10 @@ INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMaxima
 (36, 'Queimador Industrial 50.000 BTU',     11, 'Queimador a gás para uso industrial, 50.000 BTU/h',  30,  980.00, 25),
 (37, 'Queimador Industrial 100.000 BTU',     7, 'Queimador a gás de alta potência para fornos industriais',  20, 1650.00, 25),
 (38, 'Kit Reparo de Regulador GLP',         42, 'Kit com vedações e mola para manutenção de reguladores', 150,   45.00, 40),
-(39, 'Capacete de Segurança CA',            28, 'Capacete de proteção com certificado INMETRO',  60,   38.00, 35),
-(40, 'Óculos de Segurança Incolor',         35, 'Óculos de proteção com lente incolor e vedação lateral',  80,   14.00, 40),
-(41, 'Luva de Couro Cano Longo',            20, 'Luva de couro para trabalhos com gás e maçarico',  50,   29.00, 40),
-(42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',  40,  145.00, 30),
+(39, 'Capacete de Segurança CA',            28, 'Capacete de proteção com certificado INMETRO',  60,   38.00, NULL),
+(40, 'Óculos de Segurança Incolor',         35, 'Óculos de proteção com lente incolor e vedação lateral',  80,   14.00, NULL),
+(41, 'Luva de Couro Cano Longo',            20, 'Luva de couro para trabalhos com gás e maçarico',  50,   29.00, NULL),
+(42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',  40,  145.00, NULL),
 (43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro', 800,   42.00, 35),
 (44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro', 600,   19.00, 35),
 (45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 100,    NULL, NULL);
@@ -307,7 +308,8 @@ SET SQL_SAFE_UPDATES = 0;
 UPDATE produtosObras po
 JOIN produtos p ON p.idProduto = po.idProduto
 SET po.custoUnitario = p.custoUnitario,
-    po.precoVenda    = ROUND(p.custoUnitario / (1 - p.margemPercentual / 100), 2);
+    -- margem NULL = margem padrão (30%, MARGEM_PADRAO em precificacao.py)
+    po.precoVenda    = ROUND(p.custoUnitario / (1 - COALESCE(p.margemPercentual, 30) / 100), 2);
 SET SQL_SAFE_UPDATES = 1;
 
 -- ── Histórico ─────────────────────────────────────────────────────────────────

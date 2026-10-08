@@ -3,14 +3,26 @@
 A margem é sobre a venda, não markup: com custo 100 e margem 30%, o preço é
 100 ÷ 0,70 = 142,86 — dos 142,86 cobrados, 30% (42,86) é lucro. O lucro aqui
 considera só material; mão de obra, deslocamento e impostos ainda não entram.
+
+Produto sem margem própria usa MARGEM_PADRAO — como o estoque mínimo, que é
+automático até alguém definir um valor manual. O valor é provisório até a
+empresa informar a margem real.
 """
+
+MARGEM_PADRAO = 30.0
+
+
+def margem_efetiva(margem_percentual) -> float:
+    """A margem do produto, ou a padrão quando ele não tem uma própria."""
+    return float(margem_percentual) if margem_percentual is not None else MARGEM_PADRAO
 
 
 def preco_venda(custo, margem_percentual):
-    """Preço de venda pela margem sobre a venda, ou None se faltar custo ou margem."""
-    if custo is None or margem_percentual is None:
+    """Preço de venda pela margem sobre a venda (a padrão, se o produto não
+    tiver margem própria), ou None se faltar o custo."""
+    if custo is None:
         return None
-    margem = float(margem_percentual) / 100
+    margem = margem_efetiva(margem_percentual) / 100
     if not 0 <= margem < 1:
         return None
     return round(float(custo) / (1 - margem), 2)

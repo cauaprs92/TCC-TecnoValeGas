@@ -37,6 +37,10 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
   por média ponderada com o estoque atual) e **margem sobre a venda**
 - Preço de venda = `custo ÷ (1 − margem)` — custo 100 com margem 30% vende a
   142,86, e 30% do que é cobrado é lucro
+- Produto sem margem própria usa a **margem padrão** (30%, `MARGEM_PADRAO`),
+  como o estoque mínimo automático; a margem manual é opcional no cadastro
+- Produto cadastrado pela nota fiscal usa o mesmo formulário, com o custo
+  vindo direto da nota
 - Valor da obra = serviços + produtos avulsos × preço de venda. O material
   consumido pelos serviços não é cobrado à parte (o preço do serviço já cobre)
 - Custo e preço são **congelados** no vínculo com a obra: mudar o custo do
