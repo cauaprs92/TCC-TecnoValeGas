@@ -6,7 +6,7 @@ _COLS_SELECT = """
     idObra, codCliente, descObra, dataInicio, dataFim,
     statusObra, respObra, obsObra, orientacaoObra,
     tipoObra, clientePrimario, fieldObra, unidadeObra, emailContato, celular1, celular2,
-    valorObra, setorObra
+    valorObra, setorObra, custoObra
 """
 
 # Campos que o formulário grava diretamente. statusObra fica de fora: mudar o

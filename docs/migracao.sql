@@ -126,3 +126,38 @@ WHERE entidade = 'Obra'
   AND idEntidade IS NULL
   AND descricao REGEXP 'ID:? [0-9]+';
 SET SQL_SAFE_UPDATES = 1;
+
+-- ── 6. Custo, margem e lucro ─────────────────────────────────────────────────
+-- Produto ganha custo (manual ou pela nota fiscal) e margem sobre a venda.
+-- O material da obra guarda o custo (e, no avulso, o preço de venda) do
+-- momento do vínculo. Obras antigas ficam sem custo congelado (NULL): o custo
+-- da época não existe mais, e o sistema não chuta. Elas aparecem como "sem
+-- custo" no lucro em vez de entrarem com custo zero.
+ALTER TABLE produtos
+    ADD COLUMN custoUnitario    DECIMAL(10,4) DEFAULT NULL,
+    ADD COLUMN margemPercentual DECIMAL(5,2)  DEFAULT NULL,
+    ADD CONSTRAINT ck_produto_custo  CHECK (custoUnitario >= 0),
+    ADD CONSTRAINT ck_produto_margem CHECK (margemPercentual >= 0 AND margemPercentual < 100);
+
+ALTER TABLE produtosObras
+    ADD COLUMN custoUnitario DECIMAL(10,4) DEFAULT NULL,
+    ADD COLUMN precoVenda    DECIMAL(10,4) DEFAULT NULL;
+ALTER TABLE obraServicoProdutos
+    ADD COLUMN custoUnitario DECIMAL(10,4) DEFAULT NULL;
+ALTER TABLE obras
+    ADD COLUMN custoObra DECIMAL(10,2) DEFAULT NULL;
+
+-- Custo inicial pelas notas fiscais já conferidas: média ponderada de tudo
+-- que entrou de cada produto.
+SET SQL_SAFE_UPDATES = 0;
+SET SQL_SAFE_UPDATES = 0;
+UPDATE produtos p
+JOIN (
+    SELECT idProduto, SUM(valorUnitario * quantidade) / SUM(quantidade) AS custo
+    FROM notaFiscalItens
+    WHERE statusItem = 'confirmado' AND idProduto IS NOT NULL
+      AND valorUnitario IS NOT NULL AND quantidade > 0
+    GROUP BY idProduto
+) nf ON nf.idProduto = p.idProduto
+SET p.custoUnitario = nf.custo;
+SET SQL_SAFE_UPDATES = 1;

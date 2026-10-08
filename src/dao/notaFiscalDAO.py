@@ -5,6 +5,7 @@ from difflib import SequenceMatcher
 from src.dao.banco import OperacaoInvalida, consultar, consultar_um, executar_transacao
 from src.dao.movimentacaoDAO import registrar_movimentacao
 from src.modelo.notaFiscal import NotaFiscal, NotaFiscalItem
+from src.service import precificacao
 
 # similaridade mínima para sugerir um produto já cadastrado na tela de conferência
 _LIMIAR_SUGESTAO = 0.55
@@ -214,7 +215,9 @@ class NotaFiscalDAO:
         """Aplica a decisão do usuário sobre um item da nota.
 
         acao='repor'   → soma a quantidade do item ao estoque do produto informado
-        acao='criar'   → cadastra um produto novo com a quantidade do item como estoque
+                         e recalcula o custo médio com o valor unitário da nota
+        acao='criar'   → cadastra um produto novo com a quantidade do item como
+                         estoque e o valor unitário da nota como custo
         acao='ignorar' → não mexe no estoque, apenas marca o item
 
         Retorna (sucesso, mensagem, idProduto).
@@ -223,7 +226,7 @@ class NotaFiscalDAO:
             # FOR UPDATE: duas confirmações simultâneas do mesmo item não somam
             # o estoque duas vezes — a segunda espera e já vê o item conferido.
             cursor.execute("""
-                SELECT i.quantidade, i.nomeProdutoNota, i.statusItem, n.idFornecedor
+                SELECT i.quantidade, i.nomeProdutoNota, i.statusItem, n.idFornecedor, i.valorUnitario
                 FROM notaFiscalItens i
                 JOIN notasFiscais n ON n.idNotaFiscal = i.idNotaFiscal
                 WHERE i.idItem = %s
@@ -232,10 +235,15 @@ class NotaFiscalDAO:
             linha = cursor.fetchone()
             if not linha:
                 raise OperacaoInvalida("Item da nota fiscal não encontrado.")
-            quantidade_nota, nome_nota, status, idFornecedor = linha
+            quantidade_nota, nome_nota, status, idFornecedor, valor_unitario = linha
             if status != 'pendente':
                 raise OperacaoInvalida("Este item já foi conferido anteriormente.")
             quantidade = int(round(float(quantidade_nota or 0)))
+            # O custo por unidade de estoque é o total do item dividido pela
+            # quantidade que de fato entra (que foi arredondada para inteiro).
+            custo_nota = None
+            if valor_unitario is not None and quantidade > 0:
+                custo_nota = float(valor_unitario) * float(quantidade_nota) / quantidade
 
             if acao == 'ignorar':
                 cursor.execute("UPDATE notaFiscalItens SET statusItem = 'ignorado' WHERE idItem = %s", (idItem,))
@@ -244,17 +252,24 @@ class NotaFiscalDAO:
             id_produto = idProduto
             if acao == 'repor':
                 cursor.execute(
-                    "UPDATE produtos SET qtdProduto = qtdProduto + %s WHERE idProduto = %s",
-                    (quantidade, id_produto)
+                    "SELECT qtdProduto, custoUnitario FROM produtos WHERE idProduto = %s FOR UPDATE",
+                    (id_produto,)
                 )
-                if cursor.rowcount == 0:
+                atual = cursor.fetchone()
+                if not atual:
                     raise OperacaoInvalida(f"Produto ID {id_produto} não encontrado.")
+                custo = precificacao.custo_medio(atual[0], atual[1], quantidade, custo_nota)
+                cursor.execute(
+                    "UPDATE produtos SET qtdProduto = qtdProduto + %s, custoUnitario = %s WHERE idProduto = %s",
+                    (quantidade, custo, id_produto)
+                )
             elif acao == 'criar':
                 dados = dadosNovoProduto or {}
                 cursor.execute("""
                     INSERT INTO produtos
-                        (nomeProduto, qtdProduto, descProduto, qtdMinimaManual, qtdMaxima, idFornecedor)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                        (nomeProduto, qtdProduto, descProduto, qtdMinimaManual, qtdMaxima, idFornecedor,
+                         custoUnitario)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """, (
                     (dados.get("nomeProduto") or nome_nota or "").strip(),
                     quantidade,
@@ -262,6 +277,7 @@ class NotaFiscalDAO:
                     quantidadeMinima,  # None = mínimo automático
                     quantidadeMaxima if quantidadeMaxima is not None else 9999,
                     idFornecedor,
+                    round(custo_nota, 4) if custo_nota is not None else None,
                 ))
                 id_produto = cursor.lastrowid
             else:

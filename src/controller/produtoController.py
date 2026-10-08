@@ -42,6 +42,21 @@ class ProdutoController:
             return False, f"{rotulo} deve ser maior que zero.", None
         return True, "", numero
 
+    def _opcional_decimal(self, valor, rotulo: str, maximo: float = None) -> tuple:
+        """Campo opcional de valor: vazio vira None; se vier, número >= 0
+        (e menor que `maximo`, quando informado)."""
+        if valor is None or valor == "":
+            return True, "", None
+        try:
+            numero = float(valor)
+        except (ValueError, TypeError):
+            return False, f"{rotulo} deve ser um número.", None
+        if numero < 0:
+            return False, f"{rotulo} não pode ser negativo.", None
+        if maximo is not None and numero >= maximo:
+            return False, f"{rotulo} deve ser menor que {maximo:g}.", None
+        return True, "", numero
+
     def _montar(self, dados: dict) -> tuple:
         """Valida o corpo do cadastro/edição e monta o Produto.
         Retorna (sucesso, mensagem, produto)."""
@@ -82,6 +97,14 @@ class ProdutoController:
         if consumo is None:
             periodo = None
 
+        # Custo e margem sobre a venda; vazios = produto ainda sem preço de venda
+        valido, mensagem, custo = self._opcional_decimal(dados.get("custoUnitario"), "Custo unitário")
+        if not valido:
+            return False, mensagem, None
+        valido, mensagem, margem = self._opcional_decimal(dados.get("margemPercentual"), "Margem", maximo=100)
+        if not valido:
+            return False, mensagem, None
+
         produto = Produto()
         produto._nomeProduto       = nome
         produto._qtdProduto        = qtd
@@ -92,6 +115,8 @@ class ProdutoController:
         produto._prazoEntregaDias  = prazo
         produto._consumoEstimado   = consumo
         produto._periodoEstimativa = periodo
+        produto._custoUnitario     = custo
+        produto._margemPercentual  = margem
         return True, "", produto
 
     def _aviso_pos_gravacao(self, id_produto: int) -> str:

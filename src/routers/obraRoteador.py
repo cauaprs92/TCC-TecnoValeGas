@@ -10,6 +10,7 @@ from src.error_response                 import ErrorResponse
 from src.routers.clienteRoteador        import serializar_cliente
 from src.dao.fotoDAO                    import foto_obra_dao
 from src.uploads                        import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
+from src.service                        import precificacao
 
 obra_bp        = Blueprint("obra", __name__, url_prefix="/obra")
 controller     = ObraController()
@@ -40,6 +41,11 @@ def _serializar(o, equipe=None, nome_cliente=None):
         "valorObra":        float(o[16]) if len(o) > 16 and o[16] is not None else None,
         "setorObra":        o[17] if len(o) > 17 else None,
     }
+    # Custo e lucro (só material) ficam de fora para o funcionário de obra.
+    if g.get("cargo") != CARGO_OBRA:
+        custo = float(o[18]) if len(o) > 18 and o[18] is not None else None
+        dados["custoObra"] = custo
+        dados.update(precificacao.lucro(dados["valorObra"], custo))
     dados["funcionarios"] = equipe or []
     dados["nomeCliente"]  = nome_cliente
     return dados
@@ -168,6 +174,10 @@ def buscar_produtos_da_obra(idObra: int):
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
     produtos = controller.buscar_produtos_da_obra(idObra)
+    if g.get("cargo") == CARGO_OBRA:
+        for p in produtos:
+            p.pop("custoUnitario", None)
+            p.pop("precoVenda", None)
     return jsonify({"status": True, "produtos": produtos}), 200
 
 

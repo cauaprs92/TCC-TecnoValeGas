@@ -53,52 +53,56 @@ INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailClie
 
 -- ── Produtos ──────────────────────────────────────────────────────────────────
 -- qtdProduto = estoque atual | o estoque mínimo é calculado (ver docs/codigo.sql)
-INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMaxima) VALUES
-(1,  'Tubo Aço Galvanizado 1"',           180, 'Tubo rígido galvanizado para rede de gás', 500),
-(2,  'Registro de Esfera 3/4"',            95, 'Registro de esfera para gás com vedação reforçada', 300),
-(3,  'Medidor de Gás Industrial G16',       8, 'Medidor para instalação industrial de gás natural',  50),
-(4,  'Válvula Redutora de Pressão',         55, 'Válvula reguladora de pressão para rede de gás', 200),
-(5,  'Mangueira Flexível 3/4"',             42, 'Mangueira flexível para conexão de gás', 300),
-(6,  'Cinta de Fixação Metálica',          150, 'Cinta metálica para fixação de tubulações', 500),
-(7,  'Tubo PPR 32mm',                       63, 'Tubo de polipropileno para água e gás', 200),
-(8,  'Filtro de Linha para Gás',            67, 'Filtro de linha de proteção para rede de gás', 150),
-(9,  'Conector Curvo 90° 1/2"',            120, 'Conector em curva para tubulação de gás', 300),
-(10, 'Adaptador Rosca 1/2" x 3/4"',       144, 'Adaptador de rosca para composições mistas', 500),
-(11, 'Lanterna de Inspeção Antichama',      18, 'Lanterna para inspeção com proteção antichama',  80),
-(12, 'Detector de Vazão Portátil',           4, 'Detector portátil para vazamentos de gás',  40),
-(13, 'Regulador de Pressão 1ª Família',     72, 'Regulador para GLP residencial, saída 2,8 kPa', 200),
-(14, 'Regulador de Pressão 2ª Família',     48, 'Regulador para GLP industrial, saída 15 kPa', 150),
-(15, 'Mangueira GLP 1,20m Certificada',     85, 'Mangueira certificada INMETRO para botijão residencial', 300),
-(16, 'Abraçadeira Metálica 3/4"',          200, 'Abraçadeira para fixação de mangueiras e tubos 3/4"', 600),
-(17, 'Válvula de Alívio 1/2" 1,5 kgf',     36, 'Válvula de alívio de segurança para sistemas de GLP', 100),
-(18, 'Luva de Redução 3/4" x 1/2"',       160, 'Luva de redução roscada galvanizada', 500),
-(19, 'Niple Duplo 1/2"',                   175, 'Niple duplo galvanizado para conexões de gás', 600),
-(20, 'Tê 1/2" Galvanizado',               130, 'Tê roscado para ramificações em redes de gás', 400),
-(21, 'Joelho 90° 1/2" Galvanizado',       145, 'Joelho 90° roscado para mudança de direção', 500),
-(22, 'Joelho 90° 3/4" Galvanizado',       110, 'Joelho 90° roscado 3/4" para tubulações de gás', 400),
-(23, 'Tampão Macho 1/2"',                  90, 'Tampão macho roscado para fechamento de pontos de gás', 300),
-(24, 'Fita Veda Rosca 18mm x 50m',         95, 'Fita PTFE para vedação de roscas em instalações de gás', 300),
-(25, 'Selante para GLP 250ml',              58, 'Selante líquido específico para vedação de conexões GLP', 200),
-(26, 'Detector de Gás Natural/GLP',         22, 'Detector fixo de vazamento de gás para ambientes internos', 100),
-(27, 'Extintor CO2 6kg',                    15, 'Extintor de dióxido de carbono para áreas de equipamentos',  50),
-(28, 'Extintor Pó Químico Seco 4kg',        19, 'Extintor ABC 4kg para uso geral em obras e instalações',  60),
-(29, 'Manômetro 0-4 kgf/cm² 1/4"',         33, 'Manômetro para aferição de pressão em redes de GLP', 100),
-(30, 'Manifold GLP 4 Saídas',              17, 'Manifold para distribuição simultânea de GLP, 4 saídas',  40),
-(31, 'Tubo Flexível Metálico 1m',           38, 'Tubo flexível de aço inox corrugado para fogões industriais', 100),
-(32, 'Tubo Flexível Metálico 2m',           25, 'Tubo flexível de aço inox corrugado 2m para uso geral',  80),
-(33, 'Conector Rápido GLP 1/2"',            62, 'Engate rápido para mangueiras de GLP, 1/2"', 200),
-(34, 'Válvula Solenóide GLP 1/2" 220V',    13, 'Válvula solenóide 220V para corte automático de GLP',  30),
-(35, 'Filtro de GLP Inline 3/4"',           40, 'Filtro de impurezas inline para linhas de GLP 3/4"', 120),
-(36, 'Queimador Industrial 50.000 BTU',     11, 'Queimador a gás para uso industrial, 50.000 BTU/h',  30),
-(37, 'Queimador Industrial 100.000 BTU',     7, 'Queimador a gás de alta potência para fornos industriais',  20),
-(38, 'Kit Reparo de Regulador GLP',         42, 'Kit com vedações e mola para manutenção de reguladores', 150),
-(39, 'Capacete de Segurança CA',            28, 'Capacete de proteção com certificado INMETRO',  60),
-(40, 'Óculos de Segurança Incolor',         35, 'Óculos de proteção com lente incolor e vedação lateral',  80),
-(41, 'Luva de Couro Cano Longo',            20, 'Luva de couro para trabalhos com gás e maçarico',  50),
-(42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',  40),
-(43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro', 800),
-(44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro', 600),
-(45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 100);
+-- custoUnitario e margemPercentual são FICTÍCIOS — substituir pelos valores
+-- reais da TecnoVale Gás. Preço de venda = custo ÷ (1 − margem).
+-- O produto 45 fica sem custo e sem margem de propósito, para mostrar na tela
+-- um produto ainda sem preço de venda.
+INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMaxima, custoUnitario, margemPercentual) VALUES
+(1,  'Tubo Aço Galvanizado 1"',           180, 'Tubo rígido galvanizado para rede de gás', 500,   22.00, 35),
+(2,  'Registro de Esfera 3/4"',            95, 'Registro de esfera para gás com vedação reforçada', 300,   32.00, 40),
+(3,  'Medidor de Gás Industrial G16',       8, 'Medidor para instalação industrial de gás natural',  50,  380.00, 25),
+(4,  'Válvula Redutora de Pressão',         55, 'Válvula reguladora de pressão para rede de gás', 200,   85.00, 35),
+(5,  'Mangueira Flexível 3/4"',             42, 'Mangueira flexível para conexão de gás', 300,   28.00, 40),
+(6,  'Cinta de Fixação Metálica',          150, 'Cinta metálica para fixação de tubulações', 500,    4.50, 50),
+(7,  'Tubo PPR 32mm',                       63, 'Tubo de polipropileno para água e gás', 200,   18.00, 35),
+(8,  'Filtro de Linha para Gás',            67, 'Filtro de linha de proteção para rede de gás', 150,   65.00, 35),
+(9,  'Conector Curvo 90° 1/2"',            120, 'Conector em curva para tubulação de gás', 300,    9.00, 45),
+(10, 'Adaptador Rosca 1/2" x 3/4"',       144, 'Adaptador de rosca para composições mistas', 500,    7.50, 45),
+(11, 'Lanterna de Inspeção Antichama',      18, 'Lanterna para inspeção com proteção antichama',  80,  120.00, 30),
+(12, 'Detector de Vazão Portátil',           4, 'Detector portátil para vazamentos de gás',  40,  650.00, 25),
+(13, 'Regulador de Pressão 1ª Família',     72, 'Regulador para GLP residencial, saída 2,8 kPa', 200,   48.00, 40),
+(14, 'Regulador de Pressão 2ª Família',     48, 'Regulador para GLP industrial, saída 15 kPa', 150,  135.00, 35),
+(15, 'Mangueira GLP 1,20m Certificada',     85, 'Mangueira certificada INMETRO para botijão residencial', 300,   22.00, 45),
+(16, 'Abraçadeira Metálica 3/4"',          200, 'Abraçadeira para fixação de mangueiras e tubos 3/4"', 600,    3.20, 50),
+(17, 'Válvula de Alívio 1/2" 1,5 kgf',     36, 'Válvula de alívio de segurança para sistemas de GLP', 100,   58.00, 35),
+(18, 'Luva de Redução 3/4" x 1/2"',       160, 'Luva de redução roscada galvanizada', 500,    6.80, 45),
+(19, 'Niple Duplo 1/2"',                   175, 'Niple duplo galvanizado para conexões de gás', 600,    5.40, 45),
+(20, 'Tê 1/2" Galvanizado',               130, 'Tê roscado para ramificações em redes de gás', 400,    7.90, 45),
+(21, 'Joelho 90° 1/2" Galvanizado',       145, 'Joelho 90° roscado para mudança de direção', 500,    6.50, 45),
+(22, 'Joelho 90° 3/4" Galvanizado',       110, 'Joelho 90° roscado 3/4" para tubulações de gás', 400,    9.80, 45),
+(23, 'Tampão Macho 1/2"',                  90, 'Tampão macho roscado para fechamento de pontos de gás', 300,    4.10, 45),
+(24, 'Fita Veda Rosca 18mm x 50m',         95, 'Fita PTFE para vedação de roscas em instalações de gás', 300,    6.90, 50),
+(25, 'Selante para GLP 250ml',              58, 'Selante líquido específico para vedação de conexões GLP', 200,   34.00, 40),
+(26, 'Detector de Gás Natural/GLP',         22, 'Detector fixo de vazamento de gás para ambientes internos', 100,  210.00, 30),
+(27, 'Extintor CO2 6kg',                    15, 'Extintor de dióxido de carbono para áreas de equipamentos',  50,  480.00, 20),
+(28, 'Extintor Pó Químico Seco 4kg',        19, 'Extintor ABC 4kg para uso geral em obras e instalações',  60,  145.00, 25),
+(29, 'Manômetro 0-4 kgf/cm² 1/4"',         33, 'Manômetro para aferição de pressão em redes de GLP', 100,   72.00, 35),
+(30, 'Manifold GLP 4 Saídas',              17, 'Manifold para distribuição simultânea de GLP, 4 saídas',  40,  390.00, 30),
+(31, 'Tubo Flexível Metálico 1m',           38, 'Tubo flexível de aço inox corrugado para fogões industriais', 100,   68.00, 35),
+(32, 'Tubo Flexível Metálico 2m',           25, 'Tubo flexível de aço inox corrugado 2m para uso geral',  80,  112.00, 35),
+(33, 'Conector Rápido GLP 1/2"',            62, 'Engate rápido para mangueiras de GLP, 1/2"', 200,   39.00, 40),
+(34, 'Válvula Solenóide GLP 1/2" 220V',    13, 'Válvula solenóide 220V para corte automático de GLP',  30,  320.00, 30),
+(35, 'Filtro de GLP Inline 3/4"',           40, 'Filtro de impurezas inline para linhas de GLP 3/4"', 120,   88.00, 35),
+(36, 'Queimador Industrial 50.000 BTU',     11, 'Queimador a gás para uso industrial, 50.000 BTU/h',  30,  980.00, 25),
+(37, 'Queimador Industrial 100.000 BTU',     7, 'Queimador a gás de alta potência para fornos industriais',  20, 1650.00, 25),
+(38, 'Kit Reparo de Regulador GLP',         42, 'Kit com vedações e mola para manutenção de reguladores', 150,   45.00, 40),
+(39, 'Capacete de Segurança CA',            28, 'Capacete de proteção com certificado INMETRO',  60,   38.00, 35),
+(40, 'Óculos de Segurança Incolor',         35, 'Óculos de proteção com lente incolor e vedação lateral',  80,   14.00, 40),
+(41, 'Luva de Couro Cano Longo',            20, 'Luva de couro para trabalhos com gás e maçarico',  50,   29.00, 40),
+(42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',  40,  145.00, 30),
+(43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro', 800,   42.00, 35),
+(44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro', 600,   19.00, 35),
+(45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 100,    NULL, NULL);
 
 -- ── Fornecedor de cada produto ────────────────────────────────────────────────
 -- Vincula por nomeProduto/nomeFornecedor para não depender da ordem/IDs de quem
@@ -297,6 +301,15 @@ INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra) VALUES
 -- Obra 30 — Expansão churrascaria (em andamento)
 (30,  1, 25), (30, 15,  4), (30, 36,  3);
 
+-- Custo e preço de venda congelados no vínculo — no sistema eles são copiados
+-- do produto no momento em que ele entra na obra.
+SET SQL_SAFE_UPDATES = 0;
+UPDATE produtosObras po
+JOIN produtos p ON p.idProduto = po.idProduto
+SET po.custoUnitario = p.custoUnitario,
+    po.precoVenda    = ROUND(p.custoUnitario / (1 - p.margemPercentual / 100), 2);
+SET SQL_SAFE_UPDATES = 1;
+
 -- ── Histórico ─────────────────────────────────────────────────────────────────
 -- Representa as ações realizadas pelos dois admins ao longo do período de uso.
 -- idAdmin 1 = adm  |  idAdmin 2 = João
@@ -490,29 +503,43 @@ INSERT INTO obraServicos (idObra, idServico) VALUES
 (29, 6), -- Ampliação rede GLP industrial novo setor    → Extensão de Rede Comercial
 (30, 1); -- Novo setor de churrasco expansão            → Instalação de Ramal Residencial
 
--- Receita que cada vínculo consumiu — no sistema ela é copiada de
--- servicoProdutos no momento em que o serviço entra na obra.
-INSERT INTO obraServicoProdutos (idObraServico, idProduto, quantidade)
-SELECT os.idObraServico, sp.idProduto, sp.quantidade
+-- Receita que cada vínculo consumiu, com o custo do produto — no sistema ela é
+-- copiada de servicoProdutos no momento em que o serviço entra na obra.
+INSERT INTO obraServicoProdutos (idObraServico, idProduto, quantidade, custoUnitario)
+SELECT os.idObraServico, sp.idProduto, sp.quantidade, p.custoUnitario
 FROM obraServicos os
-JOIN servicoProdutos sp ON sp.idServico = os.idServico;
+JOIN servicoProdutos sp ON sp.idServico = os.idServico
+JOIN produtos p         ON p.idProduto  = sp.idProduto;
 
--- Recalcula valorObra das obras concluídas com base nos serviços vinculados,
--- replicando a regra de negócio real (ProdutosObrasDAO.recalcular_valor): soma do
--- precoServico de todos os serviços ligados à obra via obraServicos.
+-- Valor e custo das obras concluídas, replicando ProdutosObrasDAO.recalcular_valor:
+--   valorObra = serviços + produtos avulsos × preço de venda congelado
+--   custoObra = todo o material × custo congelado (NULL se algum item não
+--               tiver custo, para o lucro não sair inflado)
 -- SQL_SAFE_UPDATES desligado temporariamente: o MySQL Workbench bloqueia
--- UPDATE...JOIN por não reconhecer a condição do join como uma cláusula de
--- chave simples, mesmo o WHERE final usando idObra (chave primária).
+-- UPDATE sem a chave primária no WHERE.
 SET SQL_SAFE_UPDATES = 0;
 
 UPDATE obras o
-JOIN (
-    SELECT os.idObra, SUM(s.precoServico) AS total
-    FROM obraServicos os
-    JOIN servicos s ON s.idServico = os.idServico
-    GROUP BY os.idObra
-) totais ON totais.idObra = o.idObra
-SET o.valorObra = totais.total
+SET o.valorObra =
+        (SELECT COALESCE(SUM(s.precoServico), 0)
+         FROM obraServicos os
+         JOIN servicos s ON s.idServico = os.idServico
+         WHERE os.idObra = o.idObra)
+      + (SELECT COALESCE(SUM(po.qtdProdutosObra * po.precoVenda), 0)
+         FROM produtosObras po
+         WHERE po.idObra = o.idObra),
+    o.custoObra = (
+        SELECT IF(COUNT(*) = COUNT(c.custo), COALESCE(SUM(c.quantidade * c.custo), 0), NULL)
+        FROM (
+            SELECT idObra, qtdProdutosObra AS quantidade, custoUnitario AS custo
+            FROM produtosObras
+            UNION ALL
+            SELECT os.idObra, osp.quantidade, osp.custoUnitario
+            FROM obraServicoProdutos osp
+            JOIN obraServicos os ON os.idObraServico = osp.idObraServico
+        ) c
+        WHERE c.idObra = o.idObra
+    )
 WHERE o.statusObra = 'Concluida';
 
 SET SQL_SAFE_UPDATES = 1;

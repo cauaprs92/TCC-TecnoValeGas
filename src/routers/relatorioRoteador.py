@@ -22,3 +22,21 @@ def produtos_consumidos():
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def grafico_produtos():
     return jsonify({"status": True, "dados": dao.consumo_por_produto_e_obra()}), 200
+
+
+# ─── GET /relatorio/lucro-servicos ───────────────────────────────────────────
+# Margem de cada serviço com o custo atual da receita (só material)
+@relatorio_bp.route("/lucro-servicos", methods=["GET"])
+@jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
+def lucro_servicos():
+    return jsonify({"status": True, "dados": dao.lucro_servicos()}), 200
+
+
+# ─── GET /relatorio/lucro-produtos ───────────────────────────────────────────
+# Preço de venda atual e lucro realizado nas vendas avulsas em obras concluídas
+@relatorio_bp.route("/lucro-produtos", methods=["GET"])
+@jwt.validate_token
+@jwt.require_cargo(CARGO_ADMINISTRACAO)
+def lucro_produtos():
+    return jsonify({"status": True, "dados": dao.lucro_produtos()}), 200

@@ -14,6 +14,11 @@ class Produto:
         self._consumoEstimado   = None
         self._periodoEstimativa = None   # 'dia' | 'semana' | 'mes'
 
+        # Custo (manual ou pela nota fiscal) e margem sobre a venda. O preço
+        # de venda é calculado (src/service/precificacao.py), não gravado.
+        self._custoUnitario    = None
+        self._margemPercentual = None
+
         # Resultado do cálculo (src/service/estoqueMinimo.py), preenchido na
         # leitura. _qtdMinima é o mínimo efetivo: manual ou calculado.
         self._qtdMinima      = 0

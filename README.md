@@ -28,6 +28,21 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
   tem data de fim)
 - Produtos cadastrados e alertas de estoque são posição atual e não variam com
   o período
+- Card de **lucro sobre material** (valor faturado − custo do material), na
+  mesma regra de período do faturado; obra concluída com material sem custo
+  fica fora da soma e é indicada no tooltip
+
+**Custo, preço de venda e lucro** (regra em `src/service/precificacao.py`)
+- Cada produto tem **custo unitário** (digitado ou atualizado pela nota fiscal,
+  por média ponderada com o estoque atual) e **margem sobre a venda**
+- Preço de venda = `custo ÷ (1 − margem)` — custo 100 com margem 30% vende a
+  142,86, e 30% do que é cobrado é lucro
+- Valor da obra = serviços + produtos avulsos × preço de venda. O material
+  consumido pelos serviços não é cobrado à parte (o preço do serviço já cobre)
+- Custo e preço são **congelados** no vínculo com a obra: mudar o custo do
+  produto depois não altera o lucro de obras já registradas
+- Por enquanto o lucro considera só material (sem mão de obra e impostos)
+- Custo, margem e lucro não são enviados para o cargo Obra
 
 **Autenticação**
 - Login com e-mail e senha
@@ -102,7 +117,7 @@ TCC-TecnoValeGas/
     ├── controller/          # Regras de negócio
     ├── routers/             # Blueprints Flask — definição das rotas
     ├── middleware/          # Validação de body e token JWT / cargo
-    ├── service/             # Leitura de NF-e (XML e PDF) e cálculo do estoque mínimo
+    ├── service/             # Leitura de NF-e (XML e PDF), estoque mínimo e precificação
     └── error_response.py    # Classe de erro padronizada
 ```
 
@@ -132,6 +147,8 @@ Frontend → Router → Middleware → Controller → DAO → MySQL
 | DELETE | `/obra/:id` | Remove obra e devolve o estoque |
 | GET | `/obra/:id/produtos` | Lista produtos de uma obra |
 | GET | `/obra/:id/servicos` | Lista serviços de uma obra |
+| GET | `/relatorio/lucro-servicos` | Margem de cada serviço com o custo atual da receita |
+| GET | `/relatorio/lucro-produtos` | Preço de venda e lucro realizado por produto avulso |
 
 As demais rotas (serviços, fotos, usuários, fields, histórico, relatórios e
 importação de NF-e) seguem o mesmo padrão — ver `src/routers/`.

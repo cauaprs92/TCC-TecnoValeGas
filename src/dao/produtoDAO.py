@@ -6,6 +6,7 @@ from src.service import estoqueMinimo
 _CAMPOS = [
     "nomeProduto", "qtdProduto", "descProduto", "qtdMaxima", "idFornecedor",
     "qtdMinimaManual", "prazoEntregaDias", "consumoEstimado", "periodoEstimativa",
+    "custoUnitario", "margemPercentual",
 ]
 
 # Consumo líquido das obras na janela (saídas menos devoluções) e a data da
@@ -14,7 +15,8 @@ _SELECT = f"""
     SELECT p.idProduto, p.nomeProduto, p.qtdProduto, p.descProduto, p.qtdMaxima,
            p.idFornecedor, p.qtdMinimaManual, p.prazoEntregaDias, p.consumoEstimado,
            p.periodoEstimativa, f.nomeFornecedor, f.prazoEntregaDias,
-           COALESCE(m.consumoJanela, 0), m.primeiraSaida
+           COALESCE(m.consumoJanela, 0), m.primeiraSaida,
+           p.custoUnitario, p.margemPercentual
     FROM produtos p
     LEFT JOIN fornecedores f ON f.idFornecedor = p.idFornecedor
     LEFT JOIN (
@@ -85,9 +87,11 @@ class ProdutoDAO:
         (p._idProduto, p._nomeProduto, p._qtdProduto, p._descProduto, qtd_maxima,
          p._idFornecedor, p._qtdMinimaManual, p._prazoEntregaDias, consumo_estimado,
          p._periodoEstimativa, p._nomeFornecedor, prazo_fornecedor,
-         consumo_janela, primeira_saida) = linha
-        p._qtdMaxima       = qtd_maxima if qtd_maxima is not None else 9999
-        p._consumoEstimado = float(consumo_estimado) if consumo_estimado is not None else None
+         consumo_janela, primeira_saida, custo, margem) = linha
+        p._qtdMaxima        = qtd_maxima if qtd_maxima is not None else 9999
+        p._consumoEstimado  = float(consumo_estimado) if consumo_estimado is not None else None
+        p._custoUnitario    = float(custo)  if custo  is not None else None
+        p._margemPercentual = float(margem) if margem is not None else None
 
         p._estoqueMinimo = estoqueMinimo.calcular(
             consumo_janela, primeira_saida,

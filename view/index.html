@@ -175,6 +175,13 @@
               <span class="kpi-label" id="kpi-label-faturado">Valor Total Faturado</span>
             </div>
           </div>
+          <div class="kpi-card kpi-nav" onclick="irParaObrasConcluidas()" data-pagina="obras" title="Ver obras concluídas">
+            <div class="kpi-icon green"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="kpi-info">
+              <span class="kpi-value kpi-value-money" id="kpi-lucro" title="">—</span>
+              <span class="kpi-label" id="kpi-label-lucro">Lucro sobre Material</span>
+            </div>
+          </div>
         </div>
 
         <div class="dashboard-grid">
@@ -788,6 +795,27 @@
                   onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
                   autocomplete="off" />
                 <div class="prod-dropdown hidden"></div>
+              </div>
+            </div>
+
+            <!-- ── Custo e venda ── -->
+            <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="form-group">
+                <label>Custo unitário <span style="font-weight:400;opacity:.6">(R$, opcional)</span></label>
+                <input type="number" id="prodCusto" min="0" step="0.01" placeholder="Ex: 12,50"
+                       oninput="_atualizarPrecoVenda()" />
+                <span class="field-hint">Atualizado também pela nota fiscal.</span>
+              </div>
+              <div class="form-group">
+                <label>Margem <span style="font-weight:400;opacity:.6">(%, opcional)</span></label>
+                <input type="number" id="prodMargem" min="0" max="99.99" step="0.1" placeholder="Ex: 30"
+                       oninput="_atualizarPrecoVenda()" />
+                <span class="field-hint">Margem sobre o preço de venda.</span>
+              </div>
+              <div class="form-group">
+                <label>Preço de venda</label>
+                <input type="text" id="prodPrecoVenda" readonly placeholder="—" />
+                <span class="field-hint">Custo ÷ (1 − margem).</span>
               </div>
             </div>
 

@@ -6,6 +6,7 @@ from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRAC
 from src.dao.fotoDAO                     import foto_produto_dao
 from src.uploads                         import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
 from src.error_response                  import ErrorResponse
+from src.service                         import precificacao
 
 produto_bp     = Blueprint("produto", __name__, url_prefix="/produto")
 controller     = ProdutoController()
@@ -16,7 +17,7 @@ foto_dao       = foto_produto_dao()
 
 
 def _serializar(p) -> dict:
-    return {
+    dados = {
         "idProduto":      p._idProduto,
         "nomeProduto":    p._nomeProduto,
         "qtdProduto":     p._qtdProduto,
@@ -32,6 +33,12 @@ def _serializar(p) -> dict:
         # Resultado do cálculo: qtdMinima (efetivo), origem, consumo, prazo...
         **p._estoqueMinimo,
     }
+    # Custo e margem são informação financeira: o funcionário de obra não recebe.
+    if g.get("cargo") != CARGO_OBRA:
+        dados["custoUnitario"]    = p._custoUnitario
+        dados["margemPercentual"] = p._margemPercentual
+        dados["precoVenda"]       = precificacao.preco_venda(p._custoUnitario, p._margemPercentual)
+    return dados
 
 
 # ─── POST /produto ────────────────────────────────────────────────────────────

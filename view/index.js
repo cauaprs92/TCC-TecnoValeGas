@@ -661,8 +661,9 @@ async function _uploadFotosPendentes(idProduto) {
 
 function abrirModalNovoProduto() {
   ['prodIdEdicao','prodNome','prodQtd','prodQtdMax','prodDesc','prodFornecedor',
-   'prodPrazo','prodConsumo','prodQtdMinManual']
+   'prodPrazo','prodConsumo','prodQtdMinManual','prodCusto','prodMargem']
     .forEach(id => { document.getElementById(id).value = ''; });
+  _atualizarPrecoVenda();
   document.getElementById('prodPeriodo').value = 'mes';
   document.getElementById('prodMinManualChk').checked = false;
   _toggleMinimoManual();
@@ -688,6 +689,9 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('prodPeriodo').value  = p.periodoEstimativa || 'mes';
   document.getElementById('prodMinManualChk').checked = p.qtdMinimaManual != null;
   document.getElementById('prodQtdMinManual').value   = p.qtdMinimaManual ?? '';
+  document.getElementById('prodCusto').value  = p.custoUnitario ?? '';
+  document.getElementById('prodMargem').value = p.margemPercentual ?? '';
+  _atualizarPrecoVenda();
   _toggleMinimoManual();
   _renderResumoMinimo(p);
   _prazoHintProduto(p);
@@ -701,6 +705,19 @@ function abrirModalEditarProduto(idProduto) {
   _produtoIdAtual = idProduto;
   _carregarFotosProduto(idProduto);
   abrirModal('modalProduto');
+}
+
+// Mesma conta de src/service/precificacao.py: margem sobre a venda, não markup.
+function _precoVenda(custo, margem) {
+  if (custo == null || margem == null || margem < 0 || margem >= 100) return null;
+  return custo / (1 - margem / 100);
+}
+
+function _atualizarPrecoVenda() {
+  const custo  = document.getElementById('prodCusto').value.trim();
+  const margem = document.getElementById('prodMargem').value.trim();
+  const preco  = (custo && margem) ? _precoVenda(Number(custo), Number(margem)) : null;
+  document.getElementById('prodPrecoVenda').value = preco != null ? _fmtMoeda(preco) : '';
 }
 
 async function salvarProduto() {
@@ -721,6 +738,8 @@ async function salvarProduto() {
   const prazo   = document.getElementById('prodPrazo').value.trim();
   const consumo = document.getElementById('prodConsumo').value.trim();
   const manual  = document.getElementById('prodMinManualChk').checked;
+  const custo   = document.getElementById('prodCusto').value.trim();
+  const margem  = document.getElementById('prodMargem').value.trim();
 
   const payload = {
     produto: {
@@ -729,6 +748,8 @@ async function salvarProduto() {
       consumoEstimado:   consumo ? Number(consumo) : null,
       periodoEstimativa: consumo ? document.getElementById('prodPeriodo').value : null,
       qtdMinimaManual:   manual  ? parseInt(document.getElementById('prodQtdMinManual').value) : null,
+      custoUnitario:     custo   ? Number(custo)  : null,
+      margemPercentual:  margem  ? Number(margem) : null,
     }
   };
 
@@ -1314,6 +1335,7 @@ function selecionarProdutoDropdown(item, idProduto) {
 
   // na conferência da NF o botão "Repor estoque" só libera com um produto escolhido
   _nfAtualizarBotaoRepor(row);
+  if (row.closest('#modalObra')) _atualizarValorTotalObra();
 }
 
 function fecharDropdownProduto(input) {
@@ -1445,6 +1467,8 @@ function _coletarServicosObra(containerId) {
 
 // Serviços já vinculados à obra em edição (somente leitura) — usados no cálculo do total
 let _obraServicosExistentes = [];
+// Avulsos já vinculados à obra em edição, com o preço de venda congelado.
+let _obraProdutosExistentes = [];
 
 
 // ══════════════════════════════════════════════════
@@ -1551,13 +1575,32 @@ document.addEventListener('click', e => {
   if (wrap && !wrap.contains(e.target)) fecharDropdownEquipe();
 });
 
+// Quantidade de produto avulso mexe no valor estimado da obra.
+document.addEventListener('input', e => {
+  if (e.target.matches('#modalObra .prod-qtd-input')) _atualizarValorTotalObra();
+});
+
+// Mesma regra do backend: serviços + produtos avulsos × preço de venda. Os
+// avulsos já vinculados usam o preço congelado neles; os novos, o preço atual.
+// Avulso sem preço de venda entra como zero.
 function _atualizarValorTotalObra() {
+  // Obra concluída mostra o valor definitivo; a estimativa não o sobrescreve.
+  if (document.getElementById('obraValorTotalBox')?.classList.contains('valor-obra-final')) return;
   let total = _obraServicosExistentes.reduce((acc, s) => acc + Number(s.precoServico || 0), 0);
   document.querySelectorAll('#servicosObraList .servico-select, #servicosObraEdList .servico-select').forEach(hidden => {
     const idServico = parseInt(hidden.value);
     if (!idServico) return;
     const s = cacheServicos.find(x => x.idServico === idServico);
     if (s) total += Number(s.precoServico || 0);
+  });
+  total += _obraProdutosExistentes.reduce(
+    (acc, p) => acc + Number(p.qtdProdutosObra || 0) * Number(p.precoVenda || 0), 0);
+  document.querySelectorAll('#produtosObraList .produto-obra-row, #produtosObraEdList .produto-obra-row').forEach(row => {
+    const idProduto = parseInt(row.querySelector('.prod-select')?.value);
+    const qtd       = parseInt(row.querySelector('.prod-qtd-input')?.value);
+    if (!idProduto || !qtd) return;
+    const p = cacheProdutos.find(x => x.idProduto === idProduto);
+    if (p) total += qtd * Number(p.precoVenda || 0);
   });
   const el = document.getElementById('obraValorTotalEstimado');
   if (el) el.textContent = _fmtMoeda(total);
@@ -1780,6 +1823,7 @@ function abrirModalNovaObra() {
   document.getElementById('obraSecaoServicos').classList.remove('hidden');
   document.getElementById('obraSecaoServicosVer').classList.add('hidden');
   _obraServicosExistentes = [];
+  _obraProdutosExistentes = [];
   _atualizarBoxValorObra(null);
   document.getElementById('modalObraTitle').innerHTML =
     '<i class="fa-solid fa-hard-hat"></i> Nova Obra';
@@ -1827,6 +1871,7 @@ function abrirModalEditarObra(idObra) {
   document.getElementById('obraSecaoProdutosVer').classList.remove('hidden');
   document.getElementById('produtosObraEdList').innerHTML = '';
 
+  _obraProdutosExistentes = [];
   _carregarProdutosVerObra(o.idObra);
 
   document.getElementById('obraSecaoServicos').classList.add('hidden');
@@ -1851,6 +1896,8 @@ function _carregarProdutosVerObra(idObra) {
 
   apiFetch(`/obra/${idObra}/produtos`).then(res => {
     const produtos = res.produtos || [];
+    _obraProdutosExistentes = produtos;
+    _atualizarValorTotalObra();
     if (!produtos.length) {
       listEl.innerHTML = '<div style="font-size:.84rem;color:var(--gray-500);padding:6px 0">Nenhum produto vinculado.</div>';
       return;
@@ -2256,6 +2303,7 @@ function removerProdutoObra(btn) {
   const list = document.getElementById('produtosObraList');
   if (list.children.length > 1) btn.closest('.produto-obra-row').remove();
   else showToast('A obra precisa de ao menos um produto.', 'warning');
+  _atualizarValorTotalObra();
 }
 
 function adicionarProdutoObraEd() {
@@ -2266,6 +2314,7 @@ function adicionarProdutoObraEd() {
 
 function removerProdutoObraEd(btn) {
   btn.closest('.produto-obra-row').remove();
+  _atualizarValorTotalObra();
 }
 
 function _novaProdutoObraRowEd() {
@@ -3724,16 +3773,34 @@ function atualizarKPI() {
       obrasPeriodo.filter(o => o.statusObra === 'Em andamento').length;
     // O faturado entra no período em que a obra foi entregue; obra concluída
     // sem data de fim preenchida cai na data de início.
-    const valorFaturado = cacheObras
+    const concluidas = cacheObras
       .filter(o => o.statusObra === 'Concluida' && o.valorObra != null)
-      .filter(o => _dentroDoRange(_dataLocal(o.dataFim || o.dataInicio), range))
-      .reduce((acc, o) => acc + Number(o.valorObra), 0);
+      .filter(o => _dentroDoRange(_dataLocal(o.dataFim || o.dataInicio), range));
+    const valorFaturado = concluidas.reduce((acc, o) => acc + Number(o.valorObra), 0);
     const elFaturado = document.getElementById('kpi-valor-faturado');
     if (elFaturado) {
       elFaturado.textContent = _fmtMoeda(valorFaturado);
       elFaturado.title = _fmtMoeda(valorFaturado);
-      ajustarFonteKpiMoeda();
     }
+
+    // Lucro só das obras com custo conhecido: uma obra com material sem custo
+    // entraria com custo zero e inflaria o número. Ela fica fora e é contada.
+    const elLucro = document.getElementById('kpi-lucro');
+    if (elLucro) {
+      const comCusto  = concluidas.filter(o => o.lucro != null);
+      const semCusto  = concluidas.length - comCusto.length;
+      const lucro     = comCusto.reduce((acc, o) => acc + Number(o.lucro), 0);
+      const receita   = comCusto.reduce((acc, o) => acc + Number(o.valorObra), 0);
+      const margem    = receita > 0 ? (lucro / receita * 100) : null;
+      elLucro.textContent = comCusto.length ? _fmtMoeda(lucro) : '—';
+      elLucro.title = [
+        comCusto.length ? _fmtMoeda(lucro) : 'Nenhuma obra concluída com custo informado',
+        margem != null ? `margem de ${margem.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : '',
+        semCusto ? `${semCusto} obra${semCusto > 1 ? 's' : ''} sem custo de material ficou de fora` : '',
+        'Considera só material — sem mão de obra e impostos',
+      ].filter(Boolean).join(' · ');
+    }
+    ajustarFonteKpiMoeda();
   }
 
   if (_cacheReady.clientes) {
@@ -3755,11 +3822,13 @@ function _atualizarRotulosKPI(filtrando, rotulo) {
     'kpi-label-obras':    filtrando ? 'Obras Ativas no Período'      : 'Obras Ativas',
     'kpi-label-clientes': filtrando ? 'Clientes Atendidos no Período': 'Clientes',
     'kpi-label-faturado': filtrando ? 'Valor Faturado no Período'    : 'Valor Total Faturado',
+    'kpi-label-lucro':    filtrando ? 'Lucro sobre Material no Período' : 'Lucro sobre Material',
   };
   const ajuda = {
     'kpi-label-obras':    'obras com início no período',
     'kpi-label-clientes': 'clientes com obra no período',
     'kpi-label-faturado': 'obras concluídas entregues no período',
+    'kpi-label-lucro':    'obras concluídas entregues no período',
   };
   Object.entries(textos).forEach(([id, texto]) => {
     const el = document.getElementById(id);

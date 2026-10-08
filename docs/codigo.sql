@@ -48,6 +48,11 @@ create table fornecedores (
 --   periodoEstimativa  → uso aproximado informado no cadastro ('dia',
 --                        'semana' ou 'mes'), usado enquanto o produto ainda
 --                        não tem histórico suficiente
+-- Custo e venda (src/service/precificacao.py):
+--   custoUnitario    → digitado no cadastro ou atualizado pela nota fiscal
+--                      (média ponderada entre o estoque atual e a entrada)
+--   margemPercentual → margem sobre a venda: preço = custo ÷ (1 − margem).
+--                      O preço de venda não é gravado; sai sempre do custo atual.
 create table produtos(
     idProduto         int primary key NOT NULL AUTO_INCREMENT,
     nomeProduto       VARCHAR(255),
@@ -59,9 +64,13 @@ create table produtos(
     prazoEntregaDias  int          DEFAULT NULL,
     consumoEstimado   DECIMAL(10,2) DEFAULT NULL,
     periodoEstimativa VARCHAR(6)   DEFAULT NULL,
+    custoUnitario     DECIMAL(10,4) DEFAULT NULL,
+    margemPercentual  DECIMAL(5,2)  DEFAULT NULL,
     FOREIGN KEY (idFornecedor) REFERENCES fornecedores(idFornecedor),
     CONSTRAINT ck_produto_periodo CHECK (periodoEstimativa IN ('dia', 'semana', 'mes')),
-    CONSTRAINT ck_produto_prazo   CHECK (prazoEntregaDias > 0)
+    CONSTRAINT ck_produto_prazo   CHECK (prazoEntregaDias > 0),
+    CONSTRAINT ck_produto_custo   CHECK (custoUnitario >= 0),
+    CONSTRAINT ck_produto_margem  CHECK (margemPercentual >= 0 AND margemPercentual < 100)
 );
 
 create table clientes(
@@ -83,7 +92,10 @@ create table clientes(
 -- clientePrimario: empresa "guarda-chuva" para quem a TecnoValeGas presta o
 -- serviço (ex.: Supergásbras). clientePrimario e setorObra são listas fechadas
 -- por enquanto, editáveis nos <select> do formulário de obra.
--- valorObra só é preenchido com a obra Concluida (soma dos serviços).
+-- valorObra e custoObra só são preenchidos com a obra Concluida:
+--   valorObra = serviços + produtos avulsos × preço de venda congelado
+--   custoObra = todo o material consumido × custo congelado
+-- O lucro sobre material é valorObra − custoObra.
 create table obras(
     idObra          int primary key AUTO_INCREMENT,
     codCliente      int          NOT NULL,
@@ -103,16 +115,21 @@ create table obras(
     celular2        VARCHAR(20),
     valorObra       DECIMAL(10,2) DEFAULT NULL,
     setorObra       VARCHAR(20),
+    custoObra       DECIMAL(10,2) DEFAULT NULL,
     FOREIGN KEY (codCliente) REFERENCES clientes(idCliente),
     CONSTRAINT ck_obras_status
         CHECK (statusObra IN ('À iniciar', 'Em andamento', 'Concluida', 'Cancelada', 'Pausada'))
 );
 
+-- Produto avulso da obra. custoUnitario e precoVenda são congelados no
+-- vínculo, para o lucro de uma obra não mudar quando o produto mudar de preço.
 create table produtosObras(
     idProdutosObra  int primary key AUTO_INCREMENT,
     idObra          int NOT NULL,
     idProduto       int NOT NULL,
     qtdProdutosObra int NOT NULL,
+    custoUnitario   DECIMAL(10,4) DEFAULT NULL,
+    precoVenda      DECIMAL(10,4) DEFAULT NULL,
 
     UNIQUE KEY uq_obra_produto (idObra, idProduto),
     FOREIGN KEY (idObra)    REFERENCES obras(idObra),
@@ -208,12 +225,14 @@ create table obraServicos(
 
 -- Receita do serviço no momento em que ele foi vinculado à obra. É o que
 -- saiu do estoque e o que volta se o vínculo for desfeito, mesmo que a
--- receita em servicoProdutos seja editada depois.
+-- receita em servicoProdutos seja editada depois. O custo também é congelado;
+-- o material do serviço não tem preço de venda (o preço do serviço já cobre).
 create table obraServicoProdutos(
     idObraServicoProduto int primary key NOT NULL AUTO_INCREMENT,
     idObraServico        int NOT NULL,
     idProduto            int NOT NULL,
     quantidade           int NOT NULL,
+    custoUnitario        DECIMAL(10,4) DEFAULT NULL,
 
     FOREIGN KEY (idObraServico) REFERENCES obraServicos(idObraServico) ON DELETE CASCADE,
     FOREIGN KEY (idProduto)     REFERENCES produtos(idProduto)

@@ -1,5 +1,6 @@
 from src.dao.banco import OperacaoInvalida, executar_transacao, consultar
 from src.dao.movimentacaoDAO import registrar_movimentacao
+from src.service import precificacao
 
 STATUS_CANCELADA = "Cancelada"
 
@@ -66,14 +67,25 @@ class ProdutosObrasDAO:
         return row[0]
 
     def vincular_produtos(self, cursor, id_obra: int, produtos: list, baixar_estoque: bool):
-        """Produto que já está na obra tem a quantidade somada, não duplicada."""
+        """Produto que já está na obra tem a quantidade somada, não duplicada.
+
+        Custo e preço de venda são congelados no vínculo. Se o produto já estava
+        na obra, os dois viram a média ponderada entre o que já estava e o que
+        entra agora — por isso são atualizados ANTES da quantidade (o MySQL
+        aplica as atribuições do ON DUPLICATE KEY UPDATE em ordem)."""
         for item in produtos or []:
             id_produto, qtd = int(item["idProduto"]), int(item["quantidade"])
+            custo, preco = self._custo_e_preco_atuais(cursor, id_produto)
             cursor.execute("""
-                INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra)
-                VALUES (%s, %s, %s)
-                ON DUPLICATE KEY UPDATE qtdProdutosObra = qtdProdutosObra + VALUES(qtdProdutosObra)
-            """, (id_obra, id_produto, qtd))
+                INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra, custoUnitario, precoVenda)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    custoUnitario   = (custoUnitario * qtdProdutosObra + VALUES(custoUnitario) * VALUES(qtdProdutosObra))
+                                      / (qtdProdutosObra + VALUES(qtdProdutosObra)),
+                    precoVenda      = (precoVenda * qtdProdutosObra + VALUES(precoVenda) * VALUES(qtdProdutosObra))
+                                      / (qtdProdutosObra + VALUES(qtdProdutosObra)),
+                    qtdProdutosObra = qtdProdutosObra + VALUES(qtdProdutosObra)
+            """, (id_obra, id_produto, qtd, custo, preco))
             if baixar_estoque:
                 self.baixar(cursor, id_obra, id_produto, qtd)
 
@@ -99,8 +111,11 @@ class ProdutosObrasDAO:
             )
             id_obra_servico = cursor.lastrowid
             cursor.execute("""
-                INSERT INTO obraServicoProdutos (idObraServico, idProduto, quantidade)
-                SELECT %s, idProduto, quantidade FROM servicoProdutos WHERE idServico = %s
+                INSERT INTO obraServicoProdutos (idObraServico, idProduto, quantidade, custoUnitario)
+                SELECT %s, sp.idProduto, sp.quantidade, p.custoUnitario
+                FROM servicoProdutos sp
+                JOIN produtos p ON p.idProduto = sp.idProduto
+                WHERE sp.idServico = %s
             """, (id_obra_servico, id_servico))
 
             if baixar_estoque:
@@ -108,20 +123,48 @@ class ProdutosObrasDAO:
                     self.baixar(cursor, id_obra, id_produto, qtd, f" (serviço '{nome_servico}')")
 
     def recalcular_valor(self, cursor, id_obra: int):
-        """valorObra = soma dos serviços quando a obra está concluída; NULL nos
-        demais status."""
+        """Valor e custo da obra, preenchidos só quando ela está concluída
+        (NULL nos demais status).
+
+        valorObra = serviços + produtos avulsos × preço de venda congelado.
+        Avulso sem preço de venda entra como zero: ele saiu sem ser cobrado.
+        custoObra = todo o material consumido × custo congelado. Se algum item
+        não tem custo, custoObra fica NULL: um custo parcial faria o lucro
+        parecer maior do que é."""
         cursor.execute("""
-            UPDATE obras SET valorObra = CASE
-                WHEN statusObra = 'Concluida' THEN (
-                    SELECT COALESCE(SUM(s.precoServico), 0)
-                    FROM obraServicos os
-                    JOIN servicos s ON s.idServico = os.idServico
-                    WHERE os.idObra = %s
-                )
-                ELSE NULL
-            END
+            UPDATE obras SET
+                valorObra = CASE WHEN statusObra = 'Concluida' THEN
+                    (SELECT COALESCE(SUM(s.precoServico), 0)
+                     FROM obraServicos os
+                     JOIN servicos s ON s.idServico = os.idServico
+                     WHERE os.idObra = %s)
+                  + (SELECT COALESCE(SUM(po.qtdProdutosObra * po.precoVenda), 0)
+                     FROM produtosObras po
+                     WHERE po.idObra = %s)
+                END,
+                custoObra = CASE WHEN statusObra = 'Concluida' THEN (
+                    SELECT IF(COUNT(*) = COUNT(c.custo), COALESCE(SUM(c.quantidade * c.custo), 0), NULL)
+                    FROM (
+                        SELECT qtdProdutosObra AS quantidade, custoUnitario AS custo
+                        FROM produtosObras WHERE idObra = %s
+                        UNION ALL
+                        SELECT osp.quantidade, osp.custoUnitario
+                        FROM obraServicoProdutos osp
+                        JOIN obraServicos os ON os.idObraServico = osp.idObraServico
+                        WHERE os.idObra = %s
+                    ) c
+                ) END
             WHERE idObra = %s
-        """, (id_obra, id_obra))
+        """, (id_obra, id_obra, id_obra, id_obra, id_obra))
+
+    def _custo_e_preco_atuais(self, cursor, id_produto: int) -> tuple:
+        cursor.execute(
+            "SELECT custoUnitario, margemPercentual FROM produtos WHERE idProduto = %s", (id_produto,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise OperacaoInvalida(f"Produto ID {id_produto} não encontrado.")
+        return row[0], precificacao.preco_venda(row[0], row[1])
 
     def _receita_vinculada(self, cursor, id_obra_servico: int) -> list:
         cursor.execute(
@@ -173,10 +216,13 @@ class ProdutosObrasDAO:
             elif ativa and diferenca < 0:
                 self.repor(cursor, id_obra, id_produto, -diferenca)
 
+            # Custo e preço congelados no vínculo continuam valendo para a
+            # quantidade nova — a edição corrige a quantidade, não reprecifica.
             cursor.execute(
                 "UPDATE produtosObras SET qtdProdutosObra = %s WHERE idObra = %s AND idProduto = %s",
                 (nova_qtd, id_obra, id_produto)
             )
+            self.recalcular_valor(cursor, id_obra)
             return "Quantidade atualizada com sucesso!"
         return executar_transacao(operacao, "Erro ao atualizar quantidade do produto na obra.")
 
@@ -198,6 +244,7 @@ class ProdutosObrasDAO:
             cursor.execute(
                 "DELETE FROM produtosObras WHERE idObra = %s AND idProduto = %s", (id_obra, id_produto)
             )
+            self.recalcular_valor(cursor, id_obra)
             return "Produto removido da obra com sucesso!"
         return executar_transacao(operacao, "Erro ao remover produto da obra.")
 
@@ -230,12 +277,14 @@ class ProdutosObrasDAO:
 
     def buscar_produtos_da_obra(self, id_obra: int) -> list:
         linhas = consultar("""
-            SELECT p.idProduto, p.nomeProduto, po.qtdProdutosObra
+            SELECT p.idProduto, p.nomeProduto, po.qtdProdutosObra, po.custoUnitario, po.precoVenda
             FROM produtosObras po
             JOIN produtos p ON po.idProduto = p.idProduto
             WHERE po.idObra = %s
         """, (id_obra,), erro="Erro ao buscar produtos da obra:")
-        return [{"idProduto": l[0], "nomeProduto": l[1], "qtdProdutosObra": l[2]} for l in linhas]
+        return [{"idProduto": l[0], "nomeProduto": l[1], "qtdProdutosObra": l[2],
+                 "custoUnitario": float(l[3]) if l[3] is not None else None,
+                 "precoVenda":    float(l[4]) if l[4] is not None else None} for l in linhas]
 
     def buscar_servicos_da_obra(self, id_obra: int) -> list:
         linhas = consultar("""
