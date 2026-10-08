@@ -518,11 +518,13 @@
                 <th class="sortable" data-sort-key="nome" onclick="ordenarTabela('servicos','nome')">Serviço <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="preco" onclick="ordenarTabela('servicos','preco')">Preço <span class="sort-arrow"></span></th>
                 <th class="sortable" data-sort-key="produtos" onclick="ordenarTabela('servicos','produtos')">Produtos <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="custo" onclick="ordenarTabela('servicos','custo')" title="Custo atual do material da receita">Custo Material <span class="sort-arrow"></span></th>
+                <th class="sortable" data-sort-key="margem" onclick="ordenarTabela('servicos','margem')" title="Lucro sobre material ÷ preço">Margem <span class="sort-arrow"></span></th>
                 <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody id="bodyServicos">
-              <tr><td colspan="5" class="loading-cell">
+              <tr><td colspan="7" class="loading-cell">
                 <i class="fa-solid fa-spinner fa-spin"></i> Carregando serviços...
               </td></tr>
             </tbody>
@@ -1479,6 +1481,12 @@
             <button class="btn btn-ghost" onclick="adicionarProdutoServico()">
               <i class="fa-solid fa-plus"></i> Adicionar Produto
             </button>
+
+            <!-- ── Lucro sobre material (preço − custo da receita) ── -->
+            <div class="form-group minimo-section" style="margin-top:16px">
+              <label>Lucro sobre Material <span class="badge badge-blue minimo-tag">preço − custo da receita</span></label>
+              <div class="minimo-resumo" id="servLucroResumo"></div>
+            </div>
 
           </div>
           <div class="modal-footer">

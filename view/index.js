@@ -295,6 +295,8 @@ async function carregarProdutos() {
     const res = await apiFetch('/produto');
     cacheProdutos = res.produtos || [];
     if (res.margemPadrao != null) margemPadrao = res.margemPadrao;
+    // custo e margem da tabela de serviços saem do custo atual dos produtos
+    if (_cacheReady.servicos) renderTabelaServicos(cacheServicos);
     _cacheReady.produtos = true;
     // Quem só carrega o catálogo para lançar material na obra não acompanha
     // estoque — a tabela, os alertas e o sino ficariam fora do contexto dele.
@@ -1390,6 +1392,7 @@ function selecionarProdutoDropdown(item, idProduto) {
   // na conferência da NF o botão "Repor estoque" só libera com um produto escolhido
   _nfAtualizarBotaoRepor(row);
   if (row.closest('#modalObra')) _atualizarValorTotalObra();
+  if (row.closest('#modalServico')) _atualizarLucroServico();
 }
 
 function fecharDropdownProduto(input) {
@@ -1630,9 +1633,11 @@ document.addEventListener('click', e => {
   if (wrap && !wrap.contains(e.target)) fecharDropdownEquipe();
 });
 
-// Quantidade de produto avulso mexe no valor estimado da obra.
+// Quantidade de produto avulso mexe no valor estimado da obra; no serviço,
+// quantidade e preço mexem no lucro sobre material.
 document.addEventListener('input', e => {
   if (e.target.matches('#modalObra .prod-qtd-input')) _atualizarValorTotalObra();
+  if (e.target.matches('#modalServico .prod-qtd-input, #servPreco')) _atualizarLucroServico();
 });
 
 // Mesma regra do backend: serviços + produtos avulsos × preço de venda. Os
@@ -2501,6 +2506,9 @@ function _getSortValue(item, table, key) {
       if (key === 'nome') return item.nomeServico || '';
       if (key === 'preco') return item.precoServico ?? 0;
       if (key === 'produtos') return (item.produtos || []).length;
+      // sem custo calculável vai para o fim/começo, não se mistura com zero
+      if (key === 'custo')  return _lucroServico(item.precoServico, item.produtos || []).custo  ?? -Infinity;
+      if (key === 'margem') return _lucroServico(item.precoServico, item.produtos || []).margem ?? -Infinity;
       return '';
     case 'admins':
       if (key === 'id') return item.idLogin;
@@ -2799,7 +2807,7 @@ async function carregarServicos() {
     atualizarStats();
   } catch (e) {
     document.getElementById('bodyServicos').innerHTML =
-      `<tr><td colspan="5" class="empty-row">Erro ao carregar serviços: ${escHtml(e.message)}</td></tr>`;
+      `<tr><td colspan="7" class="empty-row">Erro ao carregar serviços: ${escHtml(e.message)}</td></tr>`;
     console.error('carregarServicos:', e);
   }
 }
@@ -2857,18 +2865,28 @@ function renderTabelaServicos(servicos) {
       total === 0 && q
         ? `A busca por "${escHtml(q)}" não retornou resultados.`
         : 'Comece cadastrando o primeiro serviço do catálogo.',
-      !q ? 'Novo Serviço' : '', 'abrirModalNovoServico()', 5
+      !q ? 'Novo Serviço' : '', 'abrirModalNovoServico()', 7
     );
   } else {
     tbody.innerHTML = pagina.map(s => {
       const nomeSafe    = _esc(s.nomeServico);
       const qtdProdutos = (s.produtos || []).length;
+      const l = _lucroServico(s.precoServico, s.produtos || []);
+      const custoCell = l.custo == null
+        ? `<span class="cell-secondary" title="Sem custo: ${escHtml(l.semCusto.join(', '))}">—</span>`
+        : `<span class="cell-secondary">${_fmtMoeda(l.custo)}</span>`;
+      const margemCell = l.margem == null
+        ? '<span class="cell-secondary">—</span>'
+        : `<span class="badge ${l.lucro < 0 ? 'badge-red' : 'badge-green'}"
+             title="Lucro sobre material: ${_fmtMoeda(l.lucro)}">${_fmtPct(l.margem.toFixed(1))}</span>`;
       return `
         <tr onclick="abrirModalEditarServico(${s.idServico})">
           <td><span class="cell-id">${s.idServico}</span></td>
           <td><span class="cell-primary">${escHtml(s.nomeServico)}</span></td>
           <td><span class="cell-secondary">${_fmtMoeda(s.precoServico)}</span></td>
           <td><span class="cell-secondary">${qtdProdutos} produto${qtdProdutos !== 1 ? 's' : ''}</span></td>
+          <td>${custoCell}</td>
+          <td>${margemCell}</td>
           <td>${_actionMenu([
             { icon:'fa-pen',   label:'Editar',  onclick:`abrirModalEditarServico(${s.idServico})`, escrita:'servicos' },
             { divider: true },
@@ -2920,6 +2938,63 @@ function adicionarProdutoServico(idProduto = null, nomeProduto = null, quantidad
 
 function removerProdutoServico(btn) {
   btn.closest('.produto-obra-row').remove();
+  _atualizarLucroServico();
+}
+
+// ── Lucro sobre material do serviço ──────────────────────────────────────────
+// Mesma conta de /relatorio/lucro-servicos: preço − Σ(quantidade × custo atual
+// do produto). O material do serviço não tem preço de venda próprio — o preço
+// do serviço já o cobre —, então a margem dos produtos não entra aqui.
+// Produto sem custo deixa o lucro sem cálculo, em vez de contar como zero.
+function _lucroServico(preco, itens) {
+  let custo = 0;
+  const semCusto = [];
+  itens.forEach(({ idProduto, quantidade }) => {
+    const p = cacheProdutos.find(x => x.idProduto === idProduto);
+    if (!p || p.custoUnitario == null) semCusto.push(p ? p.nomeProduto : `produto ID ${idProduto}`);
+    else custo += Number(quantidade) * Number(p.custoUnitario);
+  });
+  if (semCusto.length) return { custo: null, lucro: null, margem: null, semCusto };
+  const lucro = Number(preco) - custo;
+  return { custo, lucro, margem: preco > 0 ? lucro / preco * 100 : null, semCusto };
+}
+
+// Resumo ao vivo no modal. Preço abaixo do custo só avisa: vender abaixo do
+// custo pode ser decisão da empresa (cliente estratégico, garantia...).
+function _atualizarLucroServico() {
+  const el = document.getElementById('servLucroResumo');
+  if (!el) return;
+  const preco = Number(document.getElementById('servPreco').value);
+  const itens = _coletarProdutosServico();
+
+  if (!(preco > 0)) {
+    el.innerHTML = 'Informe o preço para ver o lucro sobre o material.';
+    return;
+  }
+  if (!itens.length) {
+    el.innerHTML = `<span class="minimo-valor">${_fmtMoeda(preco)}</span>`
+      + '<span class="minimo-conta">Sem produtos na receita: o preço todo é lucro sobre material '
+      + '(mão de obra e impostos ainda não entram na conta).</span>';
+    return;
+  }
+  const l = _lucroServico(preco, itens);
+  if (l.custo == null) {
+    el.innerHTML = '<span class="badge badge-yellow">cálculo incompleto</span>'
+      + `<span class="minimo-conta">Sem custo cadastrado: ${escHtml(l.semCusto.join(', '))}. `
+      + 'Informe o custo desses produtos (no cadastro ou pela nota fiscal) para calcular o lucro.</span>';
+    return;
+  }
+  const negativo = l.lucro < 0;
+  el.innerHTML =
+    `<span class="minimo-valor" style="${negativo ? 'color:#DC2626' : ''}">${_fmtMoeda(l.lucro)}</span>`
+    + `<span class="badge ${negativo ? 'badge-red' : 'badge-green'}">margem ${_fmtPct(l.margem.toFixed(1))}</span>`
+    + `<span class="minimo-conta">Preço ${_fmtMoeda(preco)} − material ${_fmtMoeda(l.custo)}, `
+    + 'com o custo atual dos produtos.</span>'
+    + (negativo
+      ? `<span class="minimo-conta" style="color:#DC2626;font-weight:600">
+           <i class="fa-solid fa-triangle-exclamation"></i> Preço abaixo do custo do material:
+           prejuízo de ${_fmtMoeda(-l.lucro)} a cada serviço. O cadastro é permitido.</span>`
+      : '');
 }
 
 function _coletarProdutosServico() {
@@ -2980,6 +3055,7 @@ function abrirModalNovoServico() {
   _ocultarBanner('banner-modalServico');
   document.getElementById('modalServicoTitle').innerHTML =
     '<i class="fa-solid fa-screwdriver-wrench"></i> Novo Serviço';
+  _atualizarLucroServico();
   abrirModal('modalServico');
 }
 
@@ -3002,6 +3078,7 @@ function abrirModalEditarServico(idServico) {
 
   document.getElementById('modalServicoTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Serviço';
+  _atualizarLucroServico();
   abrirModal('modalServico');
 }
 
