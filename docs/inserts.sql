@@ -1,55 +1,96 @@
--- Inserts para popular as tabelas com dados de exemplo
--- Executar APÓS codigo.sql (que cria o schema e o banco)
+-- =============================================================================
+-- Dados de exemplo. Executar APÓS docs/codigo.sql (que cria o schema e o banco).
+-- Gerados para desenvolvimento e apresentação do TCC — nomes, documentos,
+-- custos e preços são FICTÍCIOS e devem ser trocados pelos reais da TecnoVale.
+--
+-- Resumo: 8 usuários | 6 fields | 6 fornecedores | 40 clientes | 50 produtos
+--         13 serviços | 60 obras | 11 notas fiscais
+-- =============================================================================
 USE tcc;
 
--- ── Login ─────────────────────────────────────────────────────────────────────
--- senha: adm123 (bcrypt hash)  |  INSERT IGNORE evita erro se já existir
--- idLogin 1 → adm | 2 → João | 3 → Marcos (almoxarifado) | 4 → Pedro (obra)
--- (ordem garantida pelo AUTO_INCREMENT; todos com a senha adm123)
-INSERT IGNORE INTO login (email, senha, nomeLogin, cargoLogin) VALUES
-('adm123@gmail.com',        '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'adm',    'Administracao'),
-('joao@tecnovalegas.com',   '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'João',   'Administracao'),
-('marcos@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Marcos', 'Almoxarifado'),
-('pedro@tecnovalegas.com',  '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Pedro',  'Obra');
+-- As datas das obras, do histórico e das notas são RELATIVAS a @hoje: assim os
+-- filtros do dashboard ("Este mês", "Últimos 12 meses"...) sempre têm dados.
+-- Para congelar numa data (ex.: prints do TCC): SET @hoje = '2026-10-05';
+SET @hoje = CURDATE();
 
--- ── Responsáveis ──────────────────────────────────────────────────────────────
-INSERT INTO responsavel (nomeResponsavel) VALUES
-('Carlos Souza'),
-('Beatriz Almeida'),
-('Renato Pereira'),
-('Ana Carolina');
+-- ── Login ─────────────────────────────────────────────────────────────────────
+-- Todos com a senha adm123. INSERT IGNORE: o adm já é criado pelo codigo.sql.
+-- idLogin 1 adm | 2 João (Administração) | 3 Marcos, 5 Juliana (Almoxarifado)
+--         4 Pedro, 6 Rafael, 7 Thiago, 8 Larissa (Obra)
+INSERT IGNORE INTO login (idLogin, email, senha, nomeLogin, cargoLogin) VALUES
+(1, 'adm123@gmail.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'adm', 'Administracao'),
+(2, 'joao@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'João', 'Administracao'),
+(3, 'marcos@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Marcos', 'Almoxarifado'),
+(4, 'pedro@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Pedro', 'Obra'),
+(5, 'juliana@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Juliana', 'Almoxarifado'),
+(6, 'rafael@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Rafael', 'Obra'),
+(7, 'thiago@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Thiago', 'Obra'),
+(8, 'larissa@tecnovalegas.com', '$2b$12$kBRKSWOo6.maB7H6G/g.OOVXvjXN5k/vv0VP348VMN0SzCy0mDuaO', 'Larissa', 'Obra');
+
+-- ── Fields (técnicos responsáveis) ──────────────────────────────────────────
+INSERT INTO responsavel (idResponsavel, nomeResponsavel) VALUES
+(1, 'Carlos Souza'),
+(2, 'Beatriz Almeida'),
+(3, 'Renato Pereira'),
+(4, 'Ana Carolina'),
+(5, 'Diego Fernandes'),
+(6, 'Patrícia Lima');
 
 -- ── Fornecedores ──────────────────────────────────────────────────────────────
--- prazoEntregaDias entra no cálculo do estoque mínimo dos produtos de cada um.
-INSERT INTO fornecedores (nomeFornecedor, prazoEntregaDias) VALUES
-('Metalúrgica Vale do Aço',           15),
-('Fersol Equipamentos de Gás',        10),
-('Conexão Flex Indústria e Comércio',  7),
-('SafeWork Proteção Industrial',       5),
-('QuimGás Insumos Técnicos',          12);
+-- CNPJ só com dígitos (como a importação de NF-e grava). prazoEntregaDias entra
+-- no cálculo do estoque mínimo dos produtos de cada um.
+INSERT INTO fornecedores (idFornecedor, nomeFornecedor, cnpjFornecedor, prazoEntregaDias) VALUES
+(1, 'Metalúrgica Vale do Aço', '11222333000181', 15),
+(2, 'Fersol Equipamentos de Gás', '22333444000172', 10),
+(3, 'Conexão Flex Indústria e Comércio', '33444555000163', 7),
+(4, 'SafeWork Proteção Industrial', '44555666000154', 5),
+(5, 'QuimGás Insumos Técnicos', '55666777000145', 12),
+(6, 'Distribuidora ABC Conexões', '66777888000136', 4);
 
 -- ── Clientes ──────────────────────────────────────────────────────────────────
+-- contatoCliente e telefone2 são telefones. 33 a 40 ficam na região do ABC e
+-- são atendidos pela unidade Mauá; os demais, pela unidade SJC.
 INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailCliente, telefone2, cep, rua, numero, complemento, bairro, cidade, estado) VALUES
-(1,  'Caua Silva',                  '123.456.789-00', '(12) 98811-2233',          'caua.silva@sjcgas.com.br', NULL, '12245-000', 'Rua São Sebastião',           '112',  'Apto 101', 'Jardim Aquarius',       'São José dos Campos', 'SP'),
-(2,  'João Vinicius Oliveira',      '234.567.890-11', '(12) 99777-4455', 'joao.vinicius@sjcgas.com.br', NULL, '12244-550', 'Avenida Cassiano Ricardo',    '4300', 'Sala 4',   'Jardim Aquarius',       'São José dos Campos', 'SP'),
-(3,  'Mateus Alves',                '345.678.901-22', '(12) 99666-7788',        'mateus.alves@sjcgas.com.br', NULL, '12226-280', 'Rua Padre Francisco',         '98',   NULL,       'Jardim das Indústrias', 'São José dos Campos', 'SP'),
-(4,  'Lúcia Martins',               '456.789.012-33', '(12) 98123-4567',         'lucia.martins@sjcgas.com.br', NULL, '12234-010', 'Rua Câmara',                  '428',  NULL,       'Vila Adyana',           'São José dos Campos', 'SP'),
-(5,  'Fabrício Rocha',              '567.890.123-44', '(12) 98222-3344',      'fabricio.rocha@sjcgas.com.br', NULL, '12227-110', 'Rua Miguel Petroni',          '78',   NULL,       'Parque Industrial',     'São José dos Campos', 'SP'),
-(6,  'Marina Nunes',                '678.901.234-55', '(12) 98111-2233',        'marina.nunes@sjcgas.com.br', NULL, '12232-150', 'Avenida Andrômeda',           '5250', 'Casa 12',  'Urbanova',              'São José dos Campos', 'SP'),
-(7,  'Restaurante Bom Sabor Ltda',  '12.345.678/0001-90', '(12) 3234-5678',      'contato@bomsabor.com.br', NULL,  '12301-000', 'Rua das Flores',              '123',  NULL,       'Centro',                'Jacareí',             'SP'),
-(8,  'Padaria São Benedito',        '23.456.789/0001-01', '(12) 3123-4567',        'padaria@saobenedito.com.br', NULL,  '12020-010', 'Av. Nove de Julho',           '456',  'Loja A',   'Jardim Satélite',       'São José dos Campos', 'SP'),
-(9,  'Indústria Têxtil Vale Ltda',  '34.567.890/0001-12', '(12) 3456-7890',       'industria@textilvale.com.br', NULL,  '12060-000', 'Rua Industrial Norte',        '789',  'Galpão 3', 'Distrito Industrial',   'São José dos Campos', 'SP'),
-(10, 'Hospital Santa Casa Taubaté', '45.678.901/0001-23', '(12) 3332-1000',        'adm@santacasataubate.org.br', NULL,  '12020-100', 'Rua Floriano Peixoto',        '100',  NULL,       'Centro',                'Taubaté',             'SP'),
-(11, 'Supermercado Bom Preço',      '56.789.012/0001-34', '(12) 3251-8900',      'gerencia@supbompreco.com.br', NULL,  '12070-000', 'Av. Presidente Vargas',       '1500', NULL,       'Vila Industrial',       'Taubaté',             'SP'),
-(12, 'Frigorífico Vale Carnes',     '67.890.123/0001-45', '(12) 3612-5400',       'compras@valecames.com.br', NULL,  '12400-000', 'Rod. Presidente Dutra',       'km 85','Galpão A', 'Zona Rural',            'Pindamonhangaba',     'SP'),
-(13, 'Hotel Fazenda do Vale',       '78.901.234/0001-56', '(12) 3101-2200',      'reservas@hotelfazendavale.com.br', NULL,  '12220-000', 'Estrada do Vale',             '5',    NULL,       'Zona Rural',            'Jacareí',             'SP'),
-(14, 'Colégio Dom Bosco',           '89.012.345/0001-67', '(12) 3231-3300',       'secretaria@colegiodombosco.com.br', NULL,  '12050-000', 'Av. João XXIII',              '200',  NULL,       'Centro',                'Taubaté',             'SP'),
-(15, 'Churrascaria do Compadre',    '90.123.456/0001-78', '(12) 3153-8700',         'churrascaria@compadre.com.br', NULL,  '12100-000', 'Av. Euzébio Ferreira',        '900',  NULL,       'Jardim Esplanada',      'Pindamonhangaba',     'SP'),
-(16, 'Metalúrgica Aço Forte Ltda',  '01.234.567/0001-89', '(12) 3944-7600',        'producao@acoforte.com.br', NULL,  '12240-000', 'Rua José Humberto Preto',    '1200', 'Barracão 2','Distrito Industrial',  'São José dos Campos', 'SP'),
-(17, 'Panificadora Delícia',        '12.345.670/0001-91', '(12) 3153-4400',        'panificadora@delicia.com.br', NULL,  '12600-000', 'Rua Coronel Rodrigues',       '78',   NULL,       'Centro',                'Lorena',              'SP'),
-(18, 'Cerâmica São Paulo Ind.',     '23.456.781/0001-02', '(12) 3241-9800',        'ceramica@ceramicasp.com.br', NULL,  '12500-000', 'Rua das Cerâmicas',           '1000', NULL,       'Distrito Industrial',   'Guaratinguetá',       'SP'),
-(19, 'Escola Municipal Boa Vista',  '34.567.892/0001-13', '(12) 3278-4500',        'escola@boavista.edu.br', NULL,  '12320-000', 'Rua José Alves',              '5',    NULL,       'Jardim das Palmeiras',  'Jacareí',             'SP'),
-(20, 'Distribuidora GLP Norte',     '45.678.903/0001-24', '(12) 3627-9000',        'distribuidora@glpnorte.com.br', NULL,  '12570-000', 'Av. Dom Pedro I',             '350',  'Galpão 1', 'Parque Industrial',     'Guaratinguetá',       'SP');
+(1, 'Caua Silva', '123.456.789-00', '(12) 98811-2233', 'caua.silva@sjcgas.com.br', '(12) 3921-4400', '12245-000', 'Rua São Sebastião', '112', 'Apto 101', 'Jardim Aquarius', 'São José dos Campos', 'SP'),
+(2, 'João Vinicius Oliveira', '234.567.890-11', '(12) 99777-4455', 'joao.vinicius@sjcgas.com.br', '(12) 3878-1020', '12244-550', 'Avenida Cassiano Ricardo', '4300', 'Sala 4', 'Jardim Aquarius', 'São José dos Campos', 'SP'),
+(3, 'Mateus Alves', '345.678.901-22', '(12) 99666-7788', 'mateus.alves@sjcgas.com.br', NULL, '12226-280', 'Rua Padre Francisco', '98', NULL, 'Jardim das Indústrias', 'São José dos Campos', 'SP'),
+(4, 'Lúcia Martins', '456.789.012-33', '(12) 98123-4567', 'lucia.martins@sjcgas.com.br', '(12) 3207-9911', '12234-010', 'Rua Câmara', '428', NULL, 'Vila Adyana', 'São José dos Campos', 'SP'),
+(5, 'Fabrício Rocha', '567.890.123-44', '(12) 98222-3344', 'fabricio.rocha@sjcgas.com.br', NULL, '12227-110', 'Rua Miguel Petroni', '78', NULL, 'Parque Industrial', 'São José dos Campos', 'SP'),
+(6, 'Marina Nunes', '678.901.234-55', '(12) 98111-2233', 'marina.nunes@sjcgas.com.br', '(12) 3949-2210', '12232-150', 'Avenida Andrômeda', '5250', 'Casa 12', 'Urbanova', 'São José dos Campos', 'SP'),
+(7, 'Restaurante Bom Sabor Ltda', '12.345.678/0001-90', '(12) 3234-5678', 'contato@bomsabor.com.br', '(12) 99702-1188', '12301-000', 'Rua das Flores', '123', NULL, 'Centro', 'Jacareí', 'SP'),
+(8, 'Padaria São Benedito', '23.456.789/0001-01', '(12) 3123-4567', 'padaria@saobenedito.com.br', NULL, '12020-010', 'Av. Nove de Julho', '456', 'Loja A', 'Jardim Satélite', 'São José dos Campos', 'SP'),
+(9, 'Indústria Têxtil Vale Ltda', '34.567.890/0001-12', '(12) 3456-7890', 'industria@textilvale.com.br', '(12) 99611-1111', '12060-000', 'Rua Industrial Norte', '789', 'Galpão 3', 'Distrito Industrial', 'São José dos Campos', 'SP'),
+(10, 'Hospital Santa Casa Taubaté', '45.678.901/0001-23', '(12) 3332-1000', 'adm@santacasataubate.org.br', '(12) 99820-4455', '12020-100', 'Rua Floriano Peixoto', '100', NULL, 'Centro', 'Taubaté', 'SP'),
+(11, 'Supermercado Bom Preço', '56.789.012/0001-34', '(12) 3251-8900', 'gerencia@supbompreco.com.br', '(12) 99388-0000', '12070-000', 'Av. Presidente Vargas', '1500', NULL, 'Vila Industrial', 'Taubaté', 'SP'),
+(12, 'Frigorífico Vale Carnes', '67.890.123/0001-45', '(12) 3612-5400', 'compras@valecames.com.br', '(12) 99166-8800', '12400-000', 'Rod. Presidente Dutra', 'km 85', 'Galpão A', 'Zona Rural', 'Pindamonhangaba', 'SP'),
+(13, 'Hotel Fazenda do Vale', '78.901.234/0001-56', '(12) 3101-2200', 'reservas@hotelfazendavale.com.br', NULL, '12220-000', 'Estrada do Vale', '5', NULL, 'Zona Rural', 'Jacareí', 'SP'),
+(14, 'Colégio Dom Bosco', '89.012.345/0001-67', '(12) 3231-3300', 'secretaria@colegiodombosco.com.br', NULL, '12050-000', 'Av. João XXIII', '200', NULL, 'Centro', 'Taubaté', 'SP'),
+(15, 'Churrascaria do Compadre', '90.123.456/0001-78', '(12) 3153-8700', 'churrascaria@compadre.com.br', '(12) 98389-9900', '12100-000', 'Av. Euzébio Ferreira', '900', NULL, 'Jardim Esplanada', 'Pindamonhangaba', 'SP'),
+(16, 'Metalúrgica Aço Forte Ltda', '01.234.567/0001-89', '(12) 3944-7600', 'producao@acoforte.com.br', '(12) 98167-9000', '12240-000', 'Rua José Humberto Preto', '1200', 'Barracão 2', 'Distrito Industrial', 'São José dos Campos', 'SP'),
+(17, 'Panificadora Delícia', '12.345.670/0001-91', '(12) 3153-4400', 'panificadora@delicia.com.br', NULL, '12600-000', 'Rua Coronel Rodrigues', '78', NULL, 'Centro', 'Lorena', 'SP'),
+(18, 'Cerâmica São Paulo Ind.', '23.456.781/0001-02', '(12) 3241-9800', 'ceramica@ceramicasp.com.br', '(12) 98944-6700', '12500-000', 'Rua das Cerâmicas', '1000', NULL, 'Distrito Industrial', 'Guaratinguetá', 'SP'),
+(19, 'Escola Municipal Boa Vista', '34.567.892/0001-13', '(12) 3278-4500', 'escola@boavista.edu.br', NULL, '12320-000', 'Rua José Alves', '5', NULL, 'Jardim das Palmeiras', 'Jacareí', 'SP'),
+(20, 'Distribuidora GLP Norte', '45.678.903/0001-24', '(12) 3627-9000', 'distribuidora@glpnorte.com.br', '(12) 97834-5600', '12570-000', 'Av. Dom Pedro I', '350', 'Galpão 1', 'Parque Industrial', 'Guaratinguetá', 'SP'),
+(21, 'Rafaela Monteiro', '567.123.890-55', '(12) 99145-2030', 'rafaela.monteiro@gmail.com', NULL, '12242-010', 'Rua Paulo Setúbal', '210', 'Casa 2', 'Jardim Esplanada', 'São José dos Campos', 'SP'),
+(22, 'Gustavo Henrique Prado', '678.234.901-66', '(12) 99233-8741', 'gustavo.prado@hotmail.com', '(12) 3912-6650', '12243-260', 'Rua Icatu', '55', NULL, 'Vila Ema', 'São José dos Campos', 'SP'),
+(23, 'Condomínio Residencial Aquarius', '11.987.654/0001-10', '(12) 3941-7700', 'sindico@resaquarius.com.br', '(12) 99701-3300', '12246-001', 'Av. Cassiano Ricardo', '1000', 'Bloco A', 'Jardim Aquarius', 'São José dos Campos', 'SP'),
+(24, 'Pizzaria Forno a Lenha', '12.876.543/0001-21', '(12) 3916-2020', 'pedidos@fornoalenha.com.br', NULL, '12230-000', 'Rua Siqueira Campos', '321', NULL, 'Centro', 'São José dos Campos', 'SP'),
+(25, 'Lavanderia Industrial Clean', '13.765.432/0001-32', '(12) 3653-1180', 'operacao@cleanlav.com.br', '(12) 98810-5522', '12280-000', 'Rua Prof. Carlos Gomes', '88', 'Galpão 1', 'Vila São Geraldo', 'Caçapava', 'SP'),
+(26, 'Academia Corpo em Forma', '14.654.321/0001-43', '(12) 3354-9090', 'contato@corpoemforma.com.br', NULL, '12400-010', 'Rua Deputado Claro César', '450', NULL, 'Centro', 'Pindamonhangaba', 'SP'),
+(27, 'Clínica Veterinária Bicho Feliz', '15.543.210/0001-54', '(12) 3622-4141', 'clinica@bichofeliz.vet.br', '(12) 99134-7070', '12030-000', 'Av. Independência', '1700', NULL, 'Independência', 'Taubaté', 'SP'),
+(28, 'Restaurante Sabor da Serra', '16.432.109/0001-65', '(12) 3663-3030', 'saborserra@gmail.com', NULL, '12460-000', 'Av. Dr. Januário Miráglia', '2100', NULL, 'Vila Capivari', 'Campos do Jordão', 'SP'),
+(29, 'Pousada Recanto das Águas', '17.321.098/0001-76', '(12) 3662-8080', 'reservas@recantodasaguas.com.br', '(12) 99611-2323', '12460-000', 'Rua Djalma Forjaz', '93', NULL, 'Vila Abernéssia', 'Campos do Jordão', 'SP'),
+(30, 'Hamburgueria Brasa Viva', '18.210.987/0001-87', '(12) 3022-5656', 'contato@brasaviva.com.br', NULL, '12215-000', 'Av. Dr. Nelson D''Ávila', '389', 'Loja 3', 'Centro', 'São José dos Campos', 'SP'),
+(31, 'Bruno Carvalho', '789.345.012-77', '(12) 98877-1102', 'bruno.carvalho@outlook.com', NULL, '12305-100', 'Rua Alfredo Schurig', '64', NULL, 'Jardim Paraíba', 'Jacareí', 'SP'),
+(32, 'Mercado Família Costa', '19.109.876/0001-98', '(12) 3958-1414', 'compras@familiacosta.com.br', '(12) 99245-3131', '12236-000', 'Estrada Velha Rio-SP', '5800', NULL, 'Eugênio de Melo', 'São José dos Campos', 'SP'),
+(33, 'Indústria Química Paulista', '20.098.765/0001-09', '(11) 4544-7000', 'manutencao@quimpaulista.com.br', '(11) 98111-7000', '09370-000', 'Av. Capitão João', '2301', 'Galpão 5', 'Jardim Zaíra', 'Mauá', 'SP'),
+(34, 'Padaria Pão Dourado', '21.987.654/0001-10', '(11) 4513-2626', 'paodourado@gmail.com', NULL, '09310-000', 'Rua Rio Branco', '112', NULL, 'Centro', 'Mauá', 'SP'),
+(35, 'Hospital Municipal de Mauá', '22.876.543/0001-21', '(11) 4555-9000', 'engenharia@hmmaua.sp.gov.br', '(11) 98222-9000', '09330-000', 'Av. Dom José Gaspar', '2000', NULL, 'Matriz', 'Mauá', 'SP'),
+(36, 'Restaurante Cantina Italiana', '23.765.432/0001-32', '(11) 4427-3838', 'cantina@cantinaitaliana.com.br', NULL, '09015-000', 'Rua Senador Fláquer', '450', NULL, 'Centro', 'Santo André', 'SP'),
+(37, 'Metalúrgica São Bernardo', '24.654.321/0001-43', '(11) 4351-6600', 'producao@metalsbc.com.br', '(11) 98333-6600', '09750-000', 'Av. Prestes Maia', '1500', 'Barracão 3', 'Centro', 'São Bernardo do Campo', 'SP'),
+(38, 'Escola Estadual Prof. Lima', '25.543.210/0001-54', '(11) 4823-1010', 'escola.lima@educacao.sp.gov.br', NULL, '09400-000', 'Rua Boa Vista', '300', NULL, 'Centro', 'Ribeirão Pires', 'SP'),
+(39, 'Fernanda Ribeiro', '890.456.123-88', '(11) 99412-5050', 'fernanda.ribeiro@gmail.com', NULL, '09380-000', 'Rua Manoel Pedro Júnior', '77', 'Apto 34', 'Vila Bocaina', 'Mauá', 'SP'),
+(40, 'Churrascaria Gaúcha Diadema', '26.432.109/0001-65', '(11) 4057-7272', 'gerencia@gauchadiadema.com.br', '(11) 98444-7272', '09910-000', 'Av. Antônio Piranga', '900', NULL, 'Centro', 'Diadema', 'SP');
 
 -- ── Produtos ──────────────────────────────────────────────────────────────────
 -- qtdProduto = estoque atual | o estoque mínimo é calculado (ver docs/codigo.sql)
@@ -103,7 +144,12 @@ INSERT INTO produtos (idProduto, nomeProduto, qtdProduto, descProduto, qtdMaxima
 (42, 'Bota de Segurança Bico de Aço',       16, 'Bota impermeável com bico de aço para trabalhos em campo',  40,  145.00, NULL),
 (43, 'Tubo de Cobre 1/2" (metro)',          220, 'Tubo de cobre mole 1/2" para instalações de gás, por metro', 800,   42.00, 35),
 (44, 'Cano de Aço Preto 1/2" (metro)',     185, 'Cano de aço preto 1/2" para redes internas, por metro', 600,   19.00, 35),
-(45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 100,    NULL, NULL);
+(45, 'Medidor de Gás Residencial G4',       30, 'Medidor volumétrico para instalações residenciais e comerciais', 100,    NULL, NULL),
+(46, 'Central GLP Compacta P13 (2 cilindros)', 9, 'Abrigo e coletor para 2 cilindros P13, uso residencial', 30, 640.00, 30),
+(47, 'Abrigo Metálico para Medidor', 24, 'Caixa metálica com visor para proteção de medidor', 80, 95.00, 40),
+(48, 'Tubo Multicamada PEX-AL-PEX 16mm (m)', 300, 'Tubo multicamada para gás, por metro', 900, 14.50, 40),
+(49, 'Conexão Prensar PEX 16mm', 210, 'Conexão de prensar para tubo multicamada 16mm', 600, 11.20, 45),
+(50, 'Placa de Sinalização "Gás Inflamável"', 60, 'Placa de advertência para centrais de GLP', 150, 18.00, 50);
 
 -- ── Fornecedor de cada produto ────────────────────────────────────────────────
 -- Vincula por nomeProduto/nomeFornecedor para não depender da ordem/IDs de quem
@@ -132,7 +178,7 @@ WHERE p.nomeProduto IN (
   'Regulador de Pressão 2ª Família', 'Válvula de Alívio 1/2" 1,5 kgf', 'Detector de Gás Natural/GLP',
   'Manômetro 0-4 kgf/cm² 1/4"', 'Manifold GLP 4 Saídas', 'Válvula Solenóide GLP 1/2" 220V',
   'Filtro de GLP Inline 3/4"', 'Queimador Industrial 50.000 BTU', 'Queimador Industrial 100.000 BTU',
-  'Medidor de Gás Residencial G4'
+  'Medidor de Gás Residencial G4', 'Central GLP Compacta P13 (2 cilindros)', 'Abrigo Metálico para Medidor'
 );
 
 UPDATE produtos p
@@ -140,7 +186,8 @@ JOIN fornecedores f ON f.nomeFornecedor = 'Conexão Flex Indústria e Comércio'
 SET p.idFornecedor = f.idFornecedor
 WHERE p.nomeProduto IN (
   'Mangueira Flexível 3/4"', 'Mangueira GLP 1,20m Certificada', 'Tubo Flexível Metálico 1m',
-  'Tubo Flexível Metálico 2m', 'Conector Rápido GLP 1/2"'
+  'Tubo Flexível Metálico 2m', 'Conector Rápido GLP 1/2"', 'Tubo Multicamada PEX-AL-PEX 16mm (m)',
+  'Conexão Prensar PEX 16mm'
 );
 
 UPDATE produtos p
@@ -149,7 +196,7 @@ SET p.idFornecedor = f.idFornecedor
 WHERE p.nomeProduto IN (
   'Lanterna de Inspeção Antichama', 'Extintor CO2 6kg', 'Extintor Pó Químico Seco 4kg',
   'Capacete de Segurança CA', 'Óculos de Segurança Incolor', 'Luva de Couro Cano Longo',
-  'Bota de Segurança Bico de Aço'
+  'Bota de Segurança Bico de Aço', 'Placa de Sinalização "Gás Inflamável"'
 );
 
 UPDATE produtos p
@@ -161,146 +208,326 @@ WHERE p.nomeProduto IN (
 
 SET SQL_SAFE_UPDATES = 1;
 
--- ── Obras ─────────────────────────────────────────────────────────────────────
--- SUBSTITUI o bloco "Obras" inteiro do script de inserts (do comentário de
--- cabeçalho até o ponto e vírgula da obra 30). O restante do arquivo não muda.
---
--- Status: Concluida(15) | Em andamento(7) | Pausada(5) | À iniciar(2) | Cancelada(1)
---
--- As datas são RELATIVAS a @hoje, e não fixas: assim o filtro "Este mês" do
--- dashboard sempre encontra dados, em qualquer dia que o script for executado.
--- Para congelar os dados numa data específica (ex.: prints do TCC), troque a
--- linha abaixo por:  SET @hoje = '2026-10-05';
-SET @hoje = CURDATE();
+-- Prazo de entrega próprio (sobrepõe o do fornecedor) — itens importados ou
+-- sob encomenda demoram mais que o resto do catálogo do fornecedor.
+UPDATE produtos SET prazoEntregaDias = 30 WHERE idProduto IN (36, 37);
+UPDATE produtos SET prazoEntregaDias = 20 WHERE idProduto IN (3, 30, 46);
 
-INSERT INTO obras (codCliente, descObra, dataInicio, dataFim, statusObra, respObra, obsObra, orientacaoObra, tipoObra, clientePrimario, fieldObra, unidadeObra, emailContato, celular1, celular2, setorObra) VALUES
--- idObra 1 — Concluida
-(1,  'Instalação de ramal de gás em condomínio residencial',         @hoje - INTERVAL 214 DAY, @hoje - INTERVAL 191 DAY, 'Concluida',    'Carlos Souza',    'Testes de estanqueidade aprovados',           'Revisar juntas e conexões',            'Residencial', 'Supergásbras', 'Gás Canalizado', 'Un', 'caua.silva@sjcgas.com.br',            '(12) 98811-2233', NULL, 'Residencial'),
--- idObra 2 — Concluida
-(1,  'Manutenção preventiva em medidor industrial',                   @hoje - INTERVAL 207 DAY, @hoje - INTERVAL 193 DAY, 'Concluida',    'Beatriz Almeida', 'Relatório enviado ao cliente',                'Confirmar próxima visita em 6 meses',  'Industrial', 'Supergásbras',  'Medidor',        'Un', 'caua.silva@sjcgas.com.br',            '(12) 98811-2233', NULL, 'Industrial'),
--- idObra 3 — Concluida
-(2,  'Extensão de rede de gás em restaurante na região central',     @hoje - INTERVAL 199 DAY, @hoje - INTERVAL 155 DAY, 'Concluida',    'Renato Pereira',  'Liberação da prefeitura obtida',              'Agendar início após autorização',      'Comercial', 'Supergásbras',   'Rede de Gás',    'm',  'joao.vinicius@sjcgas.com.br',        '(12) 99777-4455', '(12) 98100-3344', 'Comercial'),
--- idObra 4 — Concluida
-(2,  'Correção de vazamento em cozinha industrial',                   @hoje - INTERVAL 191 DAY, @hoje - INTERVAL 163 DAY, 'Concluida',    'Ana Carolina',    'Válvula substituída e teste OK',              'Registrar em manutenção preventiva',   'Industrial', 'Supergásbras',  'Gás Natural',    'Un', 'joao.vinicius@sjcgas.com.br',        '(12) 99777-4455', NULL, 'Industrial'),
--- idObra 5 — Concluida
-(3,  'Instalação de medidor privativo em prédio comercial',           @hoje - INTERVAL 183 DAY, @hoje - INTERVAL 133 DAY, 'Concluida',    'Carlos Souza',    'Peças entregues e instalação concluída',      'Revisar cronograma com fornecedor',    'Comercial', 'Supergásbras',   'Medidor',        'Un', 'mateus.alves@sjcgas.com.br',         '(12) 99666-7788', NULL, 'Comercial'),
--- idObra 6 — Concluida
-(3,  'Troca de registro e conector em unidade logística',             @hoje - INTERVAL 175 DAY, @hoje - INTERVAL 154 DAY, 'Concluida',    'Beatriz Almeida', 'Obra entregue com novo certificado',          'Enviar notas fiscais',                 'Logística', 'Supergásbras',   'Conector',       'Un', 'mateus.alves@sjcgas.com.br',         '(12) 99666-7788', NULL, 'Comercial'),
--- idObra 7 — Pausada
-(4,  'Instalação de ramal de gás para cozinha de pizzaria',           @hoje - INTERVAL 166 DAY, NULL,                     'Pausada',      'Renato Pereira',  'Aguardando liberação do alvará de obra',      'Retomar após regularização',           'Comercial', 'Supergásbras',   'Gás Canalizado', 'm',  'lucia.martins@sjcgas.com.br',        '(12) 98123-4567', NULL, 'Comercial'),
--- idObra 8 — Concluida
-(5,  'Revisão geral de rede de gás na unidade fabril',                @hoje - INTERVAL 157 DAY, @hoje - INTERVAL 117 DAY, 'Concluida',    'Ana Carolina',    'Painel de controle atualizado',               'Arquivar laudos de teste',             'Industrial', 'Supergásbras',  'Rede de Gás',    'm',  'fabricio.rocha@sjcgas.com.br',       '(12) 98222-3344', NULL, 'Ambiental'),
--- idObra 9 — Em andamento
-(6,  'Projeto de ramal de gás para nova loja de estética',            @hoje - INTERVAL 147 DAY, NULL,                     'Em andamento', 'Carlos Souza',    'Levantamento concluído, execução em curso',   'Enviar orçamento final ao cliente',    'Comercial', 'Supergásbras',   'Projeto',        'Un', 'marina.nunes@sjcgas.com.br',         '(12) 98111-2233', NULL, 'Comercial'),
--- idObra 10 — Concluida
-(7,  'Instalação de rede GLP para cozinha industrial',                @hoje - INTERVAL 137 DAY, @hoje - INTERVAL 123 DAY, 'Concluida',    'Renato Pereira',  'Instalação conforme ABNT NBR 15526',          'Utilizar tubulação de cobre 1/2"',     'Comercial', 'Supergásbras',   'GLP',            'Un', 'contato@bomsabor.com.br',            '(12) 3234-5678',  NULL, 'Comercial'),
--- idObra 11 — Em andamento
-(8,  'Substituição de reguladores e mangueiras GLP',                  @hoje - INTERVAL 122 DAY, NULL,                     'Em andamento', 'Carlos Souza',    'Aguardando chegada dos reguladores novos',    'Confirmar entrega com fornecedor',     'Manutenção', 'Supergásbras',  'GLP',            'Un', 'padaria@saobenedito.com.br',         '(12) 3123-4567',  NULL, 'Comercial'),
--- idObra 12 — Concluida
-(9,  'Projeto de instalação GLP industrial - fase 1',                 @hoje - INTERVAL 108 DAY, @hoje - INTERVAL 65 DAY,  'Concluida',    'Beatriz Almeida', 'Projeto aprovado pela concessionária',        'Pressão de operação: 0,5 kgf/cm²',    'Industrial', 'Supergásbras',  'GLP',            'm',  'industria@textilvale.com.br',        '(12) 3456-7890',  '(12) 99611-1111', 'Industrial'),
--- idObra 13 — Concluida (vistoria de um dia: início = fim)
-(10, 'Vistoria anual da central de GLP hospitalar',                   @hoje - INTERVAL 94 DAY,  @hoje - INTERVAL 94 DAY,  'Concluida',    'Ana Carolina',    'Aprovada; válvula de segurança substituída',  NULL,                                   'Vistoria', 'Supergásbras',    'GLP',            'Un', 'adm@santacasataubate.org.br',        '(12) 3332-1000',  NULL, 'Judicial'),
--- idObra 14 — Pausada
-(11, 'Adequação da rede GLP - setor de padaria',                      @hoje - INTERVAL 76 DAY,  NULL,                     'Pausada',      'Carlos Souza',    'Obra suspensa por reforma no teto do setor',  'Retomar após conclusão da reforma',    'Instalação', 'Supergásbras',  'GLP',            'm',  'gerencia@supbompreco.com.br',        '(12) 3251-8900',  '(12) 99388-0000', 'Comercial'),
--- idObra 15 — Concluida
-(12, 'Instalação industrial GLP - câmara fria',                       @hoje - INTERVAL 62 DAY,  @hoje - INTERVAL 12 DAY,  'Concluida',    'Renato Pereira',  'Sistema de aquecimento de câmara fria OK',    'Pressão industrial: 1,5 kgf/cm²',     'Industrial', 'Supergásbras',  'GLP',            'm',  'compras@valecames.com.br',           '(12) 3612-5400',  '(12) 99166-8800', 'Industrial'),
--- idObra 16 — Em andamento
-(13, 'Revisão e adequação central GLP - hotel',                       @hoje - INTERVAL 51 DAY,  NULL,                     'Em andamento', 'Beatriz Almeida', 'Substituição de válvulas em curso',           'Adequar conforme NR-13',               'Manutenção', 'Supergásbras',  'GLP',            'Un', 'reservas@hotelfazendavale.com.br',  '(12) 3101-2200',  NULL, 'Comercial'),
--- idObra 17 — Concluida (fim dentro dos últimos 5 dias)
-(14, 'Instalação de rede GLP para cantina escolar',                   @hoje - INTERVAL 42 DAY,  @hoje - INTERVAL 4 DAY,   'Concluida',    'Ana Carolina',    'Fogão 6 bocas instalado',                     NULL,                                   'Instalação', 'Supergásbras',  'GLP',            'm',  'secretaria@colegiodombosco.com.br', '(12) 3231-3300',  NULL, 'Comercial'),
--- idObra 18 — Cancelada
-(15, 'Instalação de rede GLP para churrasqueiras - lote 1',           @hoje - INTERVAL 37 DAY,  NULL,                     'Cancelada',    'Carlos Souza',    'Cliente cancelou por mudança no projeto',     NULL,                                   'Instalação', 'Supergásbras',  'GLP',            'm',  'churrascaria@compadre.com.br',       '(12) 3153-8700',  '(12) 98389-9900', 'Comercial'),
--- idObra 19 — Concluida (fim dentro dos últimos 5 dias)
-(16, 'Instalação de rede GLP para solda a gás',                       @hoje - INTERVAL 33 DAY,  @hoje - INTERVAL 3 DAY,   'Concluida',    'Renato Pereira',  'Pontos de GLP para 6 postos de solda',        'Alta pressão de operação',             'Industrial', 'Supergásbras',  'GLP',            'm',  'producao@acoforte.com.br',           '(12) 3944-7600',  '(12) 98167-9000', 'Industrial'),
--- idObra 20 — Pausada
-(17, 'Instalação de fornos e fogões a GLP',                           @hoje - INTERVAL 30 DAY,  NULL,                     'Pausada',      'Beatriz Almeida', 'Equipamentos aguardando entrega do fornecedor','Confirmar prazo de entrega',           'Instalação', 'Supergásbras',  'GLP',            'Un', 'panificadora@delicia.com.br',        '(12) 3153-4400',  NULL, 'Comercial'),
--- idObra 21 — Concluida (fim dentro dos últimos 5 dias)
-(18, 'Instalação de forno industrial a gás cerâmica',                 @hoje - INTERVAL 27 DAY,  @hoje - INTERVAL 1 DAY,   'Concluida',    'Carlos Souza',    'Queimadores de 100.000 BTU/h instalados',     'Temp. máxima: 1200°C',                 'Industrial', 'Supergásbras',  'GLP',            'Un', 'ceramica@ceramicasp.com.br',         '(12) 3241-9800',  '(12) 98944-6700', 'Industrial'),
--- idObra 22 — Em andamento
-(19, 'Instalação de GLP para cozinha escolar',                        @hoje - INTERVAL 20 DAY,  NULL,                     'Em andamento', 'Ana Carolina',    'Tubulação instalada, aguardando ligação final','Coordenar com equipe elétrica',        'Instalação', 'Supergásbras',  'GLP',            'm',  'escola@boavista.edu.br',             '(12) 3278-4500',  NULL, 'Comercial'),
--- idObra 23 — Concluida (fim hoje)
-(20, 'Ampliação da central de GLP - depósito 2',                      @hoje - INTERVAL 14 DAY,  @hoje,                    'Concluida',    'Renato Pereira',  'Nova central com capacidade 12 botijões P45', NULL,                                   'Projeto', 'Supergásbras',     'GLP',            'Un', 'distribuidora@glpnorte.com.br',      '(12) 3627-9000',  '(12) 97834-5600', 'Industrial'),
--- idObra 24 — Em andamento
-(1,  'Manutenção corretiva - revisão geral pós-vistoria',             @hoje - INTERVAL 8 DAY,   NULL,                     'Em andamento', 'Carlos Souza',    'Aguardando laudo de estanqueidade',           'Emitir relatório técnico ao cliente',  'Manutenção', 'Supergásbras',  'GLP',            'Un', 'caua.silva@sjcgas.com.br',            '(12) 98811-2233', NULL, 'Industrial'),
--- idObra 25 — À iniciar (data futura)
-(10, 'Revisão semestral central de GLP hospitalar',                   @hoje + INTERVAL 10 DAY,  NULL,                     'À iniciar',    'Beatriz Almeida', 'Agendada; aguardando confirmação do hospital','Verificar normas ANVISA vigentes',     'Vistoria', 'Supergásbras',    'GLP',            'Un', 'adm@santacasataubate.org.br',        '(12) 3332-1000',  NULL, 'ART'),
--- idObra 26 — Em andamento (início dentro dos últimos 5 dias)
-(9,  'Projeto de instalação GLP industrial - fase 2',                 @hoje - INTERVAL 4 DAY,   NULL,                     'Em andamento', 'Ana Carolina',    'Execução do setor de acabamento em curso',    'Integrar com rede existente da fase 1','Industrial', 'Supergásbras',  'GLP',            'm',  'industria@textilvale.com.br',        '(12) 3456-7890',  '(12) 99611-1111', 'Industrial'),
--- idObra 27 — À iniciar (data futura)
-(12, 'Manutenção preventiva anual - frigorífico',                     @hoje + INTERVAL 17 DAY,  NULL,                     'À iniciar',    'Carlos Souza',    'Programada; aguardando confirmação do cliente','Revisar todo o sistema de GLP',       'Manutenção', 'Supergásbras',  'GLP',            'Un', 'compras@valecames.com.br',           '(12) 3612-5400',  '(12) 99166-8800', 'Industrial'),
--- idObra 28 — Pausada (início dentro dos últimos 5 dias)
-(11, 'Instalação GLP - nova seção de frios supermercado',             @hoje - INTERVAL 2 DAY,   NULL,                     'Pausada',      'Renato Pereira',  'Obra embargada por fiscalização municipal',   'Resolver pendência com a prefeitura',  'Instalação', 'Supergásbras',  'GLP',            'm',  'gerencia@supbompreco.com.br',        '(12) 3251-8900',  '(12) 99388-0000', 'Comercial'),
--- idObra 29 — Em andamento (início dentro dos últimos 5 dias)
-(16, 'Ampliação da rede de GLP industrial - novo setor',              @hoje - INTERVAL 1 DAY,   NULL,                     'Em andamento', 'Beatriz Almeida', 'Integrar com rede existente',                 'Novo setor de produção em expansão',   'Instalação', 'Supergásbras',  'GLP',            'm',  'producao@acoforte.com.br',           '(12) 3944-7600',  '(12) 98167-9000', 'Industrial'),
--- idObra 30 — Pausada (início hoje)
-(15, 'Instalação de novo setor de churrasco - expansão',              @hoje,                    NULL,                     'Pausada',      'Carlos Souza',    'Cliente solicitou pausa para adequação civil', 'Aguardar liberação do cliente',        'Instalação', 'Supergásbras',  'GLP',            'm',  'churrascaria@compadre.com.br',       '(12) 3153-8700',  '(12) 98389-9900', 'Comercial');
+-- ── Serviços ──────────────────────────────────────────────────────────────────
+-- fornecedorServico usa o DEFAULT da tabela ('Tecnovale Gás'). Todos os preços
+-- cobrem o custo do material da receita (o sistema não aceita margem negativa).
+INSERT INTO servicos (idServico, nomeServico, precoServico) VALUES
+(1, 'Instalação de Ramal Residencial', 850.00),
+(2, 'Instalação de Ramal Comercial', 1450.00),
+(3, 'Manutenção Preventiva de Medidor', 320.00),
+(4, 'Correção de Vazamento', 480.00),
+(5, 'Troca de Registro e Conector', 210.00),
+(6, 'Extensão de Rede Comercial', 1200.00),
+(7, 'Instalação de Medidor Privativo', 690.00),
+(8, 'Vistoria e Laudo Técnico', 380.00),
+(9, 'Instalação de Central GLP P45', 2400.00),
+(10, 'Instalação de Fogão Industrial', 650.00),
+(11, 'Instalação de Detector com Corte Automático', 890.00),
+(12, 'Teste de Estanqueidade', 290.00),
+(13, 'Substituição de Regulador GLP', 260.00);
+
+-- Receita de cada serviço (o que ele consome do estoque). 8 e 12 são só mão de obra.
+INSERT INTO servicoProdutos (idServico, idProduto, quantidade) VALUES
+-- 1 Instalação de Ramal Residencial
+(1, 1, 10), (1, 2, 1), (1, 4, 1), (1, 5, 2), (1, 6, 4),
+-- 2 Instalação de Ramal Comercial
+(2, 1, 25), (2, 2, 2), (2, 3, 1), (2, 4, 1), (2, 6, 10),
+-- 3 Manutenção Preventiva de Medidor
+(3, 8, 1),
+-- 4 Correção de Vazamento
+(4, 5, 1), (4, 6, 3), (4, 2, 1),
+-- 5 Troca de Registro e Conector
+(5, 2, 1), (5, 9, 1),
+-- 6 Extensão de Rede Comercial
+(6, 1, 18), (6, 7, 8), (6, 6, 12), (6, 4, 1),
+-- 7 Instalação de Medidor Privativo
+(7, 3, 1), (7, 2, 1), (7, 8, 1),
+-- 9 Instalação de Central GLP P45
+(9, 30, 1), (9, 14, 2), (9, 43, 12), (9, 17, 1), (9, 29, 1), (9, 50, 1),
+-- 10 Instalação de Fogão Industrial
+(10, 31, 2), (10, 33, 2), (10, 2, 1), (10, 24, 1),
+-- 11 Instalação de Detector com Corte Automático
+(11, 26, 1), (11, 34, 1),
+-- 13 Substituição de Regulador GLP
+(13, 13, 1), (13, 15, 1), (13, 16, 2);
+
+-- ── Obras ─────────────────────────────────────────────────────────────────────
+-- tipoObra, unidadeObra, clientePrimario e setorObra usam exatamente as opções
+-- dos <select> do formulário de obra. emailContato e celulares vêm do cliente.
+-- Status: Concluida(38) | Em andamento(10) | Pausada(6) | À iniciar(4) | Cancelada(2)
+INSERT INTO obras (idObra, codCliente, descObra, dataInicio, dataFim, statusObra, respObra, obsObra, orientacaoObra, tipoObra, clientePrimario, fieldObra, unidadeObra, emailContato, celular1, celular2, setorObra) VALUES
+-- 1 — Concluida
+(1, 1, 'Instalação de ramal de gás em condomínio residencial', @hoje - INTERVAL 214 DAY, @hoje - INTERVAL 191 DAY, 'Concluida', 'Carlos Souza', 'Testes de estanqueidade aprovados', 'Revisar juntas e conexões', 'Instalação', 'Supergásbras', 'Gás Canalizado', 'SJC', 'caua.silva@sjcgas.com.br', '(12) 98811-2233', '(12) 3921-4400', 'Residencial'),
+-- 2 — Concluida
+(2, 1, 'Manutenção preventiva em medidor industrial', @hoje - INTERVAL 207 DAY, @hoje - INTERVAL 193 DAY, 'Concluida', 'Beatriz Almeida', 'Relatório enviado ao cliente', 'Confirmar próxima visita em 6 meses', 'Manutenção', 'Supergásbras', 'Medidor', 'SJC', 'caua.silva@sjcgas.com.br', '(12) 98811-2233', '(12) 3921-4400', 'Industrial'),
+-- 3 — Concluida
+(3, 2, 'Extensão de rede de gás em restaurante na região central', @hoje - INTERVAL 199 DAY, @hoje - INTERVAL 155 DAY, 'Concluida', 'Renato Pereira', 'Liberação da prefeitura obtida', 'Agendar início após autorização', 'Instalação', 'Supergásbras', 'Rede de Gás', 'SJC', 'joao.vinicius@sjcgas.com.br', '(12) 99777-4455', '(12) 3878-1020', 'Comercial'),
+-- 4 — Concluida
+(4, 2, 'Correção de vazamento em cozinha industrial', @hoje - INTERVAL 191 DAY, @hoje - INTERVAL 163 DAY, 'Concluida', 'Ana Carolina', 'Válvula substituída e teste OK', 'Registrar em manutenção preventiva', 'Manutenção', 'Supergásbras', 'Gás Natural', 'SJC', 'joao.vinicius@sjcgas.com.br', '(12) 99777-4455', '(12) 3878-1020', 'Industrial'),
+-- 5 — Concluida
+(5, 3, 'Instalação de medidor privativo em prédio comercial', @hoje - INTERVAL 183 DAY, @hoje - INTERVAL 133 DAY, 'Concluida', 'Carlos Souza', 'Peças entregues e instalação concluída', 'Revisar cronograma com fornecedor', 'Instalação', 'Supergásbras', 'Medidor', 'SJC', 'mateus.alves@sjcgas.com.br', '(12) 99666-7788', NULL, 'Comercial'),
+-- 6 — Concluida
+(6, 3, 'Troca de registro e conector em unidade logística', @hoje - INTERVAL 175 DAY, @hoje - INTERVAL 154 DAY, 'Concluida', 'Beatriz Almeida', 'Obra entregue com novo certificado', 'Enviar notas fiscais', 'Troca de Equipamento', 'Supergásbras', 'Conector', 'SJC', 'mateus.alves@sjcgas.com.br', '(12) 99666-7788', NULL, 'Comercial'),
+-- 7 — Pausada
+(7, 4, 'Instalação de ramal de gás para cozinha de pizzaria', @hoje - INTERVAL 166 DAY, NULL, 'Pausada', 'Renato Pereira', 'Aguardando liberação do alvará de obra', 'Retomar após regularização', 'Instalação', 'Supergásbras', 'Gás Canalizado', 'SJC', 'lucia.martins@sjcgas.com.br', '(12) 98123-4567', '(12) 3207-9911', 'Comercial'),
+-- 8 — Concluida
+(8, 5, 'Revisão geral de rede de gás na unidade fabril', @hoje - INTERVAL 157 DAY, @hoje - INTERVAL 117 DAY, 'Concluida', 'Ana Carolina', 'Painel de controle atualizado', 'Arquivar laudos de teste', 'Manutenção', 'Supergásbras', 'Rede de Gás', 'SJC', 'fabricio.rocha@sjcgas.com.br', '(12) 98222-3344', NULL, 'Ambiental'),
+-- 9 — Em andamento
+(9, 6, 'Projeto de ramal de gás para nova loja de estética', @hoje - INTERVAL 147 DAY, NULL, 'Em andamento', 'Carlos Souza', 'Levantamento concluído, execução em curso', 'Enviar orçamento final ao cliente', 'Instalação', 'Supergásbras', 'Projeto', 'SJC', 'marina.nunes@sjcgas.com.br', '(12) 98111-2233', '(12) 3949-2210', 'Comercial'),
+-- 10 — Concluida
+(10, 7, 'Instalação de rede GLP para cozinha industrial', @hoje - INTERVAL 137 DAY, @hoje - INTERVAL 123 DAY, 'Concluida', 'Renato Pereira', 'Instalação conforme ABNT NBR 15526', 'Utilizar tubulação de cobre 1/2"', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'contato@bomsabor.com.br', '(12) 3234-5678', '(12) 99702-1188', 'Comercial'),
+-- 11 — Em andamento
+(11, 8, 'Substituição de reguladores e mangueiras GLP', @hoje - INTERVAL 122 DAY, NULL, 'Em andamento', 'Carlos Souza', 'Aguardando chegada dos reguladores novos', 'Confirmar entrega com fornecedor', 'Troca de Equipamento', 'Supergásbras', 'GLP', 'SJC', 'padaria@saobenedito.com.br', '(12) 3123-4567', NULL, 'Comercial'),
+-- 12 — Concluida
+(12, 9, 'Projeto de instalação GLP industrial - fase 1', @hoje - INTERVAL 108 DAY, @hoje - INTERVAL 65 DAY, 'Concluida', 'Beatriz Almeida', 'Projeto aprovado pela concessionária', 'Pressão de operação: 0,5 kgf/cm²', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'industria@textilvale.com.br', '(12) 3456-7890', '(12) 99611-1111', 'Industrial'),
+-- 13 — Concluida
+(13, 10, 'Vistoria anual da central de GLP hospitalar', @hoje - INTERVAL 94 DAY, @hoje - INTERVAL 94 DAY, 'Concluida', 'Ana Carolina', 'Aprovada; válvula de segurança substituída', NULL, 'Vistoria', 'Supergásbras', 'GLP', 'SJC', 'adm@santacasataubate.org.br', '(12) 3332-1000', '(12) 99820-4455', 'Judicial'),
+-- 14 — Pausada
+(14, 11, 'Adequação da rede GLP - setor de padaria', @hoje - INTERVAL 76 DAY, NULL, 'Pausada', 'Carlos Souza', 'Obra suspensa por reforma no teto do setor', 'Retomar após conclusão da reforma', 'Reforma', 'Supergásbras', 'GLP', 'SJC', 'gerencia@supbompreco.com.br', '(12) 3251-8900', '(12) 99388-0000', 'Comercial'),
+-- 15 — Concluida
+(15, 12, 'Instalação industrial GLP - câmara fria', @hoje - INTERVAL 62 DAY, @hoje - INTERVAL 12 DAY, 'Concluida', 'Renato Pereira', 'Sistema de aquecimento de câmara fria OK', 'Pressão industrial: 1,5 kgf/cm²', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'compras@valecames.com.br', '(12) 3612-5400', '(12) 99166-8800', 'Industrial'),
+-- 16 — Em andamento
+(16, 13, 'Revisão e adequação central GLP - hotel', @hoje - INTERVAL 51 DAY, NULL, 'Em andamento', 'Beatriz Almeida', 'Substituição de válvulas em curso', 'Adequar conforme NR-13', 'Reforma', 'Supergásbras', 'GLP', 'SJC', 'reservas@hotelfazendavale.com.br', '(12) 3101-2200', NULL, 'Comercial'),
+-- 17 — Concluida
+(17, 14, 'Instalação de rede GLP para cantina escolar', @hoje - INTERVAL 42 DAY, @hoje - INTERVAL 4 DAY, 'Concluida', 'Ana Carolina', 'Fogão 6 bocas instalado', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'secretaria@colegiodombosco.com.br', '(12) 3231-3300', NULL, 'Comercial'),
+-- 18 — Cancelada
+(18, 15, 'Instalação de rede GLP para churrasqueiras - lote 1', @hoje - INTERVAL 37 DAY, NULL, 'Cancelada', 'Carlos Souza', 'Cliente cancelou por mudança no projeto', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'churrascaria@compadre.com.br', '(12) 3153-8700', '(12) 98389-9900', 'Comercial'),
+-- 19 — Concluida
+(19, 16, 'Instalação de rede GLP para solda a gás', @hoje - INTERVAL 33 DAY, @hoje - INTERVAL 3 DAY, 'Concluida', 'Renato Pereira', 'Pontos de GLP para 6 postos de solda', 'Alta pressão de operação', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'producao@acoforte.com.br', '(12) 3944-7600', '(12) 98167-9000', 'Industrial'),
+-- 20 — Pausada
+(20, 17, 'Instalação de fornos e fogões a GLP', @hoje - INTERVAL 30 DAY, NULL, 'Pausada', 'Beatriz Almeida', 'Equipamentos aguardando entrega do fornecedor', 'Confirmar prazo de entrega', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'panificadora@delicia.com.br', '(12) 3153-4400', NULL, 'Comercial'),
+-- 21 — Concluida
+(21, 18, 'Instalação de forno industrial a gás cerâmica', @hoje - INTERVAL 27 DAY, @hoje - INTERVAL 1 DAY, 'Concluida', 'Carlos Souza', 'Queimadores de 100.000 BTU/h instalados', 'Temp. máxima: 1200°C', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'ceramica@ceramicasp.com.br', '(12) 3241-9800', '(12) 98944-6700', 'Industrial'),
+-- 22 — Em andamento
+(22, 19, 'Instalação de GLP para cozinha escolar', @hoje - INTERVAL 20 DAY, NULL, 'Em andamento', 'Ana Carolina', 'Tubulação instalada, aguardando ligação final', 'Coordenar com equipe elétrica', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'escola@boavista.edu.br', '(12) 3278-4500', NULL, 'Comercial'),
+-- 23 — Concluida
+(23, 20, 'Ampliação da central de GLP - depósito 2', @hoje - INTERVAL 14 DAY, @hoje, 'Concluida', 'Renato Pereira', 'Nova central com capacidade 12 botijões P45', NULL, 'Reforma', 'Supergásbras', 'GLP', 'SJC', 'distribuidora@glpnorte.com.br', '(12) 3627-9000', '(12) 97834-5600', 'Industrial'),
+-- 24 — Em andamento
+(24, 1, 'Manutenção corretiva - revisão geral pós-vistoria', @hoje - INTERVAL 8 DAY, NULL, 'Em andamento', 'Carlos Souza', 'Aguardando laudo de estanqueidade', 'Emitir relatório técnico ao cliente', 'Manutenção', 'Supergásbras', 'GLP', 'SJC', 'caua.silva@sjcgas.com.br', '(12) 98811-2233', '(12) 3921-4400', 'Industrial'),
+-- 25 — À iniciar
+(25, 10, 'Revisão semestral central de GLP hospitalar', @hoje + INTERVAL 10 DAY, NULL, 'À iniciar', 'Beatriz Almeida', 'Agendada; aguardando confirmação do hospital', 'Verificar normas ANVISA vigentes', 'Vistoria', 'Supergásbras', 'GLP', 'SJC', 'adm@santacasataubate.org.br', '(12) 3332-1000', '(12) 99820-4455', 'ART'),
+-- 26 — Em andamento
+(26, 9, 'Projeto de instalação GLP industrial - fase 2', @hoje - INTERVAL 4 DAY, NULL, 'Em andamento', 'Ana Carolina', 'Execução do setor de acabamento em curso', 'Integrar com rede existente da fase 1', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'industria@textilvale.com.br', '(12) 3456-7890', '(12) 99611-1111', 'Industrial'),
+-- 27 — À iniciar
+(27, 12, 'Manutenção preventiva anual - frigorífico', @hoje + INTERVAL 17 DAY, NULL, 'À iniciar', 'Carlos Souza', 'Programada; aguardando confirmação do cliente', 'Revisar todo o sistema de GLP', 'Manutenção', 'Supergásbras', 'GLP', 'SJC', 'compras@valecames.com.br', '(12) 3612-5400', '(12) 99166-8800', 'Industrial'),
+-- 28 — Pausada
+(28, 11, 'Instalação GLP - nova seção de frios supermercado', @hoje - INTERVAL 2 DAY, NULL, 'Pausada', 'Renato Pereira', 'Obra embargada por fiscalização municipal', 'Resolver pendência com a prefeitura', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'gerencia@supbompreco.com.br', '(12) 3251-8900', '(12) 99388-0000', 'Comercial'),
+-- 29 — Em andamento
+(29, 16, 'Ampliação da rede de GLP industrial - novo setor', @hoje - INTERVAL 1 DAY, NULL, 'Em andamento', 'Beatriz Almeida', 'Integrar com rede existente', 'Novo setor de produção em expansão', 'Reforma', 'Supergásbras', 'GLP', 'SJC', 'producao@acoforte.com.br', '(12) 3944-7600', '(12) 98167-9000', 'Industrial'),
+-- 30 — Pausada
+(30, 15, 'Instalação de novo setor de churrasco - expansão', @hoje, NULL, 'Pausada', 'Carlos Souza', 'Cliente solicitou pausa para adequação civil', 'Aguardar liberação do cliente', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'churrascaria@compadre.com.br', '(12) 3153-8700', '(12) 98389-9900', 'Comercial'),
+-- 31 — Concluida
+(31, 21, 'Instalação de ramal residencial em casa térrea', @hoje - INTERVAL 350 DAY, @hoje - INTERVAL 338 DAY, 'Concluida', 'Beatriz Almeida', 'Serviço entregue e testado', 'Combinar horário com a moradora', 'Instalação', 'Supergásbras', 'Gás Canalizado', 'SJC', 'rafaela.monteiro@gmail.com', '(12) 99145-2030', NULL, 'Residencial'),
+-- 32 — Concluida
+(32, 22, 'Troca de regulador e mangueira em apartamento', @hoje - INTERVAL 330 DAY, @hoje - INTERVAL 327 DAY, 'Concluida', 'Renato Pereira', 'Cliente assinou o termo de entrega', NULL, 'Troca de Equipamento', 'Supergásbras', 'GLP', 'SJC', 'gustavo.prado@hotmail.com', '(12) 99233-8741', '(12) 3912-6650', 'Residencial'),
+-- 33 — Concluida
+(33, 23, 'Instalação de medidores individuais no condomínio', @hoje - INTERVAL 318 DAY, @hoje - INTERVAL 273 DAY, 'Concluida', 'Ana Carolina', 'Instalação conforme NBR 15526', 'Executar por bloco, um por semana', 'Instalação', 'Supergásbras', 'Medidor', 'SJC', 'sindico@resaquarius.com.br', '(12) 3941-7700', '(12) 99701-3300', 'Residencial'),
+-- 34 — Concluida
+(34, 24, 'Instalação de forno de pizza a gás', @hoje - INTERVAL 301 DAY, @hoje - INTERVAL 295 DAY, 'Concluida', 'Diego Fernandes', 'Instalação conforme NBR 15526', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'pedidos@fornoalenha.com.br', '(12) 3916-2020', NULL, 'Comercial'),
+-- 35 — Concluida
+(35, 25, 'Rede de gás para secadoras industriais', @hoje - INTERVAL 288 DAY, @hoje - INTERVAL 258 DAY, 'Concluida', 'Patrícia Lima', 'Serviço entregue e testado', 'Pressão de operação: 1,0 kgf/cm²', 'Instalação', 'Supergásbras', 'Gás Natural', 'SJC', 'operacao@cleanlav.com.br', '(12) 3653-1180', '(12) 98810-5522', 'Industrial'),
+-- 36 — Concluida
+(36, 26, 'Instalação de aquecedor de água a gás - vestiários', @hoje - INTERVAL 270 DAY, @hoje - INTERVAL 261 DAY, 'Concluida', 'Carlos Souza', 'Teste de estanqueidade aprovado', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'contato@corpoemforma.com.br', '(12) 3354-9090', NULL, 'Comercial'),
+-- 37 — Concluida
+(37, 27, 'Instalação de detector de vazamento com corte automático', @hoje - INTERVAL 255 DAY, @hoje - INTERVAL 251 DAY, 'Concluida', 'Beatriz Almeida', 'Instalação conforme NBR 15526', 'Testar o corte com o técnico da clínica', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'clinica@bichofeliz.vet.br', '(12) 3622-4141', '(12) 99134-7070', 'Comercial'),
+-- 38 — Concluida
+(38, 28, 'Vistoria anual da central de GLP', @hoje - INTERVAL 240 DAY, @hoje - INTERVAL 239 DAY, 'Concluida', 'Renato Pereira', 'Instalação conforme NBR 15526', NULL, 'Vistoria', 'Supergásbras', 'GLP', 'SJC', 'saborserra@gmail.com', '(12) 3663-3030', NULL, 'Comercial'),
+-- 39 — Concluida
+(39, 29, 'Central GLP P45 para cozinha da pousada', @hoje - INTERVAL 226 DAY, @hoje - INTERVAL 211 DAY, 'Concluida', 'Ana Carolina', 'Instalação conforme NBR 15526', 'Acesso pela rua dos fundos', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'reservas@recantodasaguas.com.br', '(12) 3662-8080', '(12) 99611-2323', 'Comercial'),
+-- 40 — Concluida
+(40, 30, 'Instalação de chapa e fritadeiras a gás', @hoje - INTERVAL 212 DAY, @hoje - INTERVAL 205 DAY, 'Concluida', 'Diego Fernandes', 'Laudo entregue ao cliente', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'contato@brasaviva.com.br', '(12) 3022-5656', NULL, 'Comercial'),
+-- 41 — Concluida
+(41, 31, 'Instalação de fogão e aquecedor residencial', @hoje - INTERVAL 198 DAY, @hoje - INTERVAL 193 DAY, 'Concluida', 'Patrícia Lima', 'Instalação conforme NBR 15526', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'bruno.carvalho@outlook.com', '(12) 98877-1102', NULL, 'Residencial'),
+-- 42 — Cancelada
+(42, 32, 'Adequação da rede de gás da padaria do mercado', @hoje - INTERVAL 185 DAY, NULL, 'Cancelada', 'Carlos Souza', 'Cliente desistiu do serviço', 'Trabalhar fora do horário de pico', 'Reforma', 'Supergásbras', 'GLP', 'SJC', 'compras@familiacosta.com.br', '(12) 3958-1414', '(12) 99245-3131', 'Comercial'),
+-- 43 — Concluida
+(43, 33, 'Rede de gás natural para caldeira - linha 2', @hoje - INTERVAL 171 DAY, @hoje - INTERVAL 136 DAY, 'Concluida', 'Beatriz Almeida', 'Instalação conforme NBR 15526', 'Pressão de operação: 2,0 kgf/cm²', 'Instalação', 'Supergásbras', 'Gás Natural', 'Mauá', 'manutencao@quimpaulista.com.br', '(11) 4544-7000', '(11) 98111-7000', 'Industrial'),
+-- 44 — Concluida
+(44, 34, 'Troca de reguladores da central de GLP', @hoje - INTERVAL 160 DAY, @hoje - INTERVAL 156 DAY, 'Concluida', 'Renato Pereira', 'Laudo entregue ao cliente', NULL, 'Troca de Equipamento', 'Supergásbras', 'GLP', 'Mauá', 'paodourado@gmail.com', '(11) 4513-2626', NULL, 'Comercial'),
+-- 45 — Concluida
+(45, 35, 'Manutenção preventiva das redes de gás hospitalares', @hoje - INTERVAL 148 DAY, @hoje - INTERVAL 138 DAY, 'Concluida', 'Ana Carolina', 'Teste de estanqueidade aprovado', 'Seguir protocolo de acesso da CCIH', 'Manutenção', 'Supergásbras', 'GLP', 'Mauá', 'engenharia@hmmaua.sp.gov.br', '(11) 4555-9000', '(11) 98222-9000', 'Comercial'),
+-- 46 — Concluida
+(46, 36, 'Instalação de fogões industriais na cantina', @hoje - INTERVAL 133 DAY, @hoje - INTERVAL 125 DAY, 'Concluida', 'Diego Fernandes', 'Serviço entregue e testado', NULL, 'Instalação', 'Supergásbras', 'GLP', 'Mauá', 'cantina@cantinaitaliana.com.br', '(11) 4427-3838', NULL, 'Comercial'),
+-- 47 — Concluida
+(47, 37, 'Rede de gás para estufa de pintura', @hoje - INTERVAL 120 DAY, @hoje - INTERVAL 92 DAY, 'Concluida', 'Patrícia Lima', 'Instalação conforme NBR 15526', 'Integrar com a automação da estufa', 'Instalação', 'Supergásbras', 'Gás Natural', 'Mauá', 'producao@metalsbc.com.br', '(11) 4351-6600', '(11) 98333-6600', 'Industrial'),
+-- 48 — Concluida
+(48, 38, 'Instalação de gás na cozinha da escola', @hoje - INTERVAL 104 DAY, @hoje - INTERVAL 92 DAY, 'Concluida', 'Carlos Souza', 'Serviço entregue e testado', NULL, 'Instalação', 'Supergásbras', 'GLP', 'Mauá', 'escola.lima@educacao.sp.gov.br', '(11) 4823-1010', NULL, 'Comercial'),
+-- 49 — Concluida
+(49, 39, 'Conversão de fogão para gás natural', @hoje - INTERVAL 92 DAY, @hoje - INTERVAL 90 DAY, 'Concluida', 'Beatriz Almeida', 'Serviço entregue e testado', NULL, 'Outros', 'Supergásbras', 'Gás Natural', 'Mauá', 'fernanda.ribeiro@gmail.com', '(11) 99412-5050', NULL, 'Residencial'),
+-- 50 — Concluida
+(50, 40, 'Laudo de estanqueidade para renovação do AVCB', @hoje - INTERVAL 80 DAY, @hoje - INTERVAL 79 DAY, 'Concluida', 'Renato Pereira', 'Cliente assinou o termo de entrega', 'Entregar laudo assinado com ART', 'Vistoria', 'Supergásbras', 'GLP', 'Mauá', 'gerencia@gauchadiadema.com.br', '(11) 4057-7272', '(11) 98444-7272', 'Judicial'),
+-- 51 — Concluida
+(51, 1, 'Revisão do ramal após reforma da cozinha', @hoje - INTERVAL 66 DAY, @hoje - INTERVAL 60 DAY, 'Concluida', 'Ana Carolina', 'Serviço entregue e testado', NULL, 'Manutenção', 'Supergásbras', 'Gás Canalizado', 'SJC', 'caua.silva@sjcgas.com.br', '(12) 98811-2233', '(12) 3921-4400', 'Residencial'),
+-- 52 — Pausada
+(52, 7, 'Ampliação da rede para novo salão', @hoje - INTERVAL 52 DAY, NULL, 'Pausada', 'Diego Fernandes', 'Aguardando aprovação do orçamento complementar', NULL, 'Reforma', 'Supergásbras', 'GLP', 'SJC', 'contato@bomsabor.com.br', '(12) 3234-5678', '(12) 99702-1188', 'Comercial'),
+-- 53 — Concluida
+(53, 9, 'Rede de gás para novo setor de tingimento', @hoje - INTERVAL 45 DAY, @hoje - INTERVAL 25 DAY, 'Concluida', 'Patrícia Lima', 'Serviço entregue e testado', 'Pressão de operação: 0,8 kgf/cm²', 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'industria@textilvale.com.br', '(12) 3456-7890', '(12) 99611-1111', 'Industrial'),
+-- 54 — Em andamento
+(54, 10, 'Instalação de detectores na central hospitalar', @hoje - INTERVAL 38 DAY, NULL, 'Em andamento', 'Carlos Souza', 'Aguardando ligação final', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'adm@santacasataubate.org.br', '(12) 3332-1000', '(12) 99820-4455', 'Comercial'),
+-- 55 — Concluida
+(55, 13, 'Troca dos fogões da cozinha do hotel', @hoje - INTERVAL 29 DAY, @hoje - INTERVAL 24 DAY, 'Concluida', 'Beatriz Almeida', 'Laudo entregue ao cliente', NULL, 'Troca de Equipamento', 'Supergásbras', 'GLP', 'SJC', 'reservas@hotelfazendavale.com.br', '(12) 3101-2200', NULL, 'Comercial'),
+-- 56 — Em andamento
+(56, 16, 'Manutenção corretiva nos pontos de solda', @hoje - INTERVAL 21 DAY, NULL, 'Em andamento', 'Renato Pereira', 'Aguardando ligação final', NULL, 'Manutenção', 'Supergásbras', 'GLP', 'SJC', 'producao@acoforte.com.br', '(12) 3944-7600', '(12) 98167-9000', 'Industrial'),
+-- 57 — Concluida
+(57, 20, 'Laudo técnico da central de GLP do depósito', @hoje - INTERVAL 12 DAY, @hoje - INTERVAL 11 DAY, 'Concluida', 'Ana Carolina', 'Cliente assinou o termo de entrega', 'Emitir ART junto com o laudo', 'Vistoria', 'Supergásbras', 'GLP', 'SJC', 'distribuidora@glpnorte.com.br', '(12) 3627-9000', '(12) 97834-5600', 'ART'),
+-- 58 — Em andamento
+(58, 3, 'Instalação de aquecedor de passagem', @hoje - INTERVAL 6 DAY, NULL, 'Em andamento', 'Diego Fernandes', 'Tubulação em execução', NULL, 'Instalação', 'Supergásbras', 'Gás Canalizado', 'SJC', 'mateus.alves@sjcgas.com.br', '(12) 99666-7788', NULL, 'Residencial'),
+-- 59 — À iniciar
+(59, 5, 'Ampliação da rede de gás da fábrica', @hoje + INTERVAL 5 DAY, NULL, 'À iniciar', 'Patrícia Lima', 'Material separado no almoxarifado', 'Aguardar licença ambiental', 'Reforma', 'Supergásbras', 'Gás Natural', 'SJC', 'fabricio.rocha@sjcgas.com.br', '(12) 98222-3344', NULL, 'Ambiental'),
+-- 60 — À iniciar
+(60, 12, 'Rede de gás para nova câmara de defumação', @hoje + INTERVAL 25 DAY, NULL, 'À iniciar', 'Carlos Souza', 'Material separado no almoxarifado', NULL, 'Instalação', 'Supergásbras', 'GLP', 'SJC', 'compras@valecames.com.br', '(12) 3612-5400', '(12) 99166-8800', 'Industrial');
 
 -- ── Equipe das obras ─────────────────────────────────────────────────────────
--- Pedro (cargo Obra) só enxerga as obras em que está na equipe.
+-- Cada funcionário de cargo Obra só enxerga as obras em que está na equipe.
 INSERT INTO obraFuncionarios (idObra, idLogin) VALUES
-(9, 4), (16, 4), (22, 4), (26, 4), (29, 4);
--- ── Produtos por Obra ─────────────────────────────────────────────────────────
+(3, 7),
+(6, 6), (6, 7),
+(7, 4),
+(9, 4), (9, 7),
+(11, 4),
+(12, 6), (12, 7),
+(14, 4), (14, 8),
+(15, 7),
+(16, 4), (16, 7),
+(18, 6), (18, 7),
+(20, 6), (20, 8),
+(21, 4),
+(22, 4), (22, 7), (22, 8),
+(24, 4), (24, 8),
+(25, 8),
+(26, 4), (26, 6), (26, 8),
+(27, 7),
+(28, 7), (28, 8),
+(29, 4), (29, 8),
+(30, 4), (30, 7),
+(33, 6),
+(36, 4), (36, 6),
+(39, 4),
+(42, 6), (42, 8),
+(45, 6),
+(48, 4), (48, 8),
+(51, 4),
+(52, 7), (52, 8),
+(54, 7), (54, 8),
+(56, 7), (56, 8),
+(57, 8),
+(58, 7), (58, 8),
+(59, 8),
+(60, 6), (60, 8);
+
+-- ── Produtos avulsos por obra ────────────────────────────────────────────────
 INSERT INTO produtosObras (idObra, idProduto, qtdProdutosObra) VALUES
--- Obra 1 — Instalação ramal residencial (Caua Silva)
-(1,  1, 20), (1,  5, 10), (1,  6, 15),
--- Obra 2 — Manutenção medidor industrial (Caua Silva)
-(2,  3,  1), (2, 11,  2),
--- Obra 3 — Extensão rede restaurante (João Vinicius)
-(3,  2,  8), (3,  4,  5), (3,  9, 12),
--- Obra 4 — Correção vazamento cozinha (João Vinicius)
-(4,  8,  3), (4, 10,  6),
--- Obra 5 — Medidor prédio comercial (Mateus Alves)
-(5,  2,  4), (5,  5, 16), (5, 12,  1),
--- Obra 6 — Troca registro/conector logística (Mateus Alves)
-(6,  1,  6), (6,  9,  3),
--- Obra 7 — Ramal pizzaria (Lúcia Martins)
-(7,  7, 22), (7,  5,  8),
--- Obra 8 — Revisão rede fabril (Fabrício Rocha)
-(8,  1,  5), (8,  4, 10),
--- Obra 9 — Projeto ramal loja de estética (Marina Nunes)
-(9,  1,  4), (9,  2,  2), (9,  9,  5),
--- Obra 10 — Instalação GLP cozinha (Restaurante Bom Sabor)
-(10, 13,  2), (10, 15,  3), (10, 21,  8),
--- Obra 11 — Substituição reguladores (Padaria São Benedito)
-(11, 13,  2), (11, 15,  3), (11, 38,  1),
--- Obra 12 — Projeto GLP industrial fase 1 (Têxtil Vale)
-(12,  1, 30), (12, 18, 20), (12, 20, 15), (12, 24,  5),
--- Obra 13 — Vistoria central GLP hospital
-(13, 17,  2), (13, 29,  1), (13, 38,  2),
--- Obra 14 — Adequação rede padaria (Supermercado)
-(14,  1, 15), (14, 21, 10), (14, 33,  6),
--- Obra 15 — Instalação câmara fria (Frigorífico)
-(15, 14,  1), (15, 19, 20), (15, 22, 12), (15, 35,  2),
--- Obra 16 — Revisão central GLP hotel
-(16, 17,  3), (16, 25,  2), (16, 38,  3),
--- Obra 17 — Rede GLP cantina escolar
-(17,  5, 10), (17, 16, 20), (17, 21,  6),
--- Obra 18 — Rede GLP churrasqueiras
-(18,  1, 20), (18, 19, 10), (18, 33,  8),
--- Obra 19 — Pontos GLP para solda (Metalúrgica)
-(19, 43, 30), (19, 20, 10), (19, 29,  2),
--- Obra 20 — Fornos e fogões (Panificadora)
-(20, 31,  4), (20, 13,  2), (20, 24,  3),
--- Obra 21 — Forno industrial cerâmica
-(21, 37,  2), (21, 14,  1), (21, 43, 15),
--- Obra 22 — GLP cozinha escolar
-(22, 15,  2), (22, 21,  4), (22, 16, 10),
--- Obra 23 — Ampliação central GLP (Distribuidora)
-(23, 14,  2), (23, 17,  4), (23, 30,  2),
--- Obra 24 — Manutenção corretiva (Caua Silva)
-(24, 15,  1), (24, 38,  1),
--- Obra 25 — Revisão hospitalar semestral
-(25, 17,  2), (25, 29,  1), (25, 38,  2),
--- Obra 26 — Projeto GLP fase 2 (Têxtil Vale)
-(26,  1, 25), (26, 18, 15), (26, 20, 12), (26, 44, 20),
--- Obra 27 — Manutenção preventiva frigorífico
-(27, 35,  2), (27, 25,  2), (27, 38,  3),
--- Obra 28 — Seção de frios supermercado
-(28,  1, 18), (28, 33,  6), (28, 21,  8),
--- Obra 29 — Ampliação industrial metalúrgica (em andamento)
+-- 1 Instalação de ramal de gás em condomínio residencial
+(1, 1, 20), (1, 5, 10), (1, 6, 15),
+-- 2 Manutenção preventiva em medidor industrial
+(2, 3, 1), (2, 11, 2),
+-- 3 Extensão de rede de gás em restaurante na região central
+(3, 2, 8), (3, 4, 5), (3, 9, 12),
+-- 4 Correção de vazamento em cozinha industrial
+(4, 8, 3), (4, 10, 6),
+-- 5 Instalação de medidor privativo em prédio comercial
+(5, 2, 4), (5, 5, 16), (5, 12, 1),
+-- 6 Troca de registro e conector em unidade logística
+(6, 1, 6), (6, 9, 3),
+-- 7 Instalação de ramal de gás para cozinha de pizzaria
+(7, 7, 22), (7, 5, 8),
+-- 8 Revisão geral de rede de gás na unidade fabril
+(8, 1, 5), (8, 4, 10),
+-- 9 Projeto de ramal de gás para nova loja de estética
+(9, 1, 4), (9, 2, 2), (9, 9, 5),
+-- 10 Instalação de rede GLP para cozinha industrial
+(10, 13, 2), (10, 15, 3), (10, 21, 8),
+-- 11 Substituição de reguladores e mangueiras GLP
+(11, 13, 2), (11, 15, 3), (11, 38, 1),
+-- 12 Projeto de instalação GLP industrial - fase 1
+(12, 1, 30), (12, 18, 20), (12, 20, 15), (12, 24, 5),
+-- 13 Vistoria anual da central de GLP hospitalar
+(13, 17, 2), (13, 29, 1), (13, 38, 2),
+-- 14 Adequação da rede GLP - setor de padaria
+(14, 1, 15), (14, 21, 10), (14, 33, 6),
+-- 15 Instalação industrial GLP - câmara fria
+(15, 14, 1), (15, 19, 20), (15, 22, 12), (15, 35, 2),
+-- 16 Revisão e adequação central GLP - hotel
+(16, 17, 3), (16, 25, 2), (16, 38, 3),
+-- 17 Instalação de rede GLP para cantina escolar
+(17, 5, 10), (17, 16, 20), (17, 21, 6),
+-- 18 Instalação de rede GLP para churrasqueiras - lote 1
+(18, 1, 20), (18, 19, 10), (18, 33, 8),
+-- 19 Instalação de rede GLP para solda a gás
+(19, 43, 30), (19, 20, 10), (19, 29, 2),
+-- 20 Instalação de fornos e fogões a GLP
+(20, 31, 4), (20, 13, 2), (20, 24, 3),
+-- 21 Instalação de forno industrial a gás cerâmica
+(21, 37, 2), (21, 14, 1), (21, 43, 15),
+-- 22 Instalação de GLP para cozinha escolar
+(22, 15, 2), (22, 21, 4), (22, 16, 10),
+-- 23 Ampliação da central de GLP - depósito 2
+(23, 14, 2), (23, 17, 4), (23, 30, 2),
+-- 24 Manutenção corretiva - revisão geral pós-vistoria
+(24, 15, 1), (24, 38, 1),
+-- 25 Revisão semestral central de GLP hospitalar
+(25, 17, 2), (25, 29, 1), (25, 38, 2),
+-- 26 Projeto de instalação GLP industrial - fase 2
+(26, 1, 25), (26, 18, 15), (26, 20, 12), (26, 44, 20),
+-- 27 Manutenção preventiva anual - frigorífico
+(27, 35, 2), (27, 25, 2), (27, 38, 3),
+-- 28 Instalação GLP - nova seção de frios supermercado
+(28, 1, 18), (28, 33, 6), (28, 21, 8),
+-- 29 Ampliação da rede de GLP industrial - novo setor
 (29, 44, 40), (29, 20, 15), (29, 22, 10),
--- Obra 30 — Expansão churrascaria (em andamento)
-(30,  1, 25), (30, 15,  4), (30, 36,  3);
+-- 30 Instalação de novo setor de churrasco - expansão
+(30, 1, 25), (30, 15, 4), (30, 36, 3),
+-- 31 Instalação de ramal residencial em casa térrea
+(31, 15, 1),
+-- 33 Instalação de medidores individuais no condomínio
+(33, 47, 12), (33, 2, 12),
+-- 34 Instalação de forno de pizza a gás
+(34, 13, 1),
+-- 35 Rede de gás para secadoras industriais
+(35, 35, 2), (35, 29, 1),
+-- 36 Instalação de aquecedor de água a gás - vestiários
+(36, 48, 25), (36, 49, 10), (36, 2, 2),
+-- 39 Central GLP P45 para cozinha da pousada
+(39, 31, 2),
+-- 40 Instalação de chapa e fritadeiras a gás
+(40, 33, 2),
+-- 41 Instalação de fogão e aquecedor residencial
+(41, 46, 1),
+-- 42 Adequação da rede de gás da padaria do mercado
+(42, 26, 1),
+-- 43 Rede de gás natural para caldeira - linha 2
+(43, 29, 2), (43, 17, 2),
+-- 44 Troca de reguladores da central de GLP
+(44, 14, 2),
+-- 45 Manutenção preventiva das redes de gás hospitalares
+(45, 38, 2),
+-- 46 Instalação de fogões industriais na cantina
+(46, 31, 2),
+-- 47 Rede de gás para estufa de pintura
+(47, 36, 1),
+-- 49 Conversão de fogão para gás natural
+(49, 10, 2), (49, 24, 1),
+-- 51 Revisão do ramal após reforma da cozinha
+(51, 5, 1),
+-- 52 Ampliação da rede para novo salão
+(52, 33, 2),
+-- 53 Rede de gás para novo setor de tingimento
+(53, 44, 30),
+-- 54 Instalação de detectores na central hospitalar
+(54, 26, 2),
+-- 56 Manutenção corretiva nos pontos de solda
+(56, 33, 4),
+-- 58 Instalação de aquecedor de passagem
+(58, 31, 1), (58, 2, 1),
+-- 59 Ampliação da rede de gás da fábrica
+(59, 8, 2),
+-- 60 Rede de gás para nova câmara de defumação
+(60, 37, 1);
 
 -- Custo e preço de venda congelados no vínculo — no sistema eles são copiados
 -- do produto no momento em que ele entra na obra.
@@ -312,198 +539,65 @@ SET po.custoUnitario = p.custoUnitario,
     po.precoVenda    = ROUND(p.custoUnitario / (1 - COALESCE(p.margemPercentual, 30) / 100), 2);
 SET SQL_SAFE_UPDATES = 1;
 
--- ── Histórico ─────────────────────────────────────────────────────────────────
--- Representa as ações realizadas pelos dois admins ao longo do período de uso.
--- idAdmin 1 = adm  |  idAdmin 2 = João
-INSERT INTO historico (idAdmin, nomeAdmin, acao, entidade, descricao, dataHora) VALUES
-
--- ── Abril 2024 — configuração inicial do sistema ──────────────────────────────
-(1, 'adm',  'Cadastrou', 'Administrador', 'Cadastrou o administrador ''João''',                                          '2024-04-01 08:15:00'),
-(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Carlos Souza''',                                          '2024-04-01 09:00:00'),
-(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Beatriz Almeida''',                                       '2024-04-01 09:05:00'),
-(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Renato Pereira''',                                        '2024-04-01 09:10:00'),
-(1, 'adm',  'Cadastrou', 'Field',         'Cadastrou o field ''Ana Carolina''',                                          '2024-04-01 09:15:00'),
-
-(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Caua Silva''',                                          '2024-04-03 10:00:00'),
-(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''João Vinicius Oliveira''',                              '2024-04-03 10:10:00'),
-(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Mateus Alves''',                                        '2024-04-03 10:20:00'),
-(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Lúcia Martins''',                                       '2024-04-03 10:30:00'),
-(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Fabrício Rocha''',                                      '2024-04-03 10:40:00'),
-(1, 'adm',  'Cadastrou', 'Cliente',       'Cadastrou o cliente ''Marina Nunes''',                                        '2024-04-03 10:50:00'),
-
-(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Tubo Aço Galvanizado 1"''',                             '2024-04-05 09:00:00'),
-(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Registro de Esfera 3/4"''',                             '2024-04-05 09:10:00'),
-(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Medidor de Gás Industrial G16''',                       '2024-04-05 09:20:00'),
-(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Válvula Redutora de Pressão''',                         '2024-04-05 09:30:00'),
-(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Mangueira Flexível 3/4"''',                             '2024-04-05 09:40:00'),
-(1, 'adm',  'Cadastrou', 'Produto',       'Cadastrou o produto ''Cinta de Fixação Metálica''',                           '2024-04-05 09:50:00'),
-(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Tubo PPR 32mm''',                                       '2024-04-05 10:00:00'),
-(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Filtro de Linha para Gás''',                            '2024-04-05 10:10:00'),
-(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Conector Curvo 90° 1/2"''',                             '2024-04-05 10:20:00'),
-(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Adaptador Rosca 1/2" x 3/4"''',                        '2024-04-05 10:30:00'),
-(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Lanterna de Inspeção Antichama''',                      '2024-04-05 10:40:00'),
-(2, 'João', 'Cadastrou', 'Produto',       'Cadastrou o produto ''Detector de Vazão Portátil''',                          '2024-04-05 10:50:00'),
-
--- ── Abril 2024 — primeiro registro de obra ────────────────────────────────────
-(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Correção de vazamento em cozinha industrial''',            '2024-04-10 14:00:00'),
-
--- ── Maio 2024 ────────────────────────────────────────────────────────────────
-(2, 'João', 'Editou',    'Obra',          'Alterou status da obra ID 4 para ''Concluida''',                              '2024-05-08 16:30:00'),
-(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Troca de registro e conector em unidade logística''',      '2024-05-12 09:00:00'),
-
--- ── Junho 2024 ───────────────────────────────────────────────────────────────
-(1, 'adm',  'Editou',    'Obra',          'Alterou status da obra ID 6 para ''Concluida''',                              '2024-06-01 17:00:00'),
-(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Manutenção preventiva em medidor industrial''',            '2024-06-18 08:00:00'),
-
--- ── Julho 2024 ───────────────────────────────────────────────────────────────
-(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Revisão geral de rede de gás na unidade fabril''',        '2024-07-01 10:00:00'),
-(1, 'adm',  'Editou',    'Obra',          'Alterou status da obra ID 2 para ''Concluida''',                              '2024-07-02 15:00:00'),
-(1, 'adm',  'Editou',    'Produto',       'Editou o produto ''Tubo Aço Galvanizado 1"'' (ID: 1)',                        '2024-07-15 11:00:00'),
-(2, 'João', 'Editou',    'Produto',       'Editou o produto ''Mangueira Flexível 3/4"'' (ID: 5)',                        '2024-07-15 11:15:00'),
-(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Instalação de medidor privativo em prédio comercial''',   '2024-07-22 09:00:00'),
-
--- ── Agosto 2024 ──────────────────────────────────────────────────────────────
-(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Instalação de ramal de gás em condomínio residencial''',  '2024-08-05 08:30:00'),
-(2, 'João', 'Editou',    'Obra',          'Alterou status da obra ID 8 para ''Concluida''',                              '2024-08-10 16:00:00'),
-(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Instalação de ramal de gás para cozinha de pizzaria''',   '2024-08-12 09:00:00'),
-(2, 'João', 'Editou',    'Obra',          'Alterou status da obra ID 5 para ''Pausada''',                                '2024-08-20 14:00:00'),
-
--- ── Setembro 2024 ────────────────────────────────────────────────────────────
-(2, 'João', 'Cadastrou', 'Obra',          'Cadastrou a obra ''Extensão de rede de gás em restaurante na região central''', '2024-09-01 08:00:00'),
-(1, 'adm',  'Editou',    'Cliente',       'Editou o cliente ''Fabrício Rocha'' (ID: 5)',                                 '2024-09-10 10:00:00'),
-(1, 'adm',  'Cadastrou', 'Obra',          'Cadastrou a obra ''Projeto de ramal de gás para nova loja de estética''',    '2024-09-15 09:00:00'),
-(2, 'João', 'Deletou',   'Produto',       'Deletou o produto ''Bucha de Redução 1/2"'' (ID: 13)',                       '2024-09-28 15:00:00'),
-
--- ── Outubro 2024 ─────────────────────────────────────────────────────────────
-(2, 'João', 'Editou',    'Produto',       'Editou o produto ''Detector de Vazão Portátil'' (ID: 12)',                   '2024-10-05 11:30:00'),
-(1, 'adm',  'Editou',    'Obra',          'Editou a obra ''Instalação de ramal de gás em condomínio residencial'' (ID: 1)', '2024-10-10 14:00:00'),
-(1, 'adm',  'Editou',    'Field',         'Editou o field para ''Carlos Souza Técnico'' (ID: 1)',                        '2024-10-18 09:30:00'),
-(2, 'João', 'Editou',    'Field',         'Editou o field para ''Carlos Souza'' (ID: 1)',                                '2024-10-18 10:00:00'),
-
--- ── Novembro 2024 ────────────────────────────────────────────────────────────
-(1, 'adm',  'Deletou',   'Cliente',       'Deletou o cliente ''Empresa Teste Ltda.'' (ID: 7)',                           '2024-11-04 09:00:00'),
-(2, 'João', 'Editou',    'Cliente',       'Editou o cliente ''Marina Nunes'' (ID: 6)',                                   '2024-11-12 14:30:00'),
-(1, 'adm',  'Editou',    'Produto',       'Editou o produto ''Registro de Esfera 3/4"'' (ID: 2)',                        '2024-11-20 11:00:00'),
-(2, 'João', 'Deletou',   'Administrador', 'Deletou o administrador ''teste'' (ID: 3)',                                   '2024-11-25 16:00:00');
-
-
--- ══════════════════════════════════════════════════════════════════════════════
--- CATÁLOGO DE SERVIÇOS (FICTÍCIO)
--- Dados fictícios para desenvolvimento — SUBSTITUIR pelo catálogo real
--- assim que recebido da TecnoVale Gás.
--- ══════════════════════════════════════════════════════════════════════════════
-
--- fornecedorServico: por enquanto só existe "Tecnovale Gás" (prestador único),
--- por isso não é listado por linha — a coluna já assume o DEFAULT da tabela.
-INSERT INTO servicos (idServico, nomeServico, precoServico) VALUES
-(1, 'Instalação de Ramal Residencial',  850.00),
-(2, 'Instalação de Ramal Comercial',   1450.00),
-(3, 'Manutenção Preventiva de Medidor', 320.00),
-(4, 'Correção de Vazamento',            480.00),
-(5, 'Troca de Registro e Conector',     210.00),
-(6, 'Extensão de Rede Comercial',      1200.00),
-(7, 'Instalação de Medidor Privativo',  690.00),
-(8, 'Vistoria e Laudo Técnico',         380.00);
-
--- ── Receita de produtos por serviço ────────────────────────────────────────────
--- idProduto buscado pelo nome exato já cadastrado na tabela produtos, para não
--- depender da ordem/IDs de quem rodar este script.
-
--- Serviço 1 — Instalação de Ramal Residencial
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 1, idProduto, qtd FROM (
-  SELECT idProduto, 10 AS qtd FROM produtos WHERE nomeProduto = 'Tubo Aço Galvanizado 1"'
-  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
-  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Válvula Redutora de Pressão'
-  UNION ALL SELECT idProduto, 2  FROM produtos WHERE nomeProduto = 'Mangueira Flexível 3/4"'
-  UNION ALL SELECT idProduto, 4  FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
-) AS receita;
-
--- Serviço 2 — Instalação de Ramal Comercial
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 2, idProduto, qtd FROM (
-  SELECT idProduto, 25 AS qtd FROM produtos WHERE nomeProduto = 'Tubo Aço Galvanizado 1"'
-  UNION ALL SELECT idProduto, 2  FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
-  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Medidor de Gás Industrial G16'
-  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Válvula Redutora de Pressão'
-  UNION ALL SELECT idProduto, 10 FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
-) AS receita;
-
--- Serviço 3 — Manutenção Preventiva de Medidor
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 3, idProduto, qtd FROM (
-  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Filtro de Linha para Gás'
-) AS receita;
-
--- Serviço 4 — Correção de Vazamento
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 4, idProduto, qtd FROM (
-  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Mangueira Flexível 3/4"'
-  UNION ALL SELECT idProduto, 3 FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
-  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
-) AS receita;
-
--- Serviço 5 — Troca de Registro e Conector
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 5, idProduto, qtd FROM (
-  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
-  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Conector Curvo 90° 1/2"'
-) AS receita;
-
--- Serviço 6 — Extensão de Rede Comercial
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 6, idProduto, qtd FROM (
-  SELECT idProduto, 18 AS qtd FROM produtos WHERE nomeProduto = 'Tubo Aço Galvanizado 1"'
-  UNION ALL SELECT idProduto, 8  FROM produtos WHERE nomeProduto = 'Tubo PPR 32mm'
-  UNION ALL SELECT idProduto, 12 FROM produtos WHERE nomeProduto = 'Cinta de Fixação Metálica'
-  UNION ALL SELECT idProduto, 1  FROM produtos WHERE nomeProduto = 'Válvula Redutora de Pressão'
-) AS receita;
-
--- Serviço 7 — Instalação de Medidor Privativo
-INSERT INTO servicoProdutos (idServico, idProduto, quantidade)
-SELECT 7, idProduto, qtd FROM (
-  SELECT idProduto, 1 AS qtd FROM produtos WHERE nomeProduto = 'Medidor de Gás Industrial G16'
-  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Registro de Esfera 3/4"'
-  UNION ALL SELECT idProduto, 1 FROM produtos WHERE nomeProduto = 'Filtro de Linha para Gás'
-) AS receita;
-
--- Serviço 8 — Vistoria e Laudo Técnico (sem consumo de produtos — apenas mão de obra)
--- Nenhum insert em servicoProdutos para este serviço.
-
--- ── Serviços por Obra ─────────────────────────────────────────────────────────
--- Vincula cada obra ao serviço do catálogo mais próximo do que foi descrito.
--- Precisa rodar depois do catálogo de serviços acima (FK idServico → servicos).
+-- ── Serviços por obra ────────────────────────────────────────────────────────
 INSERT INTO obraServicos (idObra, idServico) VALUES
-(1,  1), -- Instalação de ramal residencial            → Instalação de Ramal Residencial
-(2,  3), -- Manutenção preventiva medidor industrial    → Manutenção Preventiva de Medidor
-(3,  6), -- Extensão de rede restaurante                → Extensão de Rede Comercial
-(4,  4), -- Correção de vazamento cozinha industrial    → Correção de Vazamento
-(5,  7), -- Medidor privativo prédio comercial          → Instalação de Medidor Privativo
-(6,  5), -- Troca de registro/conector logística        → Troca de Registro e Conector
-(7,  2), -- Ramal pizzaria                              → Instalação de Ramal Comercial
-(8,  8), -- Revisão geral rede fabril                   → Vistoria e Laudo Técnico
-(9,  2), -- Projeto ramal loja de estética              → Instalação de Ramal Comercial
-(10, 6), -- Instalação rede GLP cozinha industrial      → Extensão de Rede Comercial
-(11, 5), -- Substituição reguladores/mangueiras GLP     → Troca de Registro e Conector
-(12, 2), -- Projeto GLP industrial fase 1               → Instalação de Ramal Comercial
-(13, 8), -- Vistoria central GLP hospitalar             → Vistoria e Laudo Técnico
-(14, 6), -- Adequação rede GLP padaria                  → Extensão de Rede Comercial
-(15, 2), -- Instalação industrial GLP câmara fria       → Instalação de Ramal Comercial
-(16, 8), -- Revisão central GLP hotel                   → Vistoria e Laudo Técnico
-(17, 6), -- Rede GLP cantina escolar                    → Extensão de Rede Comercial
-(18, 6), -- Rede GLP churrasqueiras (Cancelada)         → Extensão de Rede Comercial
-(19, 2), -- Rede GLP solda a gás                        → Instalação de Ramal Comercial
-(20, 6), -- Fornos e fogões a GLP                       → Extensão de Rede Comercial
-(21, 2), -- Forno industrial a gás cerâmica             → Instalação de Ramal Comercial
-(22, 1), -- GLP cozinha escolar                         → Instalação de Ramal Residencial
-(23, 6), -- Ampliação central GLP depósito 2            → Extensão de Rede Comercial
-(24, 3), -- Manutenção corretiva pós-vistoria           → Manutenção Preventiva de Medidor
-(25, 8), -- Revisão semestral central GLP hospitalar    → Vistoria e Laudo Técnico
-(26, 2), -- Projeto GLP industrial fase 2               → Instalação de Ramal Comercial
-(27, 3), -- Manutenção preventiva anual frigorífico     → Manutenção Preventiva de Medidor
-(28, 6), -- Seção de frios supermercado                 → Extensão de Rede Comercial
-(29, 6), -- Ampliação rede GLP industrial novo setor    → Extensão de Rede Comercial
-(30, 1); -- Novo setor de churrasco expansão            → Instalação de Ramal Residencial
+(1, 1),
+(2, 3),
+(3, 6),
+(4, 4),
+(5, 7),
+(6, 5),
+(7, 2),
+(8, 8),
+(9, 2),
+(10, 6),
+(11, 5),
+(12, 2),
+(13, 8),
+(14, 6),
+(15, 2),
+(16, 8),
+(17, 6),
+(18, 6),
+(19, 2),
+(20, 6),
+(21, 2),
+(22, 1),
+(23, 6),
+(24, 3),
+(25, 8),
+(26, 2),
+(27, 3),
+(28, 6),
+(29, 6),
+(30, 1),
+(31, 1),
+(32, 13),
+(33, 7),
+(34, 10),
+(35, 6),
+(37, 11),
+(38, 8), (38, 12),
+(39, 9),
+(40, 10),
+(41, 1),
+(42, 6),
+(43, 2),
+(44, 13),
+(45, 3), (45, 12),
+(46, 10),
+(47, 2),
+(48, 9),
+(50, 8), (50, 12),
+(51, 12),
+(52, 6),
+(53, 2), (53, 9),
+(54, 11),
+(55, 10),
+(56, 4),
+(57, 8),
+(59, 6),
+(60, 2);
 
 -- Receita que cada vínculo consumiu, com o custo do produto — no sistema ela é
 -- copiada de servicoProdutos no momento em que o serviço entra na obra.
@@ -546,7 +640,71 @@ WHERE o.statusObra = 'Concluida';
 
 SET SQL_SAFE_UPDATES = 1;
 
--- ── Histórico de movimentações ────────────────────────────────────────────────
+-- ── Notas fiscais ─────────────────────────────────────────────────────────────
+-- As 10 primeiras já foram conferidas (itens vinculados a produtos). A última,
+-- de um fornecedor novo, chegou há 3 dias e está pendente de conferência.
+INSERT INTO notasFiscais (idNotaFiscal, chaveAcesso, numero, serie, idFornecedor, dataEmissao, valorTotal, nomeArquivo, dataImportacao) VALUES
+(1, '35260111222333000181550010000011371726335221', '1137', '1', 1, @hoje - INTERVAL 340 DAY, 3331.80, 'NFe35260111222333000181550010000011371726335221.xml', @hoje - INTERVAL 338 DAY),
+(2, '35260222333444000172550010000012741791453942', '1274', '1', 2, @hoje - INTERVAL 300 DAY, 23866.60, 'NFe35260222333444000172550010000012741791453942.xml', @hoje - INTERVAL 298 DAY),
+(3, '35260433444555000163550010000014111596778433', '1411', '1', 3, @hoje - INTERVAL 260 DAY, 6075.60, 'NFe35260433444555000163550010000014111596778433.xml', @hoje - INTERVAL 258 DAY),
+(4, '35260555666777000145550010000015481211488714', '1548', '1', 5, @hoje - INTERVAL 220 DAY, 1312.60, 'NFe35260555666777000145550010000015481211488714.xml', @hoje - INTERVAL 218 DAY),
+(5, '35260622333444000172550010000016851281012185', '1685', '1', 2, @hoje - INTERVAL 180 DAY, 14174.70, 'NFe35260622333444000172550010000016851281012185.xml', @hoje - INTERVAL 178 DAY),
+(6, '35260811222333000181550010000018221886555066', '1822', '1', 1, @hoje - INTERVAL 140 DAY, 754.60, 'NFe35260811222333000181550010000018221886555066.xml', @hoje - INTERVAL 138 DAY),
+(7, '35260944555666000154550010000019591565759467', '1959', '1', 4, @hoje - INTERVAL 100 DAY, 644.50, 'NFe35260944555666000154550010000019591565759467.xml', @hoje - INTERVAL 98 DAY),
+(8, '35261033444555000163550010000020961262903878', '2096', '1', 3, @hoje - INTERVAL 60 DAY, 2282.70, 'NFe35261033444555000163550010000020961262903878.xml', @hoje - INTERVAL 58 DAY),
+(9, '35261222333444000172550010000022331193292699', '2233', '1', 2, @hoje - INTERVAL 25 DAY, 86694.60, 'NFe35261222333444000172550010000022331193292699.xml', @hoje - INTERVAL 23 DAY),
+(10, '35261211222333000181550010000023701164676110', '2370', '1', 1, @hoje - INTERVAL 8 DAY, 1292.60, 'NFe35261211222333000181550010000023701164676110.xml', @hoje - INTERVAL 6 DAY),
+(11, '35261266777888000136550010000025071706423681', '2507', '1', 6, @hoje - INTERVAL 3 DAY, 840.00, 'NFe35261266777888000136550010000025071706423681.xml', @hoje - INTERVAL 1 DAY);
+
+INSERT INTO notaFiscalItens (idNotaFiscal, idProduto, codProdutoFornecedor, nomeProdutoNota, quantidade, valorUnitario, valorTotal, statusItem) VALUES
+(1, 9, '10009', 'CONECTOR CURVO 90° 1/2"', 10, 9.14, 91.40, 'confirmado'),
+(1, 10, '10010', 'ADAPTADOR ROSCA 1/2" X 3/4"', 50, 7.85, 392.50, 'confirmado'),
+(1, 43, '10043', 'TUBO DE COBRE 1/2" (METRO)', 50, 43.79, 2189.50, 'confirmado'),
+(1, 1, '10001', 'TUBO AÇO GALVANIZADO 1"', 20, 22.93, 458.60, 'confirmado'),
+(1, 22, '10022', 'JOELHO 90° 3/4" GALVANIZADO', 20, 9.99, 199.80, 'confirmado'),
+(2, 46, '20046', 'CENTRAL GLP COMPACTA P13 (2 CILINDROS)', 5, 661.21, 3306.05, 'confirmado'),
+(2, 36, '20036', 'QUEIMADOR INDUSTRIAL 50.000 BTU', 20, 975.85, 19517.00, 'confirmado'),
+(2, 26, '20026', 'DETECTOR DE GÁS NATURAL/GLP', 5, 208.71, 1043.55, 'confirmado'),
+(3, 31, '30031', 'TUBO FLEXÍVEL METÁLICO 1M', 30, 70.33, 2109.90, 'confirmado'),
+(3, 32, '30032', 'TUBO FLEXÍVEL METÁLICO 2M', 30, 116.93, 3507.90, 'confirmado'),
+(3, 15, '30015', 'MANGUEIRA GLP 1,20M CERTIFICADA', 20, 22.89, 457.80, 'confirmado'),
+(4, 24, '50024', 'FITA VEDA ROSCA 18MM X 50M', 10, 6.87, 68.70, 'confirmado'),
+(4, 38, '50038', 'KIT REPARO DE REGULADOR GLP', 5, 43.16, 215.80, 'confirmado'),
+(4, 25, '50025', 'SELANTE PARA GLP 250ML', 30, 34.27, 1028.10, 'confirmado'),
+(5, 14, '20014', 'REGULADOR DE PRESSÃO 2ª FAMÍLIA', 50, 141.16, 7058.00, 'confirmado'),
+(5, 17, '20017', 'VÁLVULA DE ALÍVIO 1/2" 1,5 KGF', 20, 56.00, 1120.00, 'confirmado'),
+(5, 8, '20008', 'FILTRO DE LINHA PARA GÁS', 20, 66.07, 1321.40, 'confirmado'),
+(5, 29, '20029', 'MANÔMETRO 0-4 KGF/CM² 1/4"', 50, 73.94, 3697.00, 'confirmado'),
+(5, 2, '20002', 'REGISTRO DE ESFERA 3/4"', 30, 32.61, 978.30, 'confirmado'),
+(6, 20, '10020', 'TÊ 1/2" GALVANIZADO', 10, 8.26, 82.60, 'confirmado'),
+(6, 9, '10009', 'CONECTOR CURVO 90° 1/2"', 50, 8.81, 440.50, 'confirmado'),
+(6, 19, '10019', 'NIPLE DUPLO 1/2"', 30, 5.49, 164.70, 'confirmado'),
+(6, 21, '10021', 'JOELHO 90° 1/2" GALVANIZADO', 10, 6.68, 66.80, 'confirmado'),
+(7, 40, '40040', 'ÓCULOS DE SEGURANÇA INCOLOR', 10, 14.03, 140.30, 'confirmado'),
+(7, 50, '40050', 'PLACA DE SINALIZAÇÃO "GÁS INFLAMÁVEL"', 10, 17.78, 177.80, 'confirmado'),
+(7, 39, '40039', 'CAPACETE DE SEGURANÇA CA', 5, 37.58, 187.90, 'confirmado'),
+(7, 41, '40041', 'LUVA DE COURO CANO LONGO', 5, 27.70, 138.50, 'confirmado'),
+(8, 48, '30048', 'TUBO MULTICAMADA PEX-AL-PEX 16MM (M)', 5, 14.52, 72.60, 'confirmado'),
+(8, 31, '30031', 'TUBO FLEXÍVEL METÁLICO 1M', 20, 69.24, 1384.80, 'confirmado'),
+(8, 5, '30005', 'MANGUEIRA FLEXÍVEL 3/4"', 30, 27.51, 825.30, 'confirmado'),
+(9, 37, '20037', 'QUEIMADOR INDUSTRIAL 100.000 BTU', 50, 1653.24, 82662.00, 'confirmado'),
+(9, 13, '20013', 'REGULADOR DE PRESSÃO 1ª FAMÍLIA', 30, 48.59, 1457.70, 'confirmado'),
+(9, 4, '20004', 'VÁLVULA REDUTORA DE PRESSÃO', 30, 85.83, 2574.90, 'confirmado'),
+(10, 20, '10020', 'TÊ 1/2" GALVANIZADO', 10, 8.02, 80.20, 'confirmado'),
+(10, 18, '10018', 'LUVA DE REDUÇÃO 3/4" X 1/2"', 10, 6.49, 64.90, 'confirmado'),
+(10, 1, '10001', 'TUBO AÇO GALVANIZADO 1"', 50, 22.95, 1147.50, 'confirmado'),
+(11, NULL, '60988', 'CONEXAO LATAO 1/2 X 3/8 GAS', 40, 6.10, 244.00, 'pendente'),
+(11, NULL, '60872', 'REGISTRO GAVETA 1/2 GLP', 15, 27.40, 411.00, 'pendente'),
+(11, NULL, '60756', 'ABRACADEIRA ROSCA SEM FIM 13-19MM', 100, 1.85, 185.00, 'pendente');
+
+-- ── Movimentações de estoque ──────────────────────────────────────────────────
+-- Entradas pelas notas conferidas, na data em que foram importadas.
+INSERT INTO movimentacoesEstoque (idProduto, idObra, tipo, origem, quantidade, dataMov)
+SELECT i.idProduto, NULL, 'entrada', 'nota_fiscal', i.quantidade, n.dataImportacao
+FROM notaFiscalItens i
+JOIN notasFiscais n ON n.idNotaFiscal = i.idNotaFiscal
+WHERE i.statusItem = 'confirmado';
+
 -- No sistema, cada baixa de material numa obra grava uma saída com a data do
 -- momento. Para os dados de exemplo, a saída é datada no início da obra (ou
 -- hoje, se a obra ainda vai começar). Obras canceladas já devolveram o
@@ -556,6 +714,288 @@ SELECT v.idProduto, v.idObra, 'saida', 'obra', v.quantidade, LEAST(o.dataInicio,
 FROM vw_consumo_obra v
 JOIN obras o ON o.idObra = v.idObra
 WHERE o.statusObra <> 'Cancelada';
+
+-- ── Histórico ─────────────────────────────────────────────────────────────────
+-- Mesmos textos que o sistema grava. idEntidade liga o registro à obra.
+INSERT INTO historico (idAdmin, nomeAdmin, acao, entidade, idEntidade, descricao, dataHora) VALUES
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''João'' com o cargo Administracao', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:16:00')),
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''Marcos'' com o cargo Almoxarifado', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:19:00')),
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''Pedro'' com o cargo Obra', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:22:00')),
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''Juliana'' com o cargo Almoxarifado', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:25:00')),
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''Rafael'' com o cargo Obra', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:28:00')),
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''Thiago'' com o cargo Obra', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:31:00')),
+(1, 'adm', 'Cadastrou', 'Usuário', NULL, 'Cadastrou o usuário ''Larissa'' com o cargo Obra', TIMESTAMP(@hoje - INTERVAL 400 DAY, '08:34:00')),
+(1, 'adm', 'Cadastrou', 'Field', NULL, 'Cadastrou o field ''Carlos Souza''', TIMESTAMP(@hoje - INTERVAL 400 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Field', NULL, 'Cadastrou o field ''Beatriz Almeida''', TIMESTAMP(@hoje - INTERVAL 400 DAY, '09:05:00')),
+(1, 'adm', 'Cadastrou', 'Field', NULL, 'Cadastrou o field ''Renato Pereira''', TIMESTAMP(@hoje - INTERVAL 400 DAY, '09:10:00')),
+(1, 'adm', 'Cadastrou', 'Field', NULL, 'Cadastrou o field ''Ana Carolina''', TIMESTAMP(@hoje - INTERVAL 400 DAY, '09:15:00')),
+(1, 'adm', 'Cadastrou', 'Field', NULL, 'Cadastrou o field ''Diego Fernandes''', TIMESTAMP(@hoje - INTERVAL 400 DAY, '09:20:00')),
+(1, 'adm', 'Cadastrou', 'Field', NULL, 'Cadastrou o field ''Patrícia Lima''', TIMESTAMP(@hoje - INTERVAL 400 DAY, '09:25:00')),
+(1, 'adm', 'Cadastrou', 'Fornecedor', NULL, 'Cadastrou o fornecedor ''Metalúrgica Vale do Aço''', TIMESTAMP(@hoje - INTERVAL 399 DAY, '10:00:00')),
+(1, 'adm', 'Cadastrou', 'Fornecedor', NULL, 'Cadastrou o fornecedor ''Fersol Equipamentos de Gás''', TIMESTAMP(@hoje - INTERVAL 399 DAY, '10:06:00')),
+(1, 'adm', 'Cadastrou', 'Fornecedor', NULL, 'Cadastrou o fornecedor ''Conexão Flex Indústria e Comércio''', TIMESTAMP(@hoje - INTERVAL 399 DAY, '10:12:00')),
+(1, 'adm', 'Cadastrou', 'Fornecedor', NULL, 'Cadastrou o fornecedor ''SafeWork Proteção Industrial''', TIMESTAMP(@hoje - INTERVAL 399 DAY, '10:18:00')),
+(1, 'adm', 'Cadastrou', 'Fornecedor', NULL, 'Cadastrou o fornecedor ''QuimGás Insumos Técnicos''', TIMESTAMP(@hoje - INTERVAL 399 DAY, '10:24:00')),
+(1, 'adm', 'Cadastrou', 'Fornecedor', NULL, 'Cadastrou o fornecedor ''Distribuidora ABC Conexões''', TIMESTAMP(@hoje - INTERVAL 399 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tubo Aço Galvanizado 1"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '09:07:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Registro de Esfera 3/4"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '09:14:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Medidor de Gás Industrial G16''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '10:21:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Válvula Redutora de Pressão''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '10:28:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Mangueira Flexível 3/4"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '10:35:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Cinta de Fixação Metálica''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '11:42:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tubo PPR 32mm''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '11:49:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Filtro de Linha para Gás''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '11:56:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Conector Curvo 90° 1/2"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '12:03:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Adaptador Rosca 1/2" x 3/4"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '12:10:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Lanterna de Inspeção Antichama''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '12:17:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Detector de Vazão Portátil''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '13:24:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Regulador de Pressão 1ª Família''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '13:31:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Regulador de Pressão 2ª Família''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '13:38:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Mangueira GLP 1,20m Certificada''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '14:45:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Abraçadeira Metálica 3/4"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '14:52:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Válvula de Alívio 1/2" 1,5 kgf''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '14:59:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Luva de Redução 3/4" x 1/2"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '15:06:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Niple Duplo 1/2"''', TIMESTAMP(@hoje - INTERVAL 398 DAY, '15:13:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tê 1/2" Galvanizado''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '09:20:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Joelho 90° 1/2" Galvanizado''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '09:27:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Joelho 90° 3/4" Galvanizado''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '09:34:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tampão Macho 1/2"''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '10:41:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Fita Veda Rosca 18mm x 50m''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '10:48:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Selante para GLP 250ml''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '10:55:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Detector de Gás Natural/GLP''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '11:02:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Extintor CO2 6kg''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '11:09:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Extintor Pó Químico Seco 4kg''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '11:16:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Manômetro 0-4 kgf/cm² 1/4"''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '12:23:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Manifold GLP 4 Saídas''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '12:30:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tubo Flexível Metálico 1m''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '12:37:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tubo Flexível Metálico 2m''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '13:44:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Conector Rápido GLP 1/2"''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '13:51:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Válvula Solenóide GLP 1/2" 220V''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '13:58:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Filtro de GLP Inline 3/4"''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '14:05:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Queimador Industrial 50.000 BTU''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '14:12:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Queimador Industrial 100.000 BTU''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '14:19:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Kit Reparo de Regulador GLP''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '15:26:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Capacete de Segurança CA''', TIMESTAMP(@hoje - INTERVAL 397 DAY, '15:33:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Óculos de Segurança Incolor''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '09:40:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Luva de Couro Cano Longo''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '09:47:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Bota de Segurança Bico de Aço''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '09:54:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tubo de Cobre 1/2" (metro)''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '10:01:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Cano de Aço Preto 1/2" (metro)''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '10:08:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Medidor de Gás Residencial G4''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '10:15:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Central GLP Compacta P13 (2 cilindros)''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '11:22:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Abrigo Metálico para Medidor''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '11:29:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Tubo Multicamada PEX-AL-PEX 16mm (m)''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '11:36:00')),
+(1, 'adm', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Conexão Prensar PEX 16mm''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '12:43:00')),
+(2, 'João', 'Cadastrou', 'Produto', NULL, 'Cadastrou o produto ''Placa de Sinalização "Gás Inflamável"''', TIMESTAMP(@hoje - INTERVAL 396 DAY, '12:50:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Instalação de Ramal Residencial''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:04:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Instalação de Ramal Comercial''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:08:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Manutenção Preventiva de Medidor''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:12:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Correção de Vazamento''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:16:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Troca de Registro e Conector''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:20:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Extensão de Rede Comercial''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:24:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Instalação de Medidor Privativo''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:28:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Vistoria e Laudo Técnico''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:32:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Instalação de Central GLP P45''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:36:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Instalação de Fogão Industrial''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:40:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Instalação de Detector com Corte Automático''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:44:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Teste de Estanqueidade''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:48:00')),
+(2, 'João', 'Cadastrou', 'Serviço', NULL, 'Cadastrou o serviço ''Substituição de Regulador GLP''', TIMESTAMP(@hoje - INTERVAL 395 DAY, '14:52:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Rafaela Monteiro''', TIMESTAMP(@hoje - INTERVAL 353 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 31, 'Cadastrou a obra ''Instalação de ramal residencial em casa térrea'' (ID: 31)', TIMESTAMP(@hoje - INTERVAL 352 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1137 de ''Metalúrgica Vale do Aço'' via XML (5 itens)', TIMESTAMP(@hoje - INTERVAL 338 DAY, '11:20:00')),
+(1, 'adm', 'Editou', 'Obra', 31, 'Editou a obra ''Instalação de ramal residencial em casa térrea'' (ID: 31)', TIMESTAMP(@hoje - INTERVAL 338 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Gustavo Henrique Prado''', TIMESTAMP(@hoje - INTERVAL 333 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 32, 'Cadastrou a obra ''Troca de regulador e mangueira em apartamento'' (ID: 32)', TIMESTAMP(@hoje - INTERVAL 332 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 32, 'Editou a obra ''Troca de regulador e mangueira em apartamento'' (ID: 32)', TIMESTAMP(@hoje - INTERVAL 327 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Condomínio Residencial Aquarius''', TIMESTAMP(@hoje - INTERVAL 321 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 33, 'Cadastrou a obra ''Instalação de medidores individuais no condomínio'' (ID: 33) — equipe: Rafael', TIMESTAMP(@hoje - INTERVAL 320 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Pizzaria Forno a Lenha''', TIMESTAMP(@hoje - INTERVAL 304 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 34, 'Cadastrou a obra ''Instalação de forno de pizza a gás'' (ID: 34)', TIMESTAMP(@hoje - INTERVAL 303 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1274 de ''Fersol Equipamentos de Gás'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 298 DAY, '11:20:00')),
+(2, 'João', 'Editou', 'Obra', 34, 'Editou a obra ''Instalação de forno de pizza a gás'' (ID: 34)', TIMESTAMP(@hoje - INTERVAL 295 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Lavanderia Industrial Clean''', TIMESTAMP(@hoje - INTERVAL 291 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 35, 'Cadastrou a obra ''Rede de gás para secadoras industriais'' (ID: 35)', TIMESTAMP(@hoje - INTERVAL 290 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Academia Corpo em Forma''', TIMESTAMP(@hoje - INTERVAL 273 DAY, '10:30:00')),
+(1, 'adm', 'Editou', 'Obra', 33, 'Editou a obra ''Instalação de medidores individuais no condomínio'' (ID: 33)', TIMESTAMP(@hoje - INTERVAL 273 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 36, 'Cadastrou a obra ''Instalação de aquecedor de água a gás - vestiários'' (ID: 36) — equipe: Pedro, Rafael', TIMESTAMP(@hoje - INTERVAL 272 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 36, 'Editou a obra ''Instalação de aquecedor de água a gás - vestiários'' (ID: 36)', TIMESTAMP(@hoje - INTERVAL 261 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Clínica Veterinária Bicho Feliz''', TIMESTAMP(@hoje - INTERVAL 258 DAY, '10:30:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1411 de ''Conexão Flex Indústria e Comércio'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 258 DAY, '11:20:00')),
+(1, 'adm', 'Editou', 'Obra', 35, 'Editou a obra ''Rede de gás para secadoras industriais'' (ID: 35)', TIMESTAMP(@hoje - INTERVAL 258 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 37, 'Cadastrou a obra ''Instalação de detector de vazamento com corte automático'' (ID: 37)', TIMESTAMP(@hoje - INTERVAL 257 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 37, 'Editou a obra ''Instalação de detector de vazamento com corte automático'' (ID: 37)', TIMESTAMP(@hoje - INTERVAL 251 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Restaurante Sabor da Serra''', TIMESTAMP(@hoje - INTERVAL 243 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 38, 'Cadastrou a obra ''Vistoria anual da central de GLP'' (ID: 38)', TIMESTAMP(@hoje - INTERVAL 242 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 38, 'Editou a obra ''Vistoria anual da central de GLP'' (ID: 38)', TIMESTAMP(@hoje - INTERVAL 239 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Pousada Recanto das Águas''', TIMESTAMP(@hoje - INTERVAL 229 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 39, 'Cadastrou a obra ''Central GLP P45 para cozinha da pousada'' (ID: 39) — equipe: Pedro', TIMESTAMP(@hoje - INTERVAL 228 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1548 de ''QuimGás Insumos Técnicos'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 218 DAY, '11:20:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 1, 'Cadastrou a obra ''Instalação de ramal de gás em condomínio residencial'' (ID: 1)', TIMESTAMP(@hoje - INTERVAL 216 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Hamburgueria Brasa Viva''', TIMESTAMP(@hoje - INTERVAL 215 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 40, 'Cadastrou a obra ''Instalação de chapa e fritadeiras a gás'' (ID: 40)', TIMESTAMP(@hoje - INTERVAL 214 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 39, 'Editou a obra ''Central GLP P45 para cozinha da pousada'' (ID: 39)', TIMESTAMP(@hoje - INTERVAL 211 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Fornecedor', NULL, 'Alterou o prazo de entrega de ''Fersol Equipamentos de Gás'' para 10 dias', TIMESTAMP(@hoje - INTERVAL 210 DAY, '15:40:00')),
+(2, 'João', 'Cadastrou', 'Obra', 2, 'Cadastrou a obra ''Manutenção preventiva em medidor industrial'' (ID: 2)', TIMESTAMP(@hoje - INTERVAL 209 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 40, 'Editou a obra ''Instalação de chapa e fritadeiras a gás'' (ID: 40)', TIMESTAMP(@hoje - INTERVAL 205 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 3, 'Cadastrou a obra ''Extensão de rede de gás em restaurante na região central'' (ID: 3) — equipe: Thiago', TIMESTAMP(@hoje - INTERVAL 201 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Bruno Carvalho''', TIMESTAMP(@hoje - INTERVAL 201 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 41, 'Cadastrou a obra ''Instalação de fogão e aquecedor residencial'' (ID: 41)', TIMESTAMP(@hoje - INTERVAL 200 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''João Vinicius Oliveira''', TIMESTAMP(@hoje - INTERVAL 194 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 4, 'Cadastrou a obra ''Correção de vazamento em cozinha industrial'' (ID: 4)', TIMESTAMP(@hoje - INTERVAL 193 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 2, 'Editou a obra ''Manutenção preventiva em medidor industrial'' (ID: 2)', TIMESTAMP(@hoje - INTERVAL 193 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 41, 'Editou a obra ''Instalação de fogão e aquecedor residencial'' (ID: 41)', TIMESTAMP(@hoje - INTERVAL 193 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 1, 'Editou a obra ''Instalação de ramal de gás em condomínio residencial'' (ID: 1)', TIMESTAMP(@hoje - INTERVAL 191 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Mercado Família Costa''', TIMESTAMP(@hoje - INTERVAL 188 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 42, 'Cadastrou a obra ''Adequação da rede de gás da padaria do mercado'' (ID: 42) — equipe: Rafael, Larissa', TIMESTAMP(@hoje - INTERVAL 187 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 5, 'Cadastrou a obra ''Instalação de medidor privativo em prédio comercial'' (ID: 5)', TIMESTAMP(@hoje - INTERVAL 185 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1685 de ''Fersol Equipamentos de Gás'' via XML (5 itens)', TIMESTAMP(@hoje - INTERVAL 178 DAY, '11:20:00')),
+(2, 'João', 'Cadastrou', 'Obra', 6, 'Cadastrou a obra ''Troca de registro e conector em unidade logística'' (ID: 6) — equipe: Rafael, Thiago', TIMESTAMP(@hoje - INTERVAL 177 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 42, 'Editou a obra ''Adequação da rede de gás da padaria do mercado'' (ID: 42)', TIMESTAMP(@hoje - INTERVAL 175 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Indústria Química Paulista''', TIMESTAMP(@hoje - INTERVAL 174 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 43, 'Cadastrou a obra ''Rede de gás natural para caldeira - linha 2'' (ID: 43)', TIMESTAMP(@hoje - INTERVAL 173 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Lúcia Martins''', TIMESTAMP(@hoje - INTERVAL 169 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 7, 'Cadastrou a obra ''Instalação de ramal de gás para cozinha de pizzaria'' (ID: 7) — equipe: Pedro', TIMESTAMP(@hoje - INTERVAL 168 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Padaria Pão Dourado''', TIMESTAMP(@hoje - INTERVAL 163 DAY, '10:30:00')),
+(2, 'João', 'Editou', 'Obra', 4, 'Editou a obra ''Correção de vazamento em cozinha industrial'' (ID: 4)', TIMESTAMP(@hoje - INTERVAL 163 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 44, 'Cadastrou a obra ''Troca de reguladores da central de GLP'' (ID: 44)', TIMESTAMP(@hoje - INTERVAL 162 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Obra', 8, 'Cadastrou a obra ''Revisão geral de rede de gás na unidade fabril'' (ID: 8)', TIMESTAMP(@hoje - INTERVAL 159 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 7, 'Editou a obra ''Instalação de ramal de gás para cozinha de pizzaria'' (ID: 7)', TIMESTAMP(@hoje - INTERVAL 156 DAY, '17:15:00')),
+(2, 'João', 'Editou', 'Obra', 44, 'Editou a obra ''Troca de reguladores da central de GLP'' (ID: 44)', TIMESTAMP(@hoje - INTERVAL 156 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 3, 'Editou a obra ''Extensão de rede de gás em restaurante na região central'' (ID: 3)', TIMESTAMP(@hoje - INTERVAL 155 DAY, '17:15:00')),
+(2, 'João', 'Editou', 'Obra', 6, 'Editou a obra ''Troca de registro e conector em unidade logística'' (ID: 6)', TIMESTAMP(@hoje - INTERVAL 154 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Hospital Municipal de Mauá''', TIMESTAMP(@hoje - INTERVAL 151 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 45, 'Cadastrou a obra ''Manutenção preventiva das redes de gás hospitalares'' (ID: 45) — equipe: Rafael', TIMESTAMP(@hoje - INTERVAL 150 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Marina Nunes''', TIMESTAMP(@hoje - INTERVAL 150 DAY, '10:30:00')),
+(2, 'João', 'Editou', 'Produto', NULL, 'Editou o produto ''Tubo Aço Galvanizado 1"'' (ID: 1)', TIMESTAMP(@hoje - INTERVAL 150 DAY, '11:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 9, 'Cadastrou a obra ''Projeto de ramal de gás para nova loja de estética'' (ID: 9) — equipe: Pedro, Thiago', TIMESTAMP(@hoje - INTERVAL 149 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Obra', 10, 'Cadastrou a obra ''Instalação de rede GLP para cozinha industrial'' (ID: 10)', TIMESTAMP(@hoje - INTERVAL 139 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1822 de ''Metalúrgica Vale do Aço'' via XML (4 itens)', TIMESTAMP(@hoje - INTERVAL 138 DAY, '11:20:00')),
+(1, 'adm', 'Editou', 'Obra', 45, 'Editou a obra ''Manutenção preventiva das redes de gás hospitalares'' (ID: 45)', TIMESTAMP(@hoje - INTERVAL 138 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Restaurante Cantina Italiana''', TIMESTAMP(@hoje - INTERVAL 136 DAY, '10:30:00')),
+(1, 'adm', 'Editou', 'Obra', 43, 'Editou a obra ''Rede de gás natural para caldeira - linha 2'' (ID: 43)', TIMESTAMP(@hoje - INTERVAL 136 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 46, 'Cadastrou a obra ''Instalação de fogões industriais na cantina'' (ID: 46)', TIMESTAMP(@hoje - INTERVAL 135 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 5, 'Editou a obra ''Instalação de medidor privativo em prédio comercial'' (ID: 5)', TIMESTAMP(@hoje - INTERVAL 133 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Padaria São Benedito''', TIMESTAMP(@hoje - INTERVAL 125 DAY, '10:30:00')),
+(2, 'João', 'Editou', 'Obra', 46, 'Editou a obra ''Instalação de fogões industriais na cantina'' (ID: 46)', TIMESTAMP(@hoje - INTERVAL 125 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 11, 'Cadastrou a obra ''Substituição de reguladores e mangueiras GLP'' (ID: 11) — equipe: Pedro', TIMESTAMP(@hoje - INTERVAL 124 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Metalúrgica São Bernardo''', TIMESTAMP(@hoje - INTERVAL 123 DAY, '10:30:00')),
+(2, 'João', 'Editou', 'Obra', 10, 'Editou a obra ''Instalação de rede GLP para cozinha industrial'' (ID: 10)', TIMESTAMP(@hoje - INTERVAL 123 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 47, 'Cadastrou a obra ''Rede de gás para estufa de pintura'' (ID: 47)', TIMESTAMP(@hoje - INTERVAL 122 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 8, 'Editou a obra ''Revisão geral de rede de gás na unidade fabril'' (ID: 8)', TIMESTAMP(@hoje - INTERVAL 117 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 12, 'Cadastrou a obra ''Projeto de instalação GLP industrial - fase 1'' (ID: 12) — equipe: Rafael, Thiago', TIMESTAMP(@hoje - INTERVAL 110 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Escola Estadual Prof. Lima''', TIMESTAMP(@hoje - INTERVAL 107 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 48, 'Cadastrou a obra ''Instalação de gás na cozinha da escola'' (ID: 48) — equipe: Pedro, Larissa', TIMESTAMP(@hoje - INTERVAL 106 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 1959 de ''SafeWork Proteção Industrial'' via XML (4 itens)', TIMESTAMP(@hoje - INTERVAL 98 DAY, '11:20:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 13, 'Cadastrou a obra ''Vistoria anual da central de GLP hospitalar'' (ID: 13)', TIMESTAMP(@hoje - INTERVAL 96 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Fernanda Ribeiro''', TIMESTAMP(@hoje - INTERVAL 95 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 49, 'Cadastrou a obra ''Conversão de fogão para gás natural'' (ID: 49)', TIMESTAMP(@hoje - INTERVAL 94 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 13, 'Editou a obra ''Vistoria anual da central de GLP hospitalar'' (ID: 13)', TIMESTAMP(@hoje - INTERVAL 94 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 47, 'Editou a obra ''Rede de gás para estufa de pintura'' (ID: 47)', TIMESTAMP(@hoje - INTERVAL 92 DAY, '17:15:00')),
+(2, 'João', 'Editou', 'Obra', 48, 'Editou a obra ''Instalação de gás na cozinha da escola'' (ID: 48)', TIMESTAMP(@hoje - INTERVAL 92 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Serviço', NULL, 'Editou o serviço ''Instalação de Central GLP P45'' (ID: 9)', TIMESTAMP(@hoje - INTERVAL 90 DAY, '16:10:00')),
+(1, 'adm', 'Editou', 'Obra', 49, 'Editou a obra ''Conversão de fogão para gás natural'' (ID: 49)', TIMESTAMP(@hoje - INTERVAL 90 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Churrascaria Gaúcha Diadema''', TIMESTAMP(@hoje - INTERVAL 83 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 50, 'Cadastrou a obra ''Laudo de estanqueidade para renovação do AVCB'' (ID: 50)', TIMESTAMP(@hoje - INTERVAL 82 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 50, 'Editou a obra ''Laudo de estanqueidade para renovação do AVCB'' (ID: 50)', TIMESTAMP(@hoje - INTERVAL 79 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 14, 'Cadastrou a obra ''Adequação da rede GLP - setor de padaria'' (ID: 14) — equipe: Pedro, Larissa', TIMESTAMP(@hoje - INTERVAL 78 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Cliente', NULL, 'Editou o cliente ''Fabrício Rocha'' (ID: 5)', TIMESTAMP(@hoje - INTERVAL 75 DAY, '10:05:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 51, 'Cadastrou a obra ''Revisão do ramal após reforma da cozinha'' (ID: 51) — equipe: Pedro', TIMESTAMP(@hoje - INTERVAL 68 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 14, 'Editou a obra ''Adequação da rede GLP - setor de padaria'' (ID: 14)', TIMESTAMP(@hoje - INTERVAL 66 DAY, '17:15:00')),
+(2, 'João', 'Editou', 'Obra', 12, 'Editou a obra ''Projeto de instalação GLP industrial - fase 1'' (ID: 12)', TIMESTAMP(@hoje - INTERVAL 65 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 15, 'Cadastrou a obra ''Instalação industrial GLP - câmara fria'' (ID: 15) — equipe: Thiago', TIMESTAMP(@hoje - INTERVAL 64 DAY, '09:00:00')),
+(2, 'João', 'Deletou', 'Produto', NULL, 'Deletou o produto ''Bucha de Redução 1/2"'' (ID: 51)', TIMESTAMP(@hoje - INTERVAL 60 DAY, '15:00:00')),
+(1, 'adm', 'Editou', 'Obra', 51, 'Editou a obra ''Revisão do ramal após reforma da cozinha'' (ID: 51)', TIMESTAMP(@hoje - INTERVAL 60 DAY, '17:15:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 2096 de ''Conexão Flex Indústria e Comércio'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 58 DAY, '11:20:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Restaurante Bom Sabor Ltda''', TIMESTAMP(@hoje - INTERVAL 55 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 52, 'Cadastrou a obra ''Ampliação da rede para novo salão'' (ID: 52) — equipe: Thiago, Larissa', TIMESTAMP(@hoje - INTERVAL 54 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Obra', 16, 'Cadastrou a obra ''Revisão e adequação central GLP - hotel'' (ID: 16) — equipe: Pedro, Thiago', TIMESTAMP(@hoje - INTERVAL 53 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 53, 'Cadastrou a obra ''Rede de gás para novo setor de tingimento'' (ID: 53)', TIMESTAMP(@hoje - INTERVAL 47 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Colégio Dom Bosco''', TIMESTAMP(@hoje - INTERVAL 45 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 17, 'Cadastrou a obra ''Instalação de rede GLP para cantina escolar'' (ID: 17)', TIMESTAMP(@hoje - INTERVAL 44 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 52, 'Editou a obra ''Ampliação da rede para novo salão'' (ID: 52)', TIMESTAMP(@hoje - INTERVAL 42 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 54, 'Cadastrou a obra ''Instalação de detectores na central hospitalar'' (ID: 54) — equipe: Thiago, Larissa', TIMESTAMP(@hoje - INTERVAL 40 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Usuário', NULL, 'Editou o usuário ''Juliana'' (ID: 5) — cargo Almoxarifado', TIMESTAMP(@hoje - INTERVAL 40 DAY, '09:45:00')),
+(2, 'João', 'Cadastrou', 'Obra', 18, 'Cadastrou a obra ''Instalação de rede GLP para churrasqueiras - lote 1'' (ID: 18) — equipe: Rafael, Thiago', TIMESTAMP(@hoje - INTERVAL 39 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 19, 'Cadastrou a obra ''Instalação de rede GLP para solda a gás'' (ID: 19)', TIMESTAMP(@hoje - INTERVAL 35 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Panificadora Delícia''', TIMESTAMP(@hoje - INTERVAL 33 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 20, 'Cadastrou a obra ''Instalação de fornos e fogões a GLP'' (ID: 20) — equipe: Rafael, Larissa', TIMESTAMP(@hoje - INTERVAL 32 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Hotel Fazenda do Vale''', TIMESTAMP(@hoje - INTERVAL 32 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 55, 'Cadastrou a obra ''Troca dos fogões da cozinha do hotel'' (ID: 55)', TIMESTAMP(@hoje - INTERVAL 31 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Cerâmica São Paulo Ind.''', TIMESTAMP(@hoje - INTERVAL 30 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 21, 'Cadastrou a obra ''Instalação de forno industrial a gás cerâmica'' (ID: 21) — equipe: Pedro', TIMESTAMP(@hoje - INTERVAL 29 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 18, 'Editou a obra ''Instalação de rede GLP para churrasqueiras - lote 1'' (ID: 18)', TIMESTAMP(@hoje - INTERVAL 27 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 53, 'Editou a obra ''Rede de gás para novo setor de tingimento'' (ID: 53)', TIMESTAMP(@hoje - INTERVAL 25 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 55, 'Editou a obra ''Troca dos fogões da cozinha do hotel'' (ID: 55)', TIMESTAMP(@hoje - INTERVAL 24 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 56, 'Cadastrou a obra ''Manutenção corretiva nos pontos de solda'' (ID: 56) — equipe: Thiago, Larissa', TIMESTAMP(@hoje - INTERVAL 23 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Escola Municipal Boa Vista''', TIMESTAMP(@hoje - INTERVAL 23 DAY, '10:30:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 2233 de ''Fersol Equipamentos de Gás'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 23 DAY, '11:20:00')),
+(2, 'João', 'Cadastrou', 'Obra', 22, 'Cadastrou a obra ''Instalação de GLP para cozinha escolar'' (ID: 22) — equipe: Pedro, Thiago, Larissa', TIMESTAMP(@hoje - INTERVAL 22 DAY, '09:00:00')),
+(2, 'João', 'Editou', 'Obra', 20, 'Editou a obra ''Instalação de fornos e fogões a GLP'' (ID: 20)', TIMESTAMP(@hoje - INTERVAL 20 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 23, 'Cadastrou a obra ''Ampliação da central de GLP - depósito 2'' (ID: 23)', TIMESTAMP(@hoje - INTERVAL 16 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Distribuidora GLP Norte''', TIMESTAMP(@hoje - INTERVAL 15 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 57, 'Cadastrou a obra ''Laudo técnico da central de GLP do depósito'' (ID: 57) — equipe: Larissa', TIMESTAMP(@hoje - INTERVAL 14 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 15, 'Editou a obra ''Instalação industrial GLP - câmara fria'' (ID: 15)', TIMESTAMP(@hoje - INTERVAL 12 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Caua Silva''', TIMESTAMP(@hoje - INTERVAL 11 DAY, '10:30:00')),
+(1, 'adm', 'Editou', 'Obra', 57, 'Editou a obra ''Laudo técnico da central de GLP do depósito'' (ID: 57)', TIMESTAMP(@hoje - INTERVAL 11 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 24, 'Cadastrou a obra ''Manutenção corretiva - revisão geral pós-vistoria'' (ID: 24) — equipe: Pedro, Larissa', TIMESTAMP(@hoje - INTERVAL 10 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Mateus Alves''', TIMESTAMP(@hoje - INTERVAL 9 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 58, 'Cadastrou a obra ''Instalação de aquecedor de passagem'' (ID: 58) — equipe: Thiago, Larissa', TIMESTAMP(@hoje - INTERVAL 8 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Indústria Têxtil Vale Ltda''', TIMESTAMP(@hoje - INTERVAL 7 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 26, 'Cadastrou a obra ''Projeto de instalação GLP industrial - fase 2'' (ID: 26) — equipe: Pedro, Rafael, Larissa', TIMESTAMP(@hoje - INTERVAL 6 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 2370 de ''Metalúrgica Vale do Aço'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 6 DAY, '11:20:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Fabrício Rocha''', TIMESTAMP(@hoje - INTERVAL 5 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Hospital Santa Casa Taubaté''', TIMESTAMP(@hoje - INTERVAL 5 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Supermercado Bom Preço''', TIMESTAMP(@hoje - INTERVAL 5 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Frigorífico Vale Carnes''', TIMESTAMP(@hoje - INTERVAL 5 DAY, '10:30:00')),
+(1, 'adm', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Churrascaria do Compadre''', TIMESTAMP(@hoje - INTERVAL 5 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Cliente', NULL, 'Cadastrou o cliente ''Metalúrgica Aço Forte Ltda''', TIMESTAMP(@hoje - INTERVAL 5 DAY, '10:30:00')),
+(2, 'João', 'Cadastrou', 'Obra', 28, 'Cadastrou a obra ''Instalação GLP - nova seção de frios supermercado'' (ID: 28) — equipe: Thiago, Larissa', TIMESTAMP(@hoje - INTERVAL 4 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 17, 'Editou a obra ''Instalação de rede GLP para cantina escolar'' (ID: 17)', TIMESTAMP(@hoje - INTERVAL 4 DAY, '17:15:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 29, 'Cadastrou a obra ''Ampliação da rede de GLP industrial - novo setor'' (ID: 29) — equipe: Pedro, Larissa', TIMESTAMP(@hoje - INTERVAL 3 DAY, '09:00:00')),
+(1, 'adm', 'Editou', 'Obra', 19, 'Editou a obra ''Instalação de rede GLP para solda a gás'' (ID: 19)', TIMESTAMP(@hoje - INTERVAL 3 DAY, '17:15:00')),
+(2, 'João', 'Cadastrou', 'Obra', 30, 'Cadastrou a obra ''Instalação de novo setor de churrasco - expansão'' (ID: 30) — equipe: Pedro, Thiago', TIMESTAMP(@hoje - INTERVAL 2 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 25, 'Cadastrou a obra ''Revisão semestral central de GLP hospitalar'' (ID: 25) — equipe: Larissa', TIMESTAMP(@hoje - INTERVAL 1 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 27, 'Cadastrou a obra ''Manutenção preventiva anual - frigorífico'' (ID: 27) — equipe: Thiago', TIMESTAMP(@hoje - INTERVAL 1 DAY, '09:00:00')),
+(1, 'adm', 'Cadastrou', 'Obra', 59, 'Cadastrou a obra ''Ampliação da rede de gás da fábrica'' (ID: 59) — equipe: Larissa', TIMESTAMP(@hoje - INTERVAL 1 DAY, '09:00:00')),
+(2, 'João', 'Cadastrou', 'Obra', 60, 'Cadastrou a obra ''Rede de gás para nova câmara de defumação'' (ID: 60) — equipe: Rafael, Larissa', TIMESTAMP(@hoje - INTERVAL 1 DAY, '09:00:00')),
+(2, 'João', 'Importou', 'Nota Fiscal', NULL, 'Importou a nota fiscal nº 2507 de ''Distribuidora ABC Conexões'' via XML (3 itens)', TIMESTAMP(@hoje - INTERVAL 1 DAY, '11:20:00')),
+(1, 'adm', 'Editou', 'Obra', 21, 'Editou a obra ''Instalação de forno industrial a gás cerâmica'' (ID: 21)', TIMESTAMP(@hoje - INTERVAL 1 DAY, '17:15:00')),
+(1, 'adm', 'Editou', 'Obra', 23, 'Editou a obra ''Ampliação da central de GLP - depósito 2'' (ID: 23)', TIMESTAMP(@hoje - INTERVAL 1 DAY, '17:15:00')),
+(2, 'João', 'Editou', 'Obra', 28, 'Editou a obra ''Instalação GLP - nova seção de frios supermercado'' (ID: 28)', TIMESTAMP(@hoje - INTERVAL 1 DAY, '17:15:00')),
+(2, 'João', 'Editou', 'Obra', 30, 'Editou a obra ''Instalação de novo setor de churrasco - expansão'' (ID: 30)', TIMESTAMP(@hoje - INTERVAL 1 DAY, '17:15:00'));
+
+-- ── Valor e custo das obras concluídas ───────────────────────────────────────
+--   valorObra = serviços + produtos avulsos × preço de venda congelado
+--   custoObra = todo o material × custo congelado (NULL se algum item não
+--               tiver custo, para o lucro não sair inflado)
+-- SQL_SAFE_UPDATES desligado temporariamente: o MySQL Workbench bloqueia
+-- UPDATE sem a chave primária no WHERE.
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE obras o
+SET o.valorObra =
+        (SELECT COALESCE(SUM(s.precoServico), 0)
+         FROM obraServicos os
+         JOIN servicos s ON s.idServico = os.idServico
+         WHERE os.idObra = o.idObra)
+      + (SELECT COALESCE(SUM(po.qtdProdutosObra * po.precoVenda), 0)
+         FROM produtosObras po
+         WHERE po.idObra = o.idObra),
+    o.custoObra = (
+        SELECT IF(COUNT(*) = COUNT(c.custo), COALESCE(SUM(c.quantidade * c.custo), 0), NULL)
+        FROM (
+            SELECT idObra, qtdProdutosObra AS quantidade, custoUnitario AS custo
+            FROM produtosObras
+            UNION ALL
+            SELECT os.idObra, osp.quantidade, osp.custoUnitario
+            FROM obraServicoProdutos osp
+            JOIN obraServicos os ON os.idObraServico = osp.idObraServico
+        ) c
+        WHERE c.idObra = o.idObra
+    )
+WHERE o.statusObra = 'Concluida';
+
+SET SQL_SAFE_UPDATES = 1;
 
 -- ── Ajustes do estoque mínimo ─────────────────────────────────────────────────
 -- Produtos ainda sem uso em obra, para mostrar as outras origens do cálculo:

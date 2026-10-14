@@ -211,6 +211,10 @@ E-mail: adm123@gmail.com
 Senha:  adm123
 ```
 
+Com `docs/inserts.sql` carregado, há um usuário de cada cargo (todos com a senha `adm123`):
+`joao@tecnovalegas.com` (Administração), `marcos@tecnovalegas.com` (Almoxarifado) e
+`pedro@tecnovalegas.com` (Obra — vê só as obras em que está na equipe).
+
 ---
 
 ## Banco de Dados
