@@ -178,3 +178,11 @@ ALTER TABLE produto_fotos
     ADD COLUMN tipoMime VARCHAR(100) NOT NULL AFTER nomeOriginal,
     ADD COLUMN conteudo LONGTEXT     NOT NULL AFTER tipoMime,
     ADD UNIQUE KEY uq_produto_foto_arquivo (nomeArquivo);
+
+-- ── 8. Ações do histórico padronizadas ───────────────────────────────────────
+-- Só existem três ações: Inseriu, Editou e Deletou. As descrições antigas
+-- ficam como estavam; só o tipo da ação é convertido.
+SET SQL_SAFE_UPDATES = 0;
+UPDATE historico SET acao = 'Inseriu' WHERE acao IN ('Cadastrou', 'Importou');
+UPDATE historico SET acao = 'Editou'  WHERE acao IN ('Reabriu', 'Repôs', 'Ignorou');
+SET SQL_SAFE_UPDATES = 1;

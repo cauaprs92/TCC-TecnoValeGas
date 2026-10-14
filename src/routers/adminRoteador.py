@@ -9,6 +9,9 @@ admin_bp       = Blueprint("admin", __name__, url_prefix="/admin")
 controller     = AdminController()
 historico_ctrl = HistoricoController()
 middleware     = AdminMiddleware()
+
+# O cargo é gravado sem acento; no texto do histórico vai como o front mostra.
+ROTULO_CARGO = {"Administracao": "Administração"}
 jwt            = JwtMiddleware()
 
 
@@ -42,8 +45,8 @@ def criar():
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Cadastrou", "Usuário",
-        f"Cadastrou o usuário '{nome}' com o cargo {cargo}",
+        "Inseriu", "Usuário",
+        f'Inseriu o usuário "{nome}" ({ROTULO_CARGO.get(cargo, cargo)})',
     )
 
     return jsonify({"status": True, "msg": mensagem}), 201
@@ -96,7 +99,7 @@ def atualizar(idLogin: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Usuário",
-        f"Editou o usuário '{nome}' (ID: {idLogin}) — cargo {cargo}",
+        f'Editou o usuário "{nome}" ({ROTULO_CARGO.get(cargo, cargo)})',
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200
@@ -122,7 +125,7 @@ def deletar(idLogin: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Deletou", "Usuário",
-        f"Deletou o usuário '{nome}' (ID: {idLogin})",
+        f'Deletou o usuário "{nome}"',
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200

@@ -84,6 +84,9 @@ class NotaFiscalController:
 
     # ─── Conferência ──────────────────────────────────────────────────────────
 
+    def descrever_item(self, idItem: int):
+        return self.dao.descrever_item(idItem)
+
     def confirmar_item(self, idItem, acao, idProduto=None, dadosNovoProduto=None) -> tuple:
         """Valida a decisão do usuário antes de aplicá-la ao estoque.
 

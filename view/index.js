@@ -5110,7 +5110,7 @@ function _preencherSelectAdminsHistorico(lista) {
 }
 
 function _badgeAcao(acao) {
-  const map = { 'Cadastrou': 'green', 'Editou': 'blue', 'Deletou': 'red' };
+  const map = { 'Inseriu': 'green', 'Editou': 'blue', 'Deletou': 'red' };
   const tipo = map[acao] || 'gray';
   return `<span class="badge badge-${tipo}">${escHtml(acao)}</span>`;
 }

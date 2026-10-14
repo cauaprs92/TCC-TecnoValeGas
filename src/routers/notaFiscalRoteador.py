@@ -74,16 +74,16 @@ def importar():
     if reaberta:
         historico_ctrl.registrar(
             g.admin_id, g.jwt_payload.get("nomeLogin"),
-            "Reabriu", "Nota Fiscal",
-            f"Reabriu a conferência da nota fiscal nº {nota._numero} "
-            f"de '{nota._nomeFornecedor}'",
+            "Editou", "Nota Fiscal",
+            f'Editou a nota fiscal nº {nota._numero} de "{nota._nomeFornecedor}": '
+            f"conferência reaberta",
         )
     else:
         historico_ctrl.registrar(
             g.admin_id, g.jwt_payload.get("nomeLogin"),
-            "Importou", "Nota Fiscal",
-            f"Importou a nota fiscal nº {nota._numero} de '{nota._nomeFornecedor}' "
-            f"via {formato} ({len(nota._itens)} itens)",
+            "Inseriu", "Nota Fiscal",
+            f'Inseriu a nota fiscal nº {nota._numero} de "{nota._nomeFornecedor}" '
+            f"({formato}, {len(nota._itens)} itens)",
         )
 
     return jsonify({
@@ -112,16 +112,18 @@ def confirmar_item(idItem: int):
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
 
+    numero, nome_nota, qtd, nome_produto = controller.descrever_item(idItem) or ("?", "?", 0, None)
+    qtd = f"{float(qtd):g}".replace(".", ",")
     acoes = {
-        "repor":   ("Repôs",     "Repôs o estoque do produto ID {id} a partir do item {item} da nota fiscal"),
-        "criar":   ("Cadastrou", "Cadastrou o produto ID {id} a partir do item {item} da nota fiscal"),
-        "ignorar": ("Ignorou",   "Ignorou o item {item} da nota fiscal"),
+        "repor":   ("Editou",  f'Editou o estoque do produto "{nome_produto}": '
+                               f"+{qtd} pela nota fiscal nº {numero}"),
+        "criar":   ("Inseriu", f'Inseriu o produto "{nome_produto}" pela nota fiscal nº {numero}'),
+        "ignorar": ("Editou",  f'Editou a nota fiscal nº {numero}: item "{nome_nota}" ignorado'),
     }
     rotulo, descricao = acoes[(acao or "").strip().lower()]
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        rotulo, "Nota Fiscal",
-        descricao.format(id=idProduto, item=idItem),
+        rotulo, "Nota Fiscal", descricao,
     )
 
     return jsonify({"status": True, "msg": mensagem, "idProduto": idProduto}), 200

@@ -97,8 +97,8 @@ def cadastrar():
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Cadastrou", "Obra",
-        f"Cadastrou a obra '{desc}' (ID: {id_obra}){_descrever_equipe(funcionarios)}",
+        "Inseriu", "Obra",
+        f'Inseriu a obra "{desc}"{_descrever_equipe(funcionarios)}',
         id_obra,
     )
 
@@ -298,7 +298,7 @@ def atualizar(idObra: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Obra",
-        f"Editou a obra '{desc}' (ID: {idObra}){equipe_txt}",
+        f'Editou a obra "{desc}"{equipe_txt}',
         idObra,
     )
 
@@ -378,7 +378,7 @@ def deletar(idObra: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Deletou", "Obra",
-        f"Deletou a obra '{desc}' (ID: {idObra})",
+        f'Deletou a obra "{desc}"',
         idObra,
     )
 

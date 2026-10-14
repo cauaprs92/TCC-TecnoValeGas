@@ -31,8 +31,8 @@ def criar():
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Cadastrou", "Field",
-        f"Cadastrou o field '{nome}'",
+        "Inseriu", "Field",
+        f'Inseriu o field "{nome}"',
     )
 
     return jsonify({"status": True, "msg": msg}), 201
@@ -45,6 +45,7 @@ def criar():
 def atualizar(idResponsavel: int):
     body = request.get_json() or {}
     nome = (body.get("nomeResponsavel") or "").strip()
+    alvo = next((r for r in controller.listar() if r.get("idResponsavel") == idResponsavel), None)
     ok, msg = controller.atualizar(idResponsavel, nome)
     if not ok:
         raise ErrorResponse(400, msg, {"message": msg})
@@ -52,7 +53,8 @@ def atualizar(idResponsavel: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Field",
-        f"Editou o field para '{nome}' (ID: {idResponsavel})",
+        f'Editou o field "{alvo["nomeResponsavel"]}" para "{nome}"'
+        if alvo and alvo["nomeResponsavel"] != nome else f'Editou o field "{nome}"',
     )
 
     return jsonify({"status": True, "msg": msg}), 200
@@ -74,7 +76,7 @@ def deletar(idResponsavel: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Deletou", "Field",
-        f"Deletou o field '{nome}' (ID: {idResponsavel})",
+        f'Deletou o field "{nome}"',
     )
 
     return jsonify({"status": True, "msg": msg}), 200

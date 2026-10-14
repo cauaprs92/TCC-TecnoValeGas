@@ -32,8 +32,8 @@ def criar():
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Cadastrou", "Fornecedor",
-        f"Cadastrou o fornecedor '{(corpo.get('nomeFornecedor') or '').strip()}'",
+        "Inseriu", "Fornecedor",
+        f'Inseriu o fornecedor "{(corpo.get("nomeFornecedor") or "").strip()}"',
     )
     return jsonify({"status": True, "msg": mensagem, "idFornecedor": id_fornecedor}), 201
 
@@ -51,6 +51,6 @@ def atualizar_prazo(idFornecedor: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Fornecedor",
-        f"Alterou o prazo de entrega de '{nome}' para {int(prazo)} dias",
+        f'Editou o fornecedor "{nome}": prazo de entrega de {int(prazo)} dias',
     )
     return jsonify({"status": True, "msg": mensagem}), 200

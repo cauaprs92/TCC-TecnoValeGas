@@ -209,6 +209,17 @@ class NotaFiscalDAO:
         """, (idItem,), erro="Erro ao buscar item da nota fiscal:")
         return self._linha_para_item(linha) if linha else None
 
+    def descrever_item(self, idItem: int):
+        """(nº da nota, nome do item na nota, quantidade, nome do produto
+        vinculado) — o texto do histórico usa nomes, não IDs."""
+        return consultar_um("""
+            SELECT n.numero, i.nomeProdutoNota, i.quantidade, p.nomeProduto
+            FROM notaFiscalItens i
+            JOIN notasFiscais n  ON n.idNotaFiscal = i.idNotaFiscal
+            LEFT JOIN produtos p ON p.idProduto    = i.idProduto
+            WHERE i.idItem = %s
+        """, (idItem,), erro="Erro ao descrever item da nota fiscal:")
+
     # ─── Conferência ──────────────────────────────────────────────────────────
 
     def confirmar_item(self, idItem: int, acao: str, idProduto: int = None,

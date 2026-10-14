@@ -43,8 +43,8 @@ def cadastrar():
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
-        "Cadastrou", "Serviço",
-        f"Cadastrou o serviço '{nome}'",
+        "Inseriu", "Serviço",
+        f'Inseriu o serviço "{nome}"',
     )
 
     return jsonify({"status": True, "msg": mensagem, "idServico": idServico}), 201
@@ -95,7 +95,7 @@ def editar(idServico: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Editou", "Serviço",
-        f"Editou o serviço '{nome}' (ID: {idServico})",
+        f'Editou o serviço "{nome}"',
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200
@@ -117,7 +117,7 @@ def deletar(idServico: int):
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
         "Deletou", "Serviço",
-        f"Deletou o serviço '{nome}' (ID: {idServico})",
+        f'Deletou o serviço "{nome}"',
     )
 
     return jsonify({"status": True, "msg": mensagem}), 200

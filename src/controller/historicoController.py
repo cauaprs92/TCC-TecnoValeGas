@@ -1,5 +1,9 @@
 from src.dao.historicoDAO import HistoricoDAO
 
+# Toda ação do histórico é uma destas três. A descrição segue o mesmo padrão:
+# '<Ação> o/a <entidade> "<nome>"', sem IDs.
+ACOES = ("Inseriu", "Editou", "Deletou")
+
 
 class HistoricoController:
 
@@ -10,6 +14,8 @@ class HistoricoController:
                   descricao: str, idEntidade: int = None) -> None:
         """Registra uma ação no histórico. Falhas são silenciosas para não interromper o fluxo principal.
         idEntidade (opcional) vincula o registro ao item afetado — ex.: a obra."""
+        if acao not in ACOES:
+            print(f"Aviso: ação de histórico fora do padrão — {acao!r}")
         try:
             self.dao.inserir(idAdmin, nomeAdmin, acao, entidade, descricao, idEntidade)
         except Exception as e:
