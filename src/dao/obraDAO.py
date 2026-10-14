@@ -71,19 +71,15 @@ class ObraDAO:
 
     def deletar(self, id_obra: int) -> tuple:
         """Devolve o estoque (se a obra não estava cancelada) e exclui a obra.
-        Retorna (True, [arquivos de foto a apagar do disco]) ou (False, mensagem)."""
+        Retorna (True, None) ou (False, mensagem)."""
         def operacao(cursor):
             if self.materiais.status_obra(cursor, id_obra) != STATUS_CANCELADA:
                 self.materiais.repor_obra(cursor, id_obra)
-
-            cursor.execute("SELECT nomeArquivo FROM obra_fotos WHERE idObra = %s", (id_obra,))
-            arquivos = [r[0] for r in cursor.fetchall()]
 
             # Equipe, fotos e a receita dos serviços saem por ON DELETE CASCADE.
             cursor.execute("DELETE FROM produtosObras WHERE idObra = %s", (id_obra,))
             cursor.execute("DELETE FROM obraServicos  WHERE idObra = %s", (id_obra,))
             cursor.execute("DELETE FROM obras         WHERE idObra = %s", (id_obra,))
-            return arquivos
         return executar_transacao(operacao, "Erro ao deletar obra.")
 
     def _mudar_status(self, cursor, id_obra: int, status_atual: str, novo_status: str):

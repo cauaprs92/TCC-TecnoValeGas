@@ -9,7 +9,7 @@ from src.middleware.jwtMiddleware       import (
 from src.error_response                 import ErrorResponse
 from src.routers.clienteRoteador        import serializar_cliente
 from src.dao.fotoDAO                    import foto_obra_dao
-from src.uploads                        import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
+from src.uploads                        import EXT_IMAGEM, ler_arquivo_da_requisicao
 from src.service                        import precificacao
 
 obra_bp        = Blueprint("obra", __name__, url_prefix="/obra")
@@ -238,19 +238,18 @@ def upload_foto(idObra: int):
     if not obra:
         raise ErrorResponse(404, "Obra não encontrada.", {"message": f"Nenhuma obra com ID {idObra}."})
 
-    nome_unico, nome_original = salvar_arquivo_da_requisicao(EXT_IMAGEM)
-    idFoto = foto_dao.inserir(idObra, nome_unico, nome_original)
+    arquivo = ler_arquivo_da_requisicao(EXT_IMAGEM)
+    idFoto  = foto_dao.inserir(idObra, arquivo)
     if not idFoto:
-        apagar_arquivos(nome_unico)
         raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
 
     return jsonify({
         "status": True,
         "foto": {
             "idFoto":       idFoto,
-            "nomeArquivo":  nome_unico,
-            "nomeOriginal": nome_original,
-            "url":          f"/uploads/{nome_unico}",
+            "nomeArquivo":  arquivo["nomeArquivo"],
+            "nomeOriginal": arquivo["nomeOriginal"],
+            "url":          f"/uploads/{arquivo['nomeArquivo']}",
         }
     }), 201
 
@@ -261,11 +260,8 @@ def upload_foto(idObra: int):
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_OBRA)
 @exigir_acesso_obra
 def deletar_foto(idObra: int, idFoto: int):
-    nome = foto_dao.deletar(idFoto, idObra)
-    if not nome:
+    if not foto_dao.deletar(idFoto, idObra):
         raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
-
-    apagar_arquivos(nome)
 
     return jsonify({"status": True, "msg": "Foto removida."}), 200
 
@@ -374,12 +370,10 @@ def deletar(idObra: int):
     obra = controller.buscar_por_id(idObra)
     desc = obra[2] if obra else str(idObra)
 
-    sucesso, mensagem, arquivos = controller.deletar(idObra)
+    sucesso, mensagem = controller.deletar(idObra)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
-
-    apagar_arquivos(*arquivos)
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),

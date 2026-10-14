@@ -1,7 +1,8 @@
 import os
 import sys
 import traceback
-from flask import Flask, jsonify, send_from_directory
+import base64
+from flask import Flask, Response, jsonify, send_from_directory, abort
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
@@ -17,8 +18,7 @@ from src.routers import cliente_bp, produto_bp, obra_bp, login_bp, admin_bp, res
 
 STATIC_DIR   = os.path.join(BASE_DIR, "view")
 IMAGES_DIR   = os.path.join(BASE_DIR, "images")
-from src.uploads import UPLOADS_DIR
-os.makedirs(UPLOADS_DIR, exist_ok=True)
+from src.dao.fotoDAO import foto_obra_dao, foto_produto_dao
 
 app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="")
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB por arquivo
@@ -51,10 +51,17 @@ def serve_image(filename):
     """Serve imagens da pasta /images na raiz do projeto."""
     return send_from_directory(IMAGES_DIR, filename)
 
-@app.route("/uploads/<path:filename>")
-def serve_upload(filename):
-    """Serve arquivos enviados pelos usuários (fotos de produtos, notas fiscais)."""
-    return send_from_directory(UPLOADS_DIR, filename)
+@app.route("/uploads/<nome>")
+def serve_upload(nome):
+    """Serve os arquivos enviados pelos usuários (fotos de obra e de produto,
+    notas fiscais), guardados em base64 no banco."""
+    for dao in (foto_obra_dao(), foto_produto_dao()):
+        linha = dao.buscar_arquivo(nome)
+        if linha:
+            tipo_mime, conteudo = linha
+            return Response(base64.b64decode(conteudo), mimetype=tipo_mime,
+                            headers={"Cache-Control": "private, max-age=86400"})
+    abort(404)
 
 
 @app.route("/dashboard")

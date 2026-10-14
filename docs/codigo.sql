@@ -179,18 +179,24 @@ create table produto_fotos (
     idFoto       INT PRIMARY KEY AUTO_INCREMENT,
     idProduto    INT NOT NULL,
     tipoFoto     VARCHAR(20)  NOT NULL DEFAULT 'produto',
-    nomeArquivo  VARCHAR(255) NOT NULL,
+    nomeArquivo  VARCHAR(255) NOT NULL,   -- identificador aleatório usado na URL
     nomeOriginal VARCHAR(255) NOT NULL,
+    tipoMime     VARCHAR(100) NOT NULL,
+    conteudo     LONGTEXT     NOT NULL,   -- arquivo em base64
     dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_produto_foto_arquivo (nomeArquivo),
     FOREIGN KEY (idProduto) REFERENCES produtos(idProduto) ON DELETE CASCADE
 );
 
 create table obra_fotos (
     idFoto       INT PRIMARY KEY AUTO_INCREMENT,
     idObra       INT NOT NULL,
-    nomeArquivo  VARCHAR(255) NOT NULL,
+    nomeArquivo  VARCHAR(255) NOT NULL,   -- identificador aleatório usado na URL
     nomeOriginal VARCHAR(255) NOT NULL,
+    tipoMime     VARCHAR(100) NOT NULL,
+    conteudo     LONGTEXT     NOT NULL,   -- arquivo em base64
     dataUpload   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_obra_foto_arquivo (nomeArquivo),
     FOREIGN KEY (idObra) REFERENCES obras(idObra) ON DELETE CASCADE
 );
 

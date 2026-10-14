@@ -1,18 +1,22 @@
-"""Arquivos enviados pelos usuários (fotos de obra/produto e notas fiscais),
-gravados em uploads/ com nome aleatório e servidos em /uploads/<nome>."""
-import os
+"""Arquivos enviados pelos usuários (fotos de obra/produto e notas fiscais).
+O conteúdo vai para o banco em base64, junto com o tipo MIME, e é servido em
+/uploads/<nome>, onde <nome> é um identificador aleatório gravado na linha."""
+import base64
 import uuid
 from flask import request
 from src.error_response import ErrorResponse
 
-UPLOADS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
-
 EXT_IMAGEM = {"jpg", "jpeg", "png", "gif", "webp"}
 
+TIPOS_MIME = {
+    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+    "gif": "image/gif",  "webp": "image/webp", "pdf": "application/pdf",
+}
 
-def salvar_arquivo_da_requisicao(extensoes: set) -> tuple:
-    """Valida e grava o campo 'arquivo' do formulário.
-    Retorna (nome gravado em disco, nome original do arquivo)."""
+
+def ler_arquivo_da_requisicao(extensoes: set) -> dict:
+    """Valida o campo 'arquivo' do formulário e devolve
+    {nomeArquivo, nomeOriginal, tipoMime, conteudo (base64)}."""
     arquivo = request.files.get("arquivo")
     if arquivo is None:
         raise ErrorResponse(400, "Nenhum arquivo enviado.", {"message": "Campo 'arquivo' ausente."})
@@ -24,15 +28,14 @@ def salvar_arquivo_da_requisicao(extensoes: set) -> tuple:
         permitidos = ", ".join(sorted(e.upper() for e in extensoes))
         raise ErrorResponse(400, "Tipo de arquivo não permitido.", {"message": f"Permitidos: {permitidos}."})
 
-    # Nome aleatório: não dá para adivinhar a URL nem sobrescrever outro arquivo.
-    nome = f"{uuid.uuid4().hex}.{ext}"
-    os.makedirs(UPLOADS_DIR, exist_ok=True)
-    arquivo.save(os.path.join(UPLOADS_DIR, nome))
-    return nome, arquivo.filename
+    dados = arquivo.read()
+    if not dados:
+        raise ErrorResponse(400, "Arquivo inválido.", {"message": "O arquivo está vazio."})
 
-
-def apagar_arquivos(*nomes):
-    for nome in nomes:
-        caminho = os.path.join(UPLOADS_DIR, os.path.basename(nome))
-        if os.path.exists(caminho):
-            os.remove(caminho)
+    # Nome aleatório: é ele que vai na URL, então não dá para adivinhá-la.
+    return {
+        "nomeArquivo":  f"{uuid.uuid4().hex}.{ext}",
+        "nomeOriginal": arquivo.filename,
+        "tipoMime":     TIPOS_MIME.get(ext, "application/octet-stream"),
+        "conteudo":     base64.b64encode(dados).decode("ascii"),
+    }

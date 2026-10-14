@@ -150,7 +150,6 @@ ALTER TABLE obras
 -- Custo inicial pelas notas fiscais já conferidas: média ponderada de tudo
 -- que entrou de cada produto.
 SET SQL_SAFE_UPDATES = 0;
-SET SQL_SAFE_UPDATES = 0;
 UPDATE produtos p
 JOIN (
     SELECT idProduto, SUM(valorUnitario * quantidade) / SUM(quantidade) AS custo
@@ -161,3 +160,21 @@ JOIN (
 ) nf ON nf.idProduto = p.idProduto
 SET p.custoUnitario = nf.custo;
 SET SQL_SAFE_UPDATES = 1;
+
+-- ── 7. Fotos e notas fiscais no banco (base64) ───────────────────────────────
+-- Os arquivos deixam de ir para a pasta uploads/ e passam a ficar na própria
+-- linha, em base64. As fotos antigas apontam para arquivos em disco que o
+-- sistema não lê mais: são removidas e precisam ser enviadas de novo.
+SET SQL_SAFE_UPDATES = 0;
+DELETE FROM obra_fotos;
+DELETE FROM produto_fotos;
+SET SQL_SAFE_UPDATES = 1;
+
+ALTER TABLE obra_fotos
+    ADD COLUMN tipoMime VARCHAR(100) NOT NULL AFTER nomeOriginal,
+    ADD COLUMN conteudo LONGTEXT     NOT NULL AFTER tipoMime,
+    ADD UNIQUE KEY uq_obra_foto_arquivo (nomeArquivo);
+ALTER TABLE produto_fotos
+    ADD COLUMN tipoMime VARCHAR(100) NOT NULL AFTER nomeOriginal,
+    ADD COLUMN conteudo LONGTEXT     NOT NULL AFTER tipoMime,
+    ADD UNIQUE KEY uq_produto_foto_arquivo (nomeArquivo);

@@ -141,15 +141,14 @@ class ObraController:
         return self.dao.buscar_por_id(idObra)
 
     def deletar(self, idObra: int) -> tuple:
-        """Retorna (sucesso, mensagem, arquivos de foto a apagar do disco)."""
         obraExistente = self.dao.buscar_por_id(idObra)
         if not obraExistente:
-            return False, "Obra nao encontrada.", []
+            return False, "Obra nao encontrada."
 
         sucesso, resultado = self.dao.deletar(idObra)
         if sucesso:
-            return True, "Obra deletada com sucesso!", resultado
-        return False, resultado, []
+            return True, "Obra deletada com sucesso!"
+        return False, resultado
 
     def buscar_produtos_da_obra(self, idObra: int) -> list:
         return self.daoProdObras.buscar_produtos_da_obra(idObra)

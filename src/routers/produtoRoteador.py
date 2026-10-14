@@ -4,7 +4,7 @@ from src.controller.historicoController  import HistoricoController
 from src.middleware.produtoMiddleware    import ProdutoMiddleware
 from src.middleware.jwtMiddleware        import JwtMiddleware, CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO, CARGO_OBRA
 from src.dao.fotoDAO                     import foto_produto_dao
-from src.uploads                         import EXT_IMAGEM, salvar_arquivo_da_requisicao, apagar_arquivos
+from src.uploads                         import EXT_IMAGEM, ler_arquivo_da_requisicao
 from src.error_response                  import ErrorResponse
 from src.service                         import precificacao
 
@@ -126,14 +126,11 @@ def editar(idProduto: int):
 def deletar(idProduto: int):
     produto = controller.buscar_por_id(idProduto)
     nome    = produto._nomeProduto if produto else str(idProduto)
-    # As linhas de produto_fotos saem por ON DELETE CASCADE; os arquivos, não.
-    arquivos = foto_dao.nomes_arquivos(idProduto)
-
+    # As fotos (produto_fotos) saem por ON DELETE CASCADE.
     sucesso, mensagem, _ = controller.deletar(idProduto)
 
     if not sucesso:
         raise ErrorResponse(400, mensagem, {"message": mensagem})
-    apagar_arquivos(*arquivos)
 
     historico_ctrl.registrar(
         g.admin_id, g.jwt_payload.get("nomeLogin"),
@@ -166,10 +163,9 @@ def upload_foto(idProduto: int):
         tipoFoto = 'produto'
 
     # Nota fiscal pode vir digitalizada em PDF; foto de produto, só imagem.
-    nome_unico, nome_original = salvar_arquivo_da_requisicao(EXT_IMAGEM | {"pdf"})
-    idFoto = foto_dao.inserir(idProduto, nome_unico, nome_original, tipoFoto)
+    arquivo = ler_arquivo_da_requisicao(EXT_IMAGEM | {"pdf"})
+    idFoto  = foto_dao.inserir(idProduto, arquivo, tipoFoto)
     if not idFoto:
-        apagar_arquivos(nome_unico)
         raise ErrorResponse(500, "Erro ao salvar foto no banco.", {"message": "Falha ao inserir registro."})
 
     return jsonify({
@@ -177,9 +173,9 @@ def upload_foto(idProduto: int):
         "foto": {
             "idFoto":       idFoto,
             "tipoFoto":     tipoFoto,
-            "nomeArquivo":  nome_unico,
-            "nomeOriginal": nome_original,
-            "url":          f"/uploads/{nome_unico}",
+            "nomeArquivo":  arquivo["nomeArquivo"],
+            "nomeOriginal": arquivo["nomeOriginal"],
+            "url":          f"/uploads/{arquivo['nomeArquivo']}",
         }
     }), 201
 
@@ -189,10 +185,7 @@ def upload_foto(idProduto: int):
 @jwt.validate_token
 @jwt.require_cargo(CARGO_ADMINISTRACAO, CARGO_ALMOXARIFADO)
 def deletar_foto(idProduto: int, idFoto: int):
-    nome = foto_dao.deletar(idFoto, idProduto)
-    if not nome:
+    if not foto_dao.deletar(idFoto, idProduto):
         raise ErrorResponse(404, "Foto não encontrada.", {"message": f"Foto {idFoto} não existe."})
-
-    apagar_arquivos(nome)
 
     return jsonify({"status": True, "msg": "Foto removida."}), 200

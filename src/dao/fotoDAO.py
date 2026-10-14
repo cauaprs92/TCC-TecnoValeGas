@@ -3,14 +3,18 @@ from src.dao.banco import consultar, consultar_um, executar, inserir
 
 class FotoDAO:
     """Fotos de uma entidade — obra_fotos (dono idObra) ou produto_fotos (dono
-    idProduto, com tipoFoto 'produto' ou 'nota_fiscal')."""
+    idProduto, com tipoFoto 'produto' ou 'nota_fiscal'). O arquivo fica na
+    própria linha, em base64 (conteudo), e nomeArquivo é o identificador
+    aleatório usado na URL /uploads/<nomeArquivo>."""
 
     def __init__(self, tabela: str, dono: str, com_tipo: bool = False):
         self.tabela, self.dono, self.com_tipo = tabela, dono, com_tipo
 
-    def inserir(self, id_dono: int, nome_arquivo: str, nome_original: str, tipo: str = None):
-        colunas = [self.dono, "nomeArquivo", "nomeOriginal"] + (["tipoFoto"] if self.com_tipo else [])
-        valores = [id_dono, nome_arquivo, nome_original] + ([tipo] if self.com_tipo else [])
+    def inserir(self, id_dono: int, arquivo: dict, tipo: str = None):
+        """`arquivo` é o dict de ler_arquivo_da_requisicao."""
+        colunas = [self.dono, "nomeArquivo", "nomeOriginal", "tipoMime", "conteudo"]             + (["tipoFoto"] if self.com_tipo else [])
+        valores = [id_dono, arquivo["nomeArquivo"], arquivo["nomeOriginal"],
+                   arquivo["tipoMime"], arquivo["conteudo"]] + ([tipo] if self.com_tipo else [])
         return inserir(
             f"INSERT INTO {self.tabela} ({', '.join(colunas)}) VALUES ({', '.join(['%s'] * len(colunas))})",
             valores, erro=f"Erro ao inserir foto em {self.tabela}:")
@@ -36,21 +40,18 @@ class FotoDAO:
             fotos.append(foto)
         return fotos
 
-    def nomes_arquivos(self, id_dono: int) -> list:
-        return [r[0] for r in consultar(f"SELECT nomeArquivo FROM {self.tabela} WHERE {self.dono} = %s",
-                                        (id_dono,), erro="Erro ao listar arquivos:")]
+    def buscar_arquivo(self, nome_arquivo: str):
+        """(tipoMime, conteudo em base64) da foto com esse nome, ou None."""
+        return consultar_um(f"SELECT tipoMime, conteudo FROM {self.tabela} WHERE nomeArquivo = %s",
+                            (nome_arquivo,), erro="Erro ao buscar arquivo:")
 
-    def deletar(self, id_foto: int, id_dono: int):
-        """Só apaga a foto se ela pertencer ao dono informado. Retorna o nome do
-        arquivo (para apagar do disco) ou None."""
-        row = consultar_um(f"SELECT nomeArquivo FROM {self.tabela} WHERE idFoto = %s AND {self.dono} = %s",
-                           (id_foto, id_dono), erro="Erro ao buscar foto:")
-        if not row:
-            return None
-        if not executar(f"DELETE FROM {self.tabela} WHERE idFoto = %s", (id_foto,),
-                        erro="Erro ao deletar foto:"):
-            return None
-        return row[0]
+    def deletar(self, id_foto: int, id_dono: int) -> bool:
+        """Só apaga a foto se ela pertencer ao dono informado."""
+        if not consultar_um(f"SELECT 1 FROM {self.tabela} WHERE idFoto = %s AND {self.dono} = %s",
+                            (id_foto, id_dono), erro="Erro ao buscar foto:"):
+            return False
+        return bool(executar(f"DELETE FROM {self.tabela} WHERE idFoto = %s", (id_foto,),
+                             erro="Erro ao deletar foto:"))
 
 
 def foto_obra_dao() -> FotoDAO:
