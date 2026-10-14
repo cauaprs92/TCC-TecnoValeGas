@@ -216,21 +216,25 @@ function carregarAdministrador() {
 // `escrita` = pode alterar registros já existentes. `criacao` = pode abrir
 // registros novos. O funcionário de obra faz tudo nas obras designadas a ele,
 // mas não cria obra nova: uma obra recém-criada não está designada a ninguém.
+// `financeiro` = vê faturamento e lucro no dashboard.
 const PERMISSOES = {
   Administracao: {
     paginas: ['dashboard','estoque','obras','clientes','servicos','funcionarios','historico'],
     escrita: ['estoque','obras','clientes','servicos','admins','responsaveis'],
     criacao: ['estoque','obras','clientes','servicos','admins','responsaveis'],
+    financeiro: true,
   },
   Almoxarifado: {
     paginas: ['dashboard','estoque','obras','servicos'],
     escrita: ['estoque'],
     criacao: ['estoque'],
+    financeiro: false,
   },
   Obra: {
     paginas: ['obras'],
     escrita: ['obras'],
     criacao: [],
+    financeiro: false,
   },
 };
 
@@ -259,6 +263,9 @@ function aplicarPermissoesUI() {
   });
   document.querySelectorAll('[data-criar]').forEach(el => {
     el.classList.toggle('hidden', !perm.criacao.includes(el.dataset.criar));
+  });
+  document.querySelectorAll('[data-financeiro]').forEach(el => {
+    el.classList.toggle('hidden', !perm.financeiro);
   });
 
   // O relatório de consumo lê o estoque inteiro.
