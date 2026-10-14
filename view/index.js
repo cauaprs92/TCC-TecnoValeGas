@@ -2966,13 +2966,14 @@ function _lucroServico(preco, itens) {
   return { custo, lucro, margem: preco > 0 ? lucro / preco * 100 : null, semCusto };
 }
 
-// Resumo ao vivo no modal. Preço abaixo do custo só avisa: vender abaixo do
-// custo pode ser decisão da empresa (cliente estratégico, garantia...).
+// Resumo ao vivo no modal. Preço abaixo do custo bloqueia o cadastro
+// (ver _vServPreco); o backend confere de novo.
 function _atualizarLucroServico() {
   const el = document.getElementById('servLucroResumo');
   if (!el) return;
   const preco = Number(document.getElementById('servPreco').value);
   const itens = _coletarProdutosServico();
+  _vServPreco(false); // receita mudou: some o erro de margem que não vale mais
 
   if (!(preco > 0)) {
     el.innerHTML = 'Informe o preço para ver o lucro sobre o material.';
@@ -3000,7 +3001,7 @@ function _atualizarLucroServico() {
     + (negativo
       ? `<span class="minimo-conta" style="color:#DC2626;font-weight:600">
            <i class="fa-solid fa-triangle-exclamation"></i> Preço abaixo do custo do material:
-           prejuízo de ${_fmtMoeda(-l.lucro)} a cada serviço. O cadastro é permitido.</span>`
+           prejuízo de ${_fmtMoeda(-l.lucro)} a cada serviço. Aumente o preço para salvar.</span>`
       : '');
 }
 
@@ -3031,6 +3032,12 @@ function _vServPreco(show = true) {
   let msg = '';
   if (v === '')                          msg = 'O preço é obrigatório.';
   else if (isNaN(Number(v)) || Number(v) <= 0) msg = 'O preço deve ser um número positivo.';
+  else {
+    // Margem negativa: o preço não cobre o material da receita.
+    const l = _lucroServico(Number(v), _coletarProdutosServico());
+    if (l.lucro != null && l.lucro < 0)
+      msg = `O preço não cobre o custo do material (${_fmtMoeda(l.custo)}).`;
+  }
   if (msg && show) _erroCampo('servPreco', msg);
   else if (!msg)   _limparErroCampo('servPreco');
   return !msg;

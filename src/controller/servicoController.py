@@ -1,4 +1,5 @@
 from src.dao.servicoDAO import ServicoDAO
+from src.dao.produtoDAO import ProdutoDAO
 from src.modelo.servico import Servico
 
 
@@ -6,6 +7,7 @@ class ServicoController:
 
     def __init__(self):
         self.dao = ServicoDAO()
+        self.produto_dao = ProdutoDAO()
 
     def _validar_campos(self, nomeServico, precoServico) -> tuple:
         if not nomeServico or not str(nomeServico).strip():
@@ -40,6 +42,20 @@ class ServicoController:
                 return False, "quantidade deve ser um inteiro maior que zero."
         return True, ""
 
+    def _validar_margem(self, precoServico, produtos: list) -> tuple:
+        """Preço abaixo do custo do material (margem negativa) não é aceito.
+        Produto sem custo cadastrado não entra: sem custo não há como saber."""
+        custo = 0.0
+        for item in produtos:
+            produto = self.produto_dao.buscar_por_id(int(item["idProduto"]))
+            if produto and produto._custoUnitario is not None:
+                custo += int(item["quantidade"]) * float(produto._custoUnitario)
+        if float(precoServico) < round(custo, 2):
+            custo_br = f"{custo:.2f}".replace(".", ",")
+            return False, (f"O preço não cobre o custo do material (R$ {custo_br}). "
+                           "Informe um preço maior ou igual ao custo.")
+        return True, ""
+
     def cadastrar(self, nomeServico, precoServico, produtos: list = None, fornecedorServico: str = None) -> tuple:
         valido, msg = self._validar_campos(nomeServico, precoServico)
         if not valido:
@@ -47,6 +63,10 @@ class ServicoController:
 
         produtos = produtos or []
         valido, msg = self._validar_produtos(produtos)
+        if not valido:
+            return False, msg, None
+
+        valido, msg = self._validar_margem(precoServico, produtos)
         if not valido:
             return False, msg, None
 
@@ -77,6 +97,10 @@ class ServicoController:
 
         produtos = produtos or []
         valido, msg = self._validar_produtos(produtos)
+        if not valido:
+            return False, msg
+
+        valido, msg = self._validar_margem(precoServico, produtos)
         if not valido:
             return False, msg
 
