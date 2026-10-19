@@ -1334,6 +1334,12 @@ function renderTabelaObras(obras) {
   atualizarIndicadoresOrdenacao('obras');
 }
 
+// Botão quadrado com × que tira uma linha de produto/serviço do formulário.
+function _btnRemoverLinha(fn, titulo = 'Remover') {
+  return `<button type="button" class="btn-icon danger" title="${titulo}" onclick="${fn}(this)">
+    <i class="fa-solid fa-xmark"></i></button>`;
+}
+
 function _prodSearchHTML(btnRemove) {
   return `
     <div class="produto-obra-row">
@@ -1353,7 +1359,7 @@ function _prodSearchHTML(btnRemove) {
 }
 
 function _novaProdutoObraRow() {
-  return _prodSearchHTML(`<button class="btn-icon danger" onclick="removerProdutoObra(this)"><i class="fa-solid fa-minus"></i></button>`);
+  return _prodSearchHTML(_btnRemoverLinha('removerProdutoObra', 'Remover produto'));
 }
 
 function buscarProdutoInput(input) {
@@ -1451,11 +1457,11 @@ function _servSearchHTML(btnRemove) {
 }
 
 function _novaServicoObraRow() {
-  return _servSearchHTML(`<button class="btn-icon danger" onclick="removerServicoObra(this)"><i class="fa-solid fa-minus"></i></button>`);
+  return _servSearchHTML(_btnRemoverLinha('removerServicoObra', 'Remover serviço'));
 }
 
 function _novaServicoObraRowEd() {
-  return _servSearchHTML(`<button class="btn-icon danger" onclick="removerServicoObraEd(this)"><i class="fa-solid fa-minus"></i></button>`);
+  return _servSearchHTML(_btnRemoverLinha('removerServicoObraEd', 'Remover serviço'));
 }
 
 function adicionarServicoObra() {
@@ -2385,7 +2391,7 @@ function removerProdutoObraEd(btn) {
 }
 
 function _novaProdutoObraRowEd() {
-  return _prodSearchHTML(`<button class="btn-icon danger" onclick="removerProdutoObraEd(this)"><i class="fa-solid fa-minus"></i></button>`);
+  return _prodSearchHTML(_btnRemoverLinha('removerProdutoObraEd', 'Remover produto'));
 }
 
 
@@ -2918,9 +2924,7 @@ function filtrarServicos(q) {
 
 function _linhaProdutoServico(idProduto, nomeProduto, quantidade) {
   const wrap = document.createElement('div');
-  wrap.innerHTML = _prodSearchHTML(
-    `<button class="btn-icon danger" onclick="removerProdutoServico(this)"><i class="fa-solid fa-minus"></i></button>`
-  );
+  wrap.innerHTML = _prodSearchHTML(_btnRemoverLinha('removerProdutoServico', 'Remover produto'));
   const row = wrap.firstElementChild;
   if (idProduto) {
     const p = cacheProdutos.find(x => x.idProduto === idProduto);

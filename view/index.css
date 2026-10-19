@@ -555,14 +555,18 @@ body {
     width: calc(100% + 7px);
 }
 .produto-obra-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+/* min-width:0 deixa os campos encolherem: sem isso o input mantém a largura
+   intrínseca (~20 caracteres) e a linha passa da largura do modal. */
 .produto-obra-row input,
-.produto-obra-row select { border: 1px solid var(--gray-200); border-radius: 7px; padding: 8px 10px; font-family: var(--font); font-size: .85rem; outline: none; transition: border var(--transition); background: #fff; }
+.produto-obra-row select { min-width: 0; border: 1px solid var(--gray-200); border-radius: 7px; padding: 8px 10px; font-family: var(--font); font-size: .85rem; outline: none; transition: border var(--transition); background: #fff; }
 .produto-obra-row input:focus,
 .produto-obra-row select:focus { border-color: var(--gray-400); }
 .prod-id-input      { flex: 0 0 80px; }
 .prod-nome-input    { flex: 1; }
-.prod-estoque-input { flex: 0 0 180px; font-weight: 600; }
-.prod-qtd-input     { flex: 0 0 90px; }
+.prod-estoque-input { flex: 0 1 130px; font-weight: 600; }
+.prod-qtd-input     { flex: 0 1 72px; }
+/* Botões da linha (remover ×, editar, lixeira): quadrados e sem encolher. */
+.produto-obra-row .btn-icon { flex: 0 0 34px; width: 34px; height: 34px; font-size: .85rem; }
 
 #obraProdutosVerList .prod-estoque-input { flex: 0 0 80px; }
 #obraProdutosVerList .btn-icon           { flex: 0 0 30px; width: 30px; height: 30px; font-size: .7rem; }
@@ -580,7 +584,7 @@ body {
 .servico-obra-header span { padding-right: 70px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; }
 .servico-obra-header .prod-estoque-input { flex: 0 0 110px; }
 
-.prod-search-wrap   { position: relative; flex: 1; min-width: 220px; }
+.prod-search-wrap   { position: relative; flex: 1 1 200px; min-width: 0; }
 .prod-search        { width: 100%; }
 .prod-dropdown      { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--gray-200); border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 999; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
 .prod-dropdown-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; cursor: pointer; font-size: .84rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
