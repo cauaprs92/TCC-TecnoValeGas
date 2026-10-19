@@ -668,6 +668,8 @@ body {
 .obra-valor-num    { font-size: 1.6rem; font-weight: 800; color: var(--orange-dark); white-space: nowrap; letter-spacing: -.3px; }
 .obra-valor-total.valor-obra-final { background: #EAF7EE; border-color: #B7E0C4; }
 .obra-valor-total.valor-obra-final .obra-valor-icone,
+.obra-valor-total.valor-obra-final .obra-valor-sub { display: none; }
+.obra-valor-total.valor-obra-final .obra-valor-rotulo { font-size: .85rem; }
 .obra-valor-total.valor-obra-final .obra-valor-rotulo,
 .obra-valor-total.valor-obra-final .obra-valor-num { color: #2D8A4E; }
 
