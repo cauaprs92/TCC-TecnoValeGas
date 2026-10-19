@@ -1981,7 +1981,9 @@ function _carregarProdutosVerObra(idObra) {
       <div class="produto-obra-row">
         <input type="number" class="prod-id-input" value="${p.idProduto}" readonly />
         <input type="text" class="prod-nome-input" value="${escHtml(p.nomeProduto)}" readonly />
-        <input type="text" class="prod-estoque-input" value="Qtd: ${p.qtdProdutosObra}" readonly />
+        <input type="text" class="prod-valor-input" value="${p.precoVenda != null ? _fmtMoeda(p.precoVenda) : '—'}"
+          title="Preço de venda unitário gravado nesta obra" readonly />
+        <input type="text" class="prod-estoque-input" value="${p.qtdProdutosObra} un." readonly />
         <button class="btn-icon edit" title="Editar quantidade"
           onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}',${p.qtdProdutosObra})">
           <i class="fa-solid fa-pen"></i>

@@ -568,21 +568,25 @@ body {
 /* Botões da linha (remover ×, editar, lixeira): quadrados e sem encolher. */
 .produto-obra-row .btn-icon { flex: 0 0 34px; width: 34px; height: 34px; font-size: .85rem; }
 
-#obraProdutosVerList .prod-estoque-input { flex: 0 0 80px; }
-#obraProdutosVerList .btn-icon           { flex: 0 0 30px; width: 30px; height: 30px; font-size: .7rem; }
+/* Listas da obra (produtos utilizados / serviços vinculados) e seus
+   cabeçalhos usam as MESMAS larguras, para cada título ficar sobre a coluna. */
+#obraProdutosVerList .prod-id-input,
+.produto-obra-header .prod-id-input      { flex: 0 0 64px; }
+#obraProdutosVerList .prod-valor-input,
+.produto-obra-header .prod-valor-input   { flex: 0 0 112px; }
+#obraProdutosVerList .prod-estoque-input,
+.produto-obra-header .prod-estoque-input { flex: 0 0 76px; }
+#obraServicosVerList .prod-estoque-input,
+.servico-obra-header .prod-estoque-input { flex: 0 0 120px; }
+.prod-valor-input { font-weight: 600; }
 
-#obraServicosVerList .prod-estoque-input { flex: 0 0 110px; }
-#obraServicosVerList .btn-icon           { flex: 0 0 30px; width: 30px; height: 30px; font-size: .7rem; }
-
-.produto-obra-header { margin-bottom: 6px; }
-.produto-obra-header span { padding-left: 10px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; }
-.produto-obra-header .prod-nome-input    { padding-left: 120px; }
-.produto-obra-header .prod-estoque-input { flex: 0 0 80px; padding-right: 60px; }
-.produto-obra-header-spacer { flex: 0 0 30px; }
-
+.produto-obra-header,
 .servico-obra-header { margin-bottom: 6px; }
-.servico-obra-header span { padding-right: 70px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; }
-.servico-obra-header .prod-estoque-input { flex: 0 0 110px; }
+/* padding = padding + borda do input, para o título alinhar com o texto do campo */
+.produto-obra-header span,
+.servico-obra-header span { padding: 0 11px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.produto-obra-header span.produto-obra-header-spacer,
+.servico-obra-header span.produto-obra-header-spacer { flex: 0 0 34px; padding: 0; }
 
 /* flex: 1 (base 0): o mesmo wrapper aparece em linhas (produto/serviço) e
    dentro de .form-group, que é flex em coluna — lá uma base em px vira altura. */
@@ -1627,10 +1631,15 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .prod-qtd-input     { flex: 1 1 80px; }
   .produto-obra-header,
   .servico-obra-header { display: none; }
-  #obraProdutosVerList .prod-estoque-input,
-  #obraServicosVerList .prod-estoque-input { flex: 1 1 110px; }
+  /* ID, valor, qtd. e os dois botões cabem numa linha abaixo do nome */
+  #obraProdutosVerList .prod-id-input      { flex: 0 0 48px; }
+  #obraProdutosVerList .prod-estoque-input { flex: 0 0 64px; }
+  #obraProdutosVerList .prod-id-input,
+  #obraProdutosVerList .prod-estoque-input { padding-left: 6px; padding-right: 4px; }
+  #obraProdutosVerList .prod-valor-input,
+  #obraServicosVerList .prod-estoque-input { flex: 1 1 70px; }
   #obraProdutosVerList .btn-icon,
-  #obraServicosVerList .btn-icon { flex: 0 0 38px; width: 38px; height: 38px; font-size: .8rem; }
+  #obraServicosVerList .btn-icon { flex: 0 0 36px; width: 36px; height: 36px; font-size: .8rem; }
 
   /* abas da obra com rolagem horizontal */
   .obra-tabs {
