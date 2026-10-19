@@ -572,11 +572,22 @@ body {
    cabeçalhos usam as MESMAS larguras (.lista-obra), então cada título fica
    sobre a sua coluna e o Valor fica na mesma posição nas duas listas.
    .col-vazia ocupa, nos serviços, o lugar da coluna Qtd. dos produtos. */
-.lista-obra .prod-id-input    { flex: 0 0 64px; }
-.lista-obra .prod-valor-input { flex: 0 0 118px; }
+.lista-obra .prod-id-input    { flex: 0 0 56px; }
+.lista-obra .prod-valor-input { flex: 0 0 132px; }
 .lista-obra .prod-estoque-input,
 .lista-obra .col-vazia        { flex: 0 0 76px; }
 .prod-valor-input { font-weight: 600; }
+
+/* Linhas de adicionar produto/serviço na obra (.lista-add) seguem a mesma
+   grade: estoque/preço na coluna Valor, Qtd. na coluna Qtd. e o × embaixo
+   da lixeira (o deslocamento é o lugar do botão editar, 34px + 10px de gap;
+   nos serviços soma também a coluna Qtd., 76px + 10px). */
+.lista-add .prod-estoque-input { flex: 0 0 132px; }
+.lista-add .prod-qtd-input     { flex: 0 0 76px; }
+.lista-add-prod .btn-icon,
+.lista-add-prod .produto-obra-header-spacer { margin-left: 44px; }
+.lista-add-serv .btn-icon,
+.lista-add-serv .produto-obra-header-spacer { margin-left: 130px; }
 
 /* Cabeçalhos das listas: os da obra (.produto-obra-header) e os das linhas
    de adicionar produto/serviço (.linha-cabecalho). */
@@ -594,7 +605,9 @@ body {
 /* flex: 1 (base 0): o mesmo wrapper aparece em linhas (produto/serviço) e
    dentro de .form-group, que é flex em coluna — lá uma base em px vira altura. */
 .prod-search-wrap   { position: relative; flex: 1; min-width: 0; }
-.prod-search        { width: 100%; }
+/* Qualquer campo de busca dentro do wrapper ocupa a largura toda
+   (.prod-search, .serv-search, o "trocar serviço" da obra...). */
+.prod-search-wrap > input:not([type="hidden"]) { width: 100%; }
 .prod-dropdown      { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--gray-200); border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 999; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
 .prod-dropdown-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; cursor: pointer; font-size: .84rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
 .prod-dropdown-item:last-child { border-bottom: none; }
@@ -1642,6 +1655,11 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .lista-obra .prod-valor-input   { flex: 1 1 70px; }
   .lista-obra .col-vazia          { display: none; }
   .lista-obra .btn-icon { flex: 0 0 36px; width: 36px; height: 36px; font-size: .8rem; }
+  /* No celular as linhas de adicionar quebram normalmente, sem a grade. */
+  .lista-add .prod-estoque-input { flex: 1 1 110px; }
+  .lista-add .prod-qtd-input     { flex: 1 1 80px; }
+  .lista-add-prod .btn-icon,
+  .lista-add-serv .btn-icon      { margin-left: 0; }
 
   /* abas da obra com rolagem horizontal */
   .obra-tabs {
