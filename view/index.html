@@ -1253,6 +1253,12 @@
             <!-- Produtos — visível apenas no modo criação -->
             <div id="obraSecaoProdutos">
               <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
+              <div class="produto-obra-row linha-cabecalho">
+                <span class="prod-search-wrap">Nome</span>
+                <span class="prod-estoque-input">Qtd. em estoque</span>
+                <span class="prod-qtd-input">Qtd.</span>
+                <span class="produto-obra-header-spacer"></span>
+              </div>
               <div id="produtosObraList"></div>
               <span class="field-error" id="err-produtosUsados"></span>
               <button class="btn btn-ghost" onclick="adicionarProdutoObra()">
@@ -1263,17 +1269,23 @@
             <!-- Produtos somente leitura + adição — visível apenas no modo edição -->
             <div id="obraSecaoProdutosVer" class="hidden">
               <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos Utilizados</div>
-              <div class="produto-obra-row produto-obra-header">
+              <div class="produto-obra-row produto-obra-header lista-obra">
                 <span class="prod-id-input">ID</span>
                 <span class="prod-nome-input">Nome</span>
-                <span class="prod-valor-input">Valor un.</span>
+                <span class="prod-valor-input">Valor</span>
                 <span class="prod-estoque-input">Qtd.</span>
                 <span class="produto-obra-header-spacer"></span>
                 <span class="produto-obra-header-spacer"></span>
               </div>
-              <div id="obraProdutosVerList"></div>
+              <div id="obraProdutosVerList" class="lista-obra"></div>
               <div class="form-section-title" style="margin-top:14px">
                 <i class="fa-solid fa-plus"></i> Adicionar Produtos
+              </div>
+              <div class="produto-obra-row linha-cabecalho">
+                <span class="prod-search-wrap">Nome</span>
+                <span class="prod-estoque-input">Qtd. em estoque</span>
+                <span class="prod-qtd-input">Qtd.</span>
+                <span class="produto-obra-header-spacer"></span>
               </div>
               <div id="produtosObraEdList"></div>
               <button class="btn btn-ghost" onclick="adicionarProdutoObraEd()">
@@ -1284,6 +1296,11 @@
             <!-- Serviços — visível apenas no modo criação -->
             <div id="obraSecaoServicos">
               <div class="form-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Serviços Vinculados</div>
+              <div class="produto-obra-row linha-cabecalho">
+                <span class="prod-search-wrap">Nome</span>
+                <span class="prod-estoque-input">Valor</span>
+                <span class="produto-obra-header-spacer"></span>
+              </div>
               <div id="servicosObraList"></div>
               <button class="btn btn-ghost" onclick="adicionarServicoObra()">
                 <i class="fa-solid fa-plus"></i> Adicionar Serviço
@@ -1293,15 +1310,22 @@
             <!-- Serviços somente leitura + adição — visível apenas no modo edição -->
             <div id="obraSecaoServicosVer" class="hidden">
               <div class="form-section-title"><i class="fa-solid fa-screwdriver-wrench"></i> Serviços Vinculados</div>
-              <div class="produto-obra-row servico-obra-header">
+              <div class="produto-obra-row produto-obra-header lista-obra">
+                <span class="prod-id-input">ID</span>
                 <span class="prod-nome-input">Nome</span>
-                <span class="prod-estoque-input">Valor</span>
+                <span class="prod-valor-input">Valor</span>
+                <span class="col-vazia"></span>
                 <span class="produto-obra-header-spacer"></span>
                 <span class="produto-obra-header-spacer"></span>
               </div>
-              <div id="obraServicosVerList"></div>
+              <div id="obraServicosVerList" class="lista-obra"></div>
               <div class="form-section-title" style="margin-top:14px">
                 <i class="fa-solid fa-plus"></i> Adicionar Serviços
+              </div>
+              <div class="produto-obra-row linha-cabecalho">
+                <span class="prod-search-wrap">Nome</span>
+                <span class="prod-estoque-input">Valor</span>
+                <span class="produto-obra-header-spacer"></span>
               </div>
               <div id="servicosObraEdList"></div>
               <button class="btn btn-ghost" onclick="adicionarServicoObraEd()">
@@ -1470,7 +1494,8 @@
 
             <div class="form-group">
               <label>Preço (R$)<span class="required">*</span></label>
-              <input type="number" id="servPreco" placeholder="850.00" min="0.01" step="0.01" />
+              <input type="text" id="servPreco" placeholder="R$ 0,00" inputmode="numeric"
+                     autocomplete="off" oninput="_mascaraMoeda(this)" />
               <span class="field-error" id="err-servPreco"></span>
             </div>
 
@@ -1482,6 +1507,12 @@
             </div>
 
             <div class="form-section-title"><i class="fa-solid fa-boxes-stacked"></i> Produtos do Serviço</div>
+            <div class="produto-obra-row linha-cabecalho">
+              <span class="prod-search-wrap">Nome</span>
+              <span class="prod-estoque-input">Qtd. em estoque</span>
+              <span class="prod-qtd-input">Qtd.</span>
+              <span class="produto-obra-header-spacer"></span>
+            </div>
             <div id="produtosServicoList"></div>
             <button class="btn btn-ghost" onclick="adicionarProdutoServico()">
               <i class="fa-solid fa-plus"></i> Adicionar Produto

@@ -1981,8 +1981,9 @@ function _carregarProdutosVerObra(idObra) {
       <div class="produto-obra-row">
         <input type="number" class="prod-id-input" value="${p.idProduto}" readonly />
         <input type="text" class="prod-nome-input" value="${escHtml(p.nomeProduto)}" readonly />
-        <input type="text" class="prod-valor-input" value="${p.precoVenda != null ? _fmtMoeda(p.precoVenda) : '—'}"
-          title="Preço de venda unitário gravado nesta obra" readonly />
+        <input type="text" class="prod-valor-input" readonly
+          value="${p.precoVenda != null ? _fmtMoeda(p.precoVenda * p.qtdProdutosObra) : '—'}"
+          title="${p.precoVenda != null ? `${p.qtdProdutosObra} × ${_fmtMoeda(p.precoVenda)} (preço de venda gravado nesta obra)` : ''}" />
         <input type="text" class="prod-estoque-input" value="${p.qtdProdutosObra} un." readonly />
         <button class="btn-icon edit" title="Editar quantidade"
           onclick="abrirModalEditarProdObra(${idObra},${p.idProduto},'${_esc(p.nomeProduto)}',${p.qtdProdutosObra})">
@@ -2010,8 +2011,10 @@ function _carregarServicosVerObra(idObra) {
     } else {
       servListEl.innerHTML = servicos.map(s => `
         <div class="produto-obra-row">
+          <input type="text" class="prod-id-input" value="${s.idServico}" readonly />
           <input type="text" class="prod-nome-input" value="${escHtml(s.nomeServico)}" readonly />
-          <input type="text" class="prod-estoque-input" value="${_fmtMoeda(s.precoServico)}" readonly />
+          <input type="text" class="prod-valor-input" value="${_fmtMoeda(Number(s.precoServico))}" readonly />
+          <span class="col-vazia"></span>
           <button class="btn-icon edit" title="Trocar serviço"
             onclick="abrirModalEditarServObra(${idObra},${s.idServico},'${_esc(s.nomeServico)}')">
             <i class="fa-solid fa-pen"></i>
@@ -2833,6 +2836,20 @@ function _fmtMoeda(v) {
   return (v ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+// Campo de valor em dinheiro: o usuário digita só números e o campo mostra
+// "R$ 1.234,56" (os dois últimos dígitos são os centavos).
+function _mascaraMoeda(el) {
+  const digitos = el.value.replace(/\D/g, '').replace(/^0+/, '');
+  el.value = digitos ? _fmtMoeda(Number(digitos) / 100) : '';
+}
+function _lerMoeda(el) {
+  const digitos = (el?.value || '').replace(/\D/g, '');
+  return digitos ? Number(digitos) / 100 : NaN;
+}
+function _definirMoeda(el, valor) {
+  el.value = valor == null || valor === '' ? '' : _fmtMoeda(Number(valor));
+}
+
 // Valores altos estouravam a largura do card e apareciam cortados ("R$ 15.360,...").
 // Reduz a fonte em passos até o texto caber por inteiro.
 const _KPI_MOEDA_MAX = 1.3;
@@ -2979,7 +2996,7 @@ function _lucroServico(preco, itens) {
 function _atualizarLucroServico() {
   const el = document.getElementById('servLucroResumo');
   if (!el) return;
-  const preco = Number(document.getElementById('servPreco').value);
+  const preco = _lerMoeda(document.getElementById('servPreco'));
   const itens = _coletarProdutosServico();
   _vServPreco(false); // receita mudou: some o erro de margem que não vale mais
 
@@ -3036,13 +3053,13 @@ function _vServNome(show = true) {
 }
 
 function _vServPreco(show = true) {
-  const v = document.getElementById('servPreco').value.trim();
+  const preco = _lerMoeda(document.getElementById('servPreco'));
   let msg = '';
-  if (v === '')                          msg = 'O preço é obrigatório.';
-  else if (isNaN(Number(v)) || Number(v) <= 0) msg = 'O preço deve ser um número positivo.';
+  if (isNaN(preco))       msg = 'O preço é obrigatório.';
+  else if (preco <= 0)    msg = 'O preço deve ser maior que zero.';
   else {
     // Margem negativa: o preço não cobre o material da receita.
-    const l = _lucroServico(Number(v), _coletarProdutosServico());
+    const l = _lucroServico(preco, _coletarProdutosServico());
     if (l.lucro != null && l.lucro < 0)
       msg = `O preço não cobre o custo do material (${_fmtMoeda(l.custo)}).`;
   }
@@ -3086,7 +3103,7 @@ function abrirModalEditarServico(idServico) {
   if (!s) { showToast('Serviço não encontrado.', 'error'); return; }
   document.getElementById('servIdEdicao').value = s.idServico;
   document.getElementById('servNome').value     = s.nomeServico;
-  document.getElementById('servPreco').value    = s.precoServico;
+  _definirMoeda(document.getElementById('servPreco'), s.precoServico);
   document.getElementById('servFornecedor').value = s.fornecedorServico || 'Tecnovale Gás';
   _limparErroCampo('servNome');
   _limparErroCampo('servPreco');
@@ -3114,7 +3131,7 @@ async function salvarServico() {
 
   const idEdicao = document.getElementById('servIdEdicao').value;
   const nome     = document.getElementById('servNome').value.trim();
-  const preco    = parseFloat(document.getElementById('servPreco').value);
+  const preco    = _lerMoeda(document.getElementById('servPreco'));
   const produtos = _coletarProdutosServico();
   const fornecedorServico = document.getElementById('servFornecedor').value;
 

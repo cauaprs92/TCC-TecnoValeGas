@@ -563,30 +563,33 @@ body {
 .produto-obra-row select:focus { border-color: var(--gray-400); }
 .prod-id-input      { flex: 0 0 80px; }
 .prod-nome-input    { flex: 1; }
-.prod-estoque-input { flex: 0 1 130px; font-weight: 600; }
+.prod-estoque-input { flex: 0 1 150px; font-weight: 600; }
 .prod-qtd-input     { flex: 0 1 72px; }
 /* Botões da linha (remover ×, editar, lixeira): quadrados e sem encolher. */
 .produto-obra-row .btn-icon { flex: 0 0 34px; width: 34px; height: 34px; font-size: .85rem; }
 
 /* Listas da obra (produtos utilizados / serviços vinculados) e seus
-   cabeçalhos usam as MESMAS larguras, para cada título ficar sobre a coluna. */
-#obraProdutosVerList .prod-id-input,
-.produto-obra-header .prod-id-input      { flex: 0 0 64px; }
-#obraProdutosVerList .prod-valor-input,
-.produto-obra-header .prod-valor-input   { flex: 0 0 112px; }
-#obraProdutosVerList .prod-estoque-input,
-.produto-obra-header .prod-estoque-input { flex: 0 0 76px; }
-#obraServicosVerList .prod-estoque-input,
-.servico-obra-header .prod-estoque-input { flex: 0 0 120px; }
+   cabeçalhos usam as MESMAS larguras (.lista-obra), então cada título fica
+   sobre a sua coluna e o Valor fica na mesma posição nas duas listas.
+   .col-vazia ocupa, nos serviços, o lugar da coluna Qtd. dos produtos. */
+.lista-obra .prod-id-input    { flex: 0 0 64px; }
+.lista-obra .prod-valor-input { flex: 0 0 118px; }
+.lista-obra .prod-estoque-input,
+.lista-obra .col-vazia        { flex: 0 0 76px; }
 .prod-valor-input { font-weight: 600; }
 
+/* Cabeçalhos das listas: os da obra (.produto-obra-header) e os das linhas
+   de adicionar produto/serviço (.linha-cabecalho). */
 .produto-obra-header,
-.servico-obra-header { margin-bottom: 6px; }
+.linha-cabecalho { margin-bottom: 6px; }
 /* padding = padding + borda do input, para o título alinhar com o texto do campo */
 .produto-obra-header span,
-.servico-obra-header span { padding: 0 11px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.linha-cabecalho span { padding: 0 11px; min-width: 0; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .produto-obra-header span.produto-obra-header-spacer,
-.servico-obra-header span.produto-obra-header-spacer { flex: 0 0 34px; padding: 0; }
+.linha-cabecalho span.produto-obra-header-spacer { flex: 0 0 34px; padding: 0; }
+.produto-obra-header span.col-vazia { padding: 0; }
+/* Sem linhas, sem cabeçalho. */
+.linha-cabecalho:has(+ :empty) { display: none; }
 
 /* flex: 1 (base 0): o mesmo wrapper aparece em linhas (produto/serviço) e
    dentro de .form-group, que é flex em coluna — lá uma base em px vira altura. */
@@ -1630,16 +1633,15 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .prod-estoque-input { flex: 1 1 110px; }
   .prod-qtd-input     { flex: 1 1 80px; }
   .produto-obra-header,
-  .servico-obra-header { display: none; }
+  .linha-cabecalho { display: none; }
   /* ID, valor, qtd. e os dois botões cabem numa linha abaixo do nome */
-  #obraProdutosVerList .prod-id-input      { flex: 0 0 48px; }
-  #obraProdutosVerList .prod-estoque-input { flex: 0 0 64px; }
-  #obraProdutosVerList .prod-id-input,
-  #obraProdutosVerList .prod-estoque-input { padding-left: 6px; padding-right: 4px; }
-  #obraProdutosVerList .prod-valor-input,
-  #obraServicosVerList .prod-estoque-input { flex: 1 1 70px; }
-  #obraProdutosVerList .btn-icon,
-  #obraServicosVerList .btn-icon { flex: 0 0 36px; width: 36px; height: 36px; font-size: .8rem; }
+  .lista-obra .prod-id-input      { flex: 0 0 48px; }
+  .lista-obra .prod-estoque-input { flex: 0 0 64px; }
+  .lista-obra .prod-id-input,
+  .lista-obra .prod-estoque-input { padding-left: 6px; padding-right: 4px; }
+  .lista-obra .prod-valor-input   { flex: 1 1 70px; }
+  .lista-obra .col-vazia          { display: none; }
+  .lista-obra .btn-icon { flex: 0 0 36px; width: 36px; height: 36px; font-size: .8rem; }
 
   /* abas da obra com rolagem horizontal */
   .obra-tabs {
