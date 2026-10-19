@@ -1848,15 +1848,20 @@ function _resetAbasObra() {
 function _atualizarBoxValorObra(o) {
   const box   = document.getElementById('obraValorTotalBox');
   const label = document.getElementById('obraValorTotalLabel');
+  const sub   = document.getElementById('obraValorTotalSub');
+  const icone = document.getElementById('obraValorTotalIcone');
   if (!box || !label) return;
   const concluida = !!(o && o.statusObra === 'Concluida');
   box.classList.toggle('valor-obra-final', concluida);
+  if (icone) icone.className = `fa-solid ${concluida ? 'fa-circle-check' : 'fa-sack-dollar'}`;
   if (concluida) {
-    label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Valor Total da Obra (Concluída)';
+    label.textContent = 'Valor total da obra';
+    if (sub) sub.textContent = 'Valor definitivo, fechado na conclusão';
     const valEl = document.getElementById('obraValorTotalEstimado');
     if (valEl) valEl.textContent = _fmtMoeda(o.valorObra);
   } else {
-    label.innerHTML = '<i class="fa-solid fa-sack-dollar"></i> Valor Total Estimado da Obra';
+    label.textContent = 'Valor total estimado';
+    if (sub) sub.textContent = 'Serviços + produtos avulsos pelo preço de venda';
     _atualizarValorTotalObra();
   }
 }

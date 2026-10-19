@@ -644,10 +644,32 @@ body {
 }
 .equipe-chip button:hover { color: #DC2626; }
 .form-group input[readonly] { background: var(--gray-50); color: var(--gray-500); cursor: default; }
-.obra-edit-context { font-size: .88rem; color: var(--gray-700); background: var(--gray-50); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; border-left: 3px solid var(--gray-300); }
-.obra-edit-context strong { font-size: 1rem; }
-.obra-edit-context.valor-obra-final { background: #EAF7EE; border-left-color: #2D8A4E; color: #1E6B3A; }
-.obra-edit-context.valor-obra-final strong { color: #2D8A4E; font-size: 1.05rem; }
+/* Valor total da obra: card separado do formulário, com o valor em destaque.
+   Laranja = estimativa (obra em aberto); verde = valor definitivo (Concluída). */
+.obra-valor-total {
+  display: flex; align-items: center; gap: 14px;
+  margin: 24px 0 6px; padding: 16px 18px;
+  background: var(--orange-pale); border: 1.5px solid #F6CDB0; border-radius: 12px;
+  position: relative;
+}
+.obra-valor-total::before {          /* divisória que separa o card dos botões acima */
+  content: ''; position: absolute; left: 0; right: 0; top: -13px;
+  border-top: 1px solid var(--gray-200);
+}
+.obra-valor-icone {
+  flex: 0 0 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; color: var(--orange); font-size: 1.1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.obra-valor-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.obra-valor-rotulo { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--orange-dark); }
+.obra-valor-sub    { font-size: .8rem; color: var(--gray-500); }
+.obra-valor-num    { font-size: 1.6rem; font-weight: 800; color: var(--orange-dark); white-space: nowrap; letter-spacing: -.3px; }
+.obra-valor-total.valor-obra-final { background: #EAF7EE; border-color: #B7E0C4; }
+.obra-valor-total.valor-obra-final .obra-valor-icone,
+.obra-valor-total.valor-obra-final .obra-valor-rotulo,
+.obra-valor-total.valor-obra-final .obra-valor-num { color: #2D8A4E; }
 
 /* ── TOAST ── */
 .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 999; }
@@ -1585,7 +1607,8 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .form-group select,
   .form-group textarea { font-size: 16px; padding: 11px 12px; }
   .input-pwd-wrap input { width: 100%; }
-  .obra-edit-context { flex-wrap: wrap; gap: 6px; }
+  .obra-valor-total { flex-wrap: wrap; gap: 10px; padding: 14px; }
+  .obra-valor-num   { flex: 1 1 100%; font-size: 1.45rem; }
 
   /* linhas de produto / serviço empilhadas
      (min-width:0 é obrigatório: input tem largura mínima intrínseca de ~20
