@@ -584,7 +584,9 @@ body {
 .servico-obra-header span { padding-right: 70px; font-size: .75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .3px; }
 .servico-obra-header .prod-estoque-input { flex: 0 0 110px; }
 
-.prod-search-wrap   { position: relative; flex: 1 1 200px; min-width: 0; }
+/* flex: 1 (base 0): o mesmo wrapper aparece em linhas (produto/serviço) e
+   dentro de .form-group, que é flex em coluna — lá uma base em px vira altura. */
+.prod-search-wrap   { position: relative; flex: 1; min-width: 0; }
 .prod-search        { width: 100%; }
 .prod-dropdown      { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1.5px solid var(--gray-200); border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 999; box-shadow: 0 6px 18px rgba(0,0,0,.1); }
 .prod-dropdown-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; cursor: pointer; font-size: .84rem; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); }
