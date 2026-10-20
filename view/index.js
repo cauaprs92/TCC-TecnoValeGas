@@ -1358,11 +1358,66 @@ function _prodSearchHTML(btnRemove) {
     </div>`;
 }
 
+// ── Linhas novas de produto/serviço na OBRA ─────────────────────────────────
+// Mesmo padrão das linhas já salvas: ID | Nome | Valor | Qtd. | editar | excluir.
+// O ID não é digitado: vem da seleção. Depois de escolhido, o nome fica travado
+// e o lápis reabre a seleção para trocar o item.
+function _linhaNovaObraHTML(tipo, fnRemover) {
+  const ehProduto = tipo === 'produto';
+  const buscar  = ehProduto ? 'buscarProdutoInput'    : 'buscarServicoInput';
+  const fechar  = ehProduto ? 'fecharDropdownProduto' : 'fecharDropdownServico';
+  return `
+    <div class="produto-obra-row linha-nova-obra" data-tipo="${tipo}">
+      <input type="text" class="prod-id-input" placeholder="—" readonly tabindex="-1" />
+      <div class="prod-search-wrap prod-nome-input">
+        <input type="text" class="${ehProduto ? 'prod-search' : 'serv-search'}"
+          placeholder="Selecione o ${tipo}..."
+          oninput="${buscar}(this)" onfocus="${buscar}(this)"
+          onblur="setTimeout(()=>${fechar}(this),150)"
+          autocomplete="off" />
+        <input type="hidden" class="${ehProduto ? 'prod-select' : 'servico-select'}" />
+        <div class="prod-dropdown hidden"></div>
+      </div>
+      <input type="text" class="prod-valor-input" placeholder="R$ 0,00" readonly tabindex="-1" />
+      ${ehProduto
+        ? '<input type="number" class="prod-qtd-input" placeholder="Qtd." min="1" />'
+        : '<span class="col-vazia"></span>'}
+      <button type="button" class="btn-icon edit" title="Trocar ${tipo}" onclick="_editarLinhaNovaObra(this)">
+        <i class="fa-solid fa-pen"></i>
+      </button>
+      <button type="button" class="btn-icon danger" title="Remover ${tipo}" onclick="${fnRemover}(this)">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>`;
+}
+
 function _novaProdutoObraRow() {
-  return _prodSearchHTML(_btnRemoverLinha('removerProdutoObra', 'Remover produto'));
+  return _linhaNovaObraHTML('produto', 'removerProdutoObra');
+}
+
+// Lápis da linha nova: destrava o nome e abre a lista para trocar o item.
+function _editarLinhaNovaObra(btn) {
+  const busca = btn.closest('.produto-obra-row').querySelector('.prod-search, .serv-search');
+  busca.readOnly = false;
+  busca.select();
+  busca.focus();
+}
+
+// Valor da linha nova de produto: quantidade × preço de venda atual.
+function _atualizarValorLinhaObra(row) {
+  if (!row || row.dataset.tipo !== 'produto') return;
+  const valorEl = row.querySelector('.prod-valor-input');
+  const p   = cacheProdutos.find(x => x.idProduto === parseInt(row.querySelector('.prod-select').value));
+  const qtd = parseInt(row.querySelector('.prod-qtd-input').value) || 0;
+  valorEl.title = '';
+  if (!p) { valorEl.value = ''; return; }
+  if (p.precoVenda == null) { valorEl.value = '—'; valorEl.title = 'Produto sem preço de venda'; return; }
+  valorEl.value = _fmtMoeda((qtd || 1) * p.precoVenda);
+  valorEl.title = `${qtd || 1} × ${_fmtMoeda(p.precoVenda)}`;
 }
 
 function buscarProdutoInput(input) {
+  if (input.readOnly) return;   // linha da obra já escolhida: troca pelo lápis
   const q    = input.value.toLowerCase().trim();
   const wrap = input.closest('.prod-search-wrap');
   const drop = wrap.querySelector('.prod-dropdown');
@@ -1393,14 +1448,24 @@ function selecionarProdutoDropdown(item, idProduto) {
   const p       = cacheProdutos.find(x => x.idProduto === idProduto);
   if (!p) return;
 
-  wrap.querySelector('.prod-search').value = `${p.idProduto} — ${p.nomeProduto}`;
   wrap.querySelector('.prod-select').value = p.idProduto;
   wrap.querySelector('.prod-dropdown').classList.add('hidden');
 
-  const estoqueEl = row.querySelector('.prod-estoque-input');
-  const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
-  estoqueEl.value = `${p.qtdProduto} em estoque`;
-  estoqueEl.style.color = cor;
+  if (row.classList.contains('linha-nova-obra')) {
+    // Obra: ID na própria coluna e só o nome no campo, que fica travado.
+    const busca = wrap.querySelector('.prod-search');
+    busca.value    = p.nomeProduto;
+    busca.readOnly = true;
+    row.querySelector('.prod-id-input').value = p.idProduto;
+    _atualizarValorLinhaObra(row);
+  } else {
+    // Serviço (receita) e conferência da nota fiscal: mostram o estoque.
+    wrap.querySelector('.prod-search').value = `${p.idProduto} — ${p.nomeProduto}`;
+    const estoqueEl = row.querySelector('.prod-estoque-input');
+    const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
+    estoqueEl.value = `${p.qtdProduto} em estoque`;
+    estoqueEl.style.color = cor;
+  }
 
   // na conferência da NF o botão "Repor estoque" só libera com um produto escolhido
   _nfAtualizarBotaoRepor(row);
@@ -1439,29 +1504,12 @@ function selecionarFornecedorDropdown(item, nomeFornecedor) {
 
 // ── Serviços vinculados à Obra ────────────────────────────────────────────────
 
-function _servSearchHTML(btnRemove) {
-  return `
-    <div class="produto-obra-row">
-      <div class="prod-search-wrap">
-        <input type="text" class="serv-search" placeholder="Buscar serviço (nome ou ID)..."
-          oninput="buscarServicoInput(this)"
-          onfocus="buscarServicoInput(this)"
-          onblur="setTimeout(()=>fecharDropdownServico(this),150)"
-          autocomplete="off" />
-        <input type="hidden" class="servico-select" />
-        <div class="prod-dropdown hidden"></div>
-      </div>
-      <input type="text" placeholder="Preço" class="prod-estoque-input" readonly />
-      ${btnRemove}
-    </div>`;
-}
-
 function _novaServicoObraRow() {
-  return _servSearchHTML(_btnRemoverLinha('removerServicoObra', 'Remover serviço'));
+  return _linhaNovaObraHTML('serviço', 'removerServicoObra');
 }
 
 function _novaServicoObraRowEd() {
-  return _servSearchHTML(_btnRemoverLinha('removerServicoObraEd', 'Remover serviço'));
+  return _linhaNovaObraHTML('serviço', 'removerServicoObraEd');
 }
 
 function adicionarServicoObra() {
@@ -1487,6 +1535,7 @@ function removerServicoObraEd(btn) {
 }
 
 function buscarServicoInput(input) {
+  if (input.readOnly) return;   // linha da obra já escolhida: troca pelo lápis
   const q    = input.value.toLowerCase().trim();
   const wrap = input.closest('.prod-search-wrap');
   const drop = wrap.querySelector('.prod-dropdown');
@@ -1514,11 +1563,14 @@ function selecionarServicoDropdown(item, idServico) {
   const s    = cacheServicos.find(x => x.idServico === idServico);
   if (!s) return;
 
-  wrap.querySelector('.serv-search').value    = `${s.idServico} — ${s.nomeServico}`;
+  const busca = wrap.querySelector('.serv-search');
+  busca.value    = s.nomeServico;
+  busca.readOnly = true;
   wrap.querySelector('.servico-select').value = s.idServico;
   wrap.querySelector('.prod-dropdown').classList.add('hidden');
 
-  row.querySelector('.prod-estoque-input').value = _fmtMoeda(s.precoServico);
+  row.querySelector('.prod-id-input').value    = s.idServico;
+  row.querySelector('.prod-valor-input').value = _fmtMoeda(Number(s.precoServico));
   _atualizarValorTotalObra();
 }
 
@@ -1649,7 +1701,10 @@ document.addEventListener('click', e => {
 // Quantidade de produto avulso mexe no valor estimado da obra; no serviço,
 // quantidade e preço mexem no lucro sobre material.
 document.addEventListener('input', e => {
-  if (e.target.matches('#modalObra .prod-qtd-input')) _atualizarValorTotalObra();
+  if (e.target.matches('#modalObra .prod-qtd-input')) {
+    _atualizarValorLinhaObra(e.target.closest('.produto-obra-row'));
+    _atualizarValorTotalObra();
+  }
   if (e.target.matches('#modalServico .prod-qtd-input, #servPreco')) _atualizarLucroServico();
 });
 
@@ -2398,7 +2453,7 @@ function removerProdutoObraEd(btn) {
 }
 
 function _novaProdutoObraRowEd() {
-  return _prodSearchHTML(_btnRemoverLinha('removerProdutoObraEd', 'Remover produto'));
+  return _linhaNovaObraHTML('produto', 'removerProdutoObraEd');
 }
 
 

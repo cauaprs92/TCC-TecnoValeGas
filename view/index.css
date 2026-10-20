@@ -575,19 +575,15 @@ body {
 .lista-obra .prod-id-input    { flex: 0 0 56px; }
 .lista-obra .prod-valor-input { flex: 0 0 132px; }
 .lista-obra .prod-estoque-input,
+.lista-obra .prod-qtd-input,
 .lista-obra .col-vazia        { flex: 0 0 76px; }
+/* Linha nova da obra: o wrapper da busca ocupa a coluna Nome; o ID vem da
+   seleção e o nome escolhido fica travado como nas linhas já salvas. */
+.lista-obra .prod-search-wrap.prod-nome-input { flex: 1; }
+.linha-nova-obra .prod-search[readonly],
+.linha-nova-obra .serv-search[readonly] { background: var(--gray-50); cursor: default; }
 .prod-valor-input { font-weight: 600; }
 
-/* Linhas de adicionar produto/serviço na obra (.lista-add) seguem a mesma
-   grade: estoque/preço na coluna Valor, Qtd. na coluna Qtd. e o × embaixo
-   da lixeira (o deslocamento é o lugar do botão editar, 34px + 10px de gap;
-   nos serviços soma também a coluna Qtd., 76px + 10px). */
-.lista-add .prod-estoque-input { flex: 0 0 132px; }
-.lista-add .prod-qtd-input     { flex: 0 0 76px; }
-.lista-add-prod .btn-icon,
-.lista-add-prod .produto-obra-header-spacer { margin-left: 44px; }
-.lista-add-serv .btn-icon,
-.lista-add-serv .produto-obra-header-spacer { margin-left: 130px; }
 
 /* Cabeçalhos das listas: os da obra (.produto-obra-header) e os das linhas
    de adicionar produto/serviço (.linha-cabecalho). */
@@ -1655,11 +1651,8 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .lista-obra .prod-valor-input   { flex: 1 1 70px; }
   .lista-obra .col-vazia          { display: none; }
   .lista-obra .btn-icon { flex: 0 0 36px; width: 36px; height: 36px; font-size: .8rem; }
-  /* No celular as linhas de adicionar quebram normalmente, sem a grade. */
-  .lista-add .prod-estoque-input { flex: 1 1 110px; }
-  .lista-add .prod-qtd-input     { flex: 1 1 80px; }
-  .lista-add-prod .btn-icon,
-  .lista-add-serv .btn-icon      { margin-left: 0; }
+  .lista-obra .prod-qtd-input     { flex: 0 0 64px; }
+  .lista-obra .prod-search-wrap.prod-nome-input { order: -1; flex: 1 1 100%; }
 
   /* abas da obra com rolagem horizontal */
   .obra-tabs {
