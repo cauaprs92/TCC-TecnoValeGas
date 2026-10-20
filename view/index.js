@@ -488,6 +488,7 @@ function _toggleMinimoManual() {
   const manual = document.getElementById('prodMinManualChk').checked;
   document.getElementById('prodMinManualGroup').classList.toggle('hidden', !manual);
   if (!manual) _erroProd('prodQtdMinManual', '');
+  _atualizarResumoMinimo();
 }
 
 const _ORIGEM_MINIMO_BADGE = {
@@ -498,17 +499,84 @@ const _ORIGEM_MINIMO_BADGE = {
   sem_dados:       'badge-gray',
 };
 
-// Resumo do cálculo no topo da seção: valor, de onde veio e a conta.
-function _renderResumoMinimo(p) {
-  const el = document.getElementById('prodMinimoResumo');
-  if (!p) {
-    el.innerHTML = 'Calculado automaticamente: <strong>consumo médio por dia × prazo de entrega + 20% de margem</strong>. '
-      + 'O consumo vem do uso do produto nas obras; enquanto não houver histórico, informe o uso aproximado abaixo.';
-    return;
+const _ORIGEM_MINIMO_DESC = {
+  manual:          'Definido manualmente',
+  historico:       'Calculado pelo histórico',
+  estimativa:      'Calculado pela estimativa de uso',
+  historico_curto: 'Calculado com pouco histórico',
+  sem_dados:       'Aguardando dados de uso',
+};
+
+// Mesmas constantes de src/service/estoqueMinimo.py.
+const MINIMO_MARGEM_SEGURANCA = 0.20;
+const MINIMO_PRAZO_PADRAO     = 7;
+const MINIMO_HISTORICO_DIAS   = 30;
+const MINIMO_DIAS_PERIODO     = { dia: 1, semana: 7, mes: 30 };
+
+// Produto aberto no modal (com o histórico de uso vindo da API) ou null no
+// cadastro de um produto novo, que ainda não tem histórico.
+let _produtoMinimoBase = null;
+
+// 3,5 | 12 | 0,27 — igual ao _formatar do backend.
+function _fmtConsumoDia(n) {
+  let t = (n < 1 ? n.toFixed(2) : n.toFixed(1)).replace('.', ',');
+  return t.endsWith(',0') ? t.slice(0, -2) : t;
+}
+
+// Mesma conta de estoqueMinimo.calcular, com os valores que estão no
+// formulário: atualiza o resumo enquanto o usuário mexe nos campos.
+function _calcularMinimoForm() {
+  const base = _produtoMinimoBase;
+
+  // Prazo: o do produto, senão o do fornecedor digitado, senão o padrão.
+  const prazoProduto = parseInt(document.getElementById('prodPrazo').value);
+  const nomeForn     = document.getElementById('prodFornecedor').value.trim().toLowerCase();
+  const fornecedor   = cacheFornecedores.find(f => f.nomeFornecedor.toLowerCase() === nomeForn);
+  const prazo = prazoProduto > 0 ? prazoProduto
+              : fornecedor ? Number(fornecedor.prazoEntregaDias) : MINIMO_PRAZO_PADRAO;
+
+  const consumoEst = Number(document.getElementById('prodConsumo').value);
+  const periodo    = document.getElementById('prodPeriodo').value;
+  const diasUso    = base?.diasHistorico || 0;
+
+  let origem, consumoDia;
+  if (diasUso >= MINIMO_HISTORICO_DIAS) {
+    origem = 'historico';       consumoDia = Number(base.consumoDiario) || 0;
+  } else if (consumoEst > 0 && MINIMO_DIAS_PERIODO[periodo]) {
+    origem = 'estimativa';      consumoDia = consumoEst / MINIMO_DIAS_PERIODO[periodo];
+  } else if (diasUso > 0) {
+    origem = 'historico_curto'; consumoDia = Number(base.consumoDiario) || 0;
+  } else {
+    origem = 'sem_dados';       consumoDia = 0;
   }
-  el.innerHTML = `<span class="minimo-valor">${escHtml(p.qtdMinima)} un.</span>`
-    + `<span class="badge ${_ORIGEM_MINIMO_BADGE[p.origemMinimo] || 'badge-gray'}">${escHtml(p.descricaoOrigem)}</span>`
-    + `<span class="minimo-conta">${escHtml(p.explicacaoMinimo)}</span>`;
+
+  // Histórico com o mesmo prazo da API: usa o número exato do backend (o
+  // consumo diário vem arredondado e poderia mudar o resultado em 1 unidade).
+  let calculado = Math.ceil(Number((consumoDia * prazo * (1 + MINIMO_MARGEM_SEGURANCA)).toFixed(6)));
+  if (base && origem === base.origemCalculo && origem !== 'estimativa' && prazo === base.prazoEntregaDias) {
+    calculado = base.qtdMinimaCalculada;
+  }
+
+  const conta = origem === 'sem_dados'
+    ? 'Sem uso registrado nem estimativa — informe o uso aproximado abaixo para calcular.'
+    : `${_fmtConsumoDia(consumoDia)}/dia × ${prazo} dias de prazo + ${MINIMO_MARGEM_SEGURANCA * 100}% de margem`;
+
+  const manualMarcado = document.getElementById('prodMinManualChk').checked;
+  const manualV       = document.getElementById('prodQtdMinManual').value.trim();
+  if (manualMarcado && manualV !== '' && Number(manualV) >= 0) {
+    return { qtd: parseInt(manualV), origem: 'manual', conta: `O cálculo daria ${calculado} un.` };
+  }
+  return { qtd: calculado, origem, conta };
+}
+
+// Resumo no topo da seção, no mesmo formato do Preço de Venda.
+function _atualizarResumoMinimo() {
+  const el = document.getElementById('prodMinimoResumo');
+  if (!el) return;
+  const r = _calcularMinimoForm();
+  el.innerHTML = `<span class="minimo-valor">${r.qtd} un.</span>`
+    + `<span class="badge ${_ORIGEM_MINIMO_BADGE[r.origem] || 'badge-gray'}">${_ORIGEM_MINIMO_DESC[r.origem]}</span>`
+    + `<span class="minimo-conta">${escHtml(r.conta)}</span>`;
 }
 
 function _prazoHintProduto(p) {
@@ -704,8 +772,8 @@ function abrirModalNovoProduto() {
   _toggleMargemManual();
   document.getElementById('prodPeriodo').value = 'mes';
   document.getElementById('prodMinManualChk').checked = false;
+  _produtoMinimoBase = null;
   _toggleMinimoManual();
-  _renderResumoMinimo(null);
   _prazoHintProduto(null);
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-boxes-stacked"></i> Novo Produto';
@@ -731,12 +799,12 @@ function abrirModalEditarProduto(idProduto) {
   document.getElementById('prodCusto').value  = p.custoUnitario ?? '';
   document.getElementById('prodMargem').value = p.margemPercentual ?? '';
   document.getElementById('prodMargemManualChk').checked = p.margemPercentual != null;
-  _toggleMargemManual();
-  _toggleMinimoManual();
-  _renderResumoMinimo(p);
-  _prazoHintProduto(p);
   document.getElementById('prodDesc').value     = p.descProduto || '';
   document.getElementById('prodFornecedor').value = p.nomeFornecedor || '';
+  _produtoMinimoBase = p;
+  _toggleMargemManual();
+  _toggleMinimoManual();
+  _prazoHintProduto(p);
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-pen"></i> Editar Produto';
   _resetErrosProduto();
@@ -1168,6 +1236,7 @@ function _nfAbrirCadastroProduto(idItem) {
     document.getElementById('prodCusto').value = (Number(item.valorTotal) / qtd).toFixed(2);
   }
   _atualizarPrecoVenda();
+  _atualizarResumoMinimo();
   _prazoHintProduto({ idFornecedor: _nfNotaAtual.idFornecedor });
   document.getElementById('modalProdutoTitle').innerHTML =
     '<i class="fa-solid fa-file-invoice"></i> Novo Produto da Nota Fiscal';
@@ -1500,6 +1569,7 @@ function selecionarFornecedorDropdown(item, nomeFornecedor) {
   const wrap = item.closest('.prod-search-wrap');
   wrap.querySelector('.prod-search').value = nomeFornecedor;
   wrap.querySelector('.prod-dropdown').classList.add('hidden');
+  _atualizarResumoMinimo();
 }
 
 // ── Serviços vinculados à Obra ────────────────────────────────────────────────
@@ -1697,6 +1767,13 @@ document.addEventListener('click', e => {
   const wrap = document.getElementById('obraEquipeWrap');
   if (wrap && !wrap.contains(e.target)) fecharDropdownEquipe();
 });
+
+// Campos do produto que entram no estoque mínimo atualizam o resumo na hora.
+['input', 'change'].forEach(evento => document.addEventListener(evento, e => {
+  if (e.target.matches('#prodPrazo, #prodConsumo, #prodPeriodo, #prodFornecedor, #prodQtdMinManual')) {
+    _atualizarResumoMinimo();
+  }
+}));
 
 // Quantidade de produto avulso mexe no valor estimado da obra; no serviço,
 // quantidade e preço mexem no lucro sobre material.
