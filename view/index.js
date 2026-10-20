@@ -2138,7 +2138,7 @@ function _carregarProdutosVerObra(idObra) {
     _obraProdutosExistentes = produtos;
     _atualizarValorTotalObra();
     if (!produtos.length) {
-      listEl.innerHTML = '<div style="font-size:.84rem;color:var(--gray-500);padding:6px 0">Nenhum produto vinculado.</div>';
+      listEl.innerHTML = '';   // vazia: o CSS esconde o cabeçalho e fica só o botão de adicionar
       return;
     }
     listEl.innerHTML = produtos.map(p => `
@@ -2171,7 +2171,7 @@ function _carregarServicosVerObra(idObra) {
     const servicos = res.servicos || [];
     _obraServicosExistentes = servicos;
     if (!servicos.length) {
-      servListEl.innerHTML = '<div style="font-size:.84rem;color:var(--gray-500);padding:6px 0">Nenhum serviço vinculado.</div>';
+      servListEl.innerHTML = '';   // vazia: o CSS esconde o cabeçalho e fica só o botão de adicionar
     } else {
       servListEl.innerHTML = servicos.map(s => `
         <div class="produto-obra-row">

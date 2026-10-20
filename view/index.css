@@ -607,7 +607,11 @@ body {
 .linha-cabecalho span.produto-obra-header-spacer { flex: 0 0 34px; padding: 0; }
 .produto-obra-header span.col-vazia { padding: 0; }
 /* Sem linhas, sem cabeçalho. */
-.linha-cabecalho:has(+ :empty) { display: none; }
+.linha-cabecalho:has(+ :empty),
+.produto-obra-header:has(+ :empty) { display: none; }
+/* Obra sem produtos/serviços vinculados: some também o subtítulo
+   "Adicionar ...", ficando só o título da seção e o botão. */
+.lista-obra:empty + .titulo-adicionar { display: none; }
 
 /* flex: 1 (base 0): o mesmo wrapper aparece em linhas (produto/serviço) e
    dentro de .form-group, que é flex em coluna — lá uma base em px vira altura. */
