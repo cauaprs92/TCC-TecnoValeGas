@@ -2620,14 +2620,16 @@ const filtros   = {
   admins: '', adminCargo: '', responsaveis: '',
   historicoEntidade: '', historicoQ: '', historicoAdmin: '', historicoAcao: '', historicoDe: '', historicoAte: ''
 };
+// Ordem inicial das tabelas: do maior ID para o menor (o cadastro mais
+// recente aparece primeiro). Clicar no cabeçalho continua alternando.
 const ORDER_STATE = {
-  produtos: { key: 'id', dir: 'asc' },
-  obras: { key: 'id', dir: 'asc' },
-  clientes: { key: 'id', dir: 'asc' },
-  servicos: { key: 'id', dir: 'asc' },
-  admins: { key: 'id', dir: 'asc' },
-  responsaveis: { key: 'id', dir: 'asc' },
-  historico: { key: 'dataHora', dir: 'desc' },
+  produtos:     { key: 'id', dir: 'desc' },
+  obras:        { key: 'id', dir: 'desc' },
+  clientes:     { key: 'id', dir: 'desc' },
+  servicos:     { key: 'id', dir: 'desc' },
+  admins:       { key: 'id', dir: 'desc' },   // Funcionários → usuários
+  responsaveis: { key: 'id', dir: 'desc' },   // Funcionários → fields
+  historico:    { key: 'dataHora', dir: 'desc' },
 };
 
 function _compararValores(a, b, asc = true) {
