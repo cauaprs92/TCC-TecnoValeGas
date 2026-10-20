@@ -2528,10 +2528,10 @@ function adicionarProdutoObra() {
   document.getElementById('produtosObraList').appendChild(el.firstElementChild);
 }
 
+// A obra precisa de ao menos um produto OU serviço — quem confere é o salvar
+// (e o backend), então qualquer linha pode ser removida aqui.
 function removerProdutoObra(btn) {
-  const list = document.getElementById('produtosObraList');
-  if (list.children.length > 1) btn.closest('.produto-obra-row').remove();
-  else showToast('A obra precisa de ao menos um produto.', 'warning');
+  btn.closest('.produto-obra-row').remove();
   _atualizarValorTotalObra();
 }
 
@@ -5100,10 +5100,12 @@ function _atualizarListasProdutosObra(idObra) {
 
 let _totalProdutosParaExcluir = 0;
 
+// Mesma regra do backend: pode sair o último produto se a obra tiver serviço.
 function excluirProdutoObra(idObra, idProduto, nomeProduto) {
   const countModal    = document.querySelectorAll('#modalVerObraBody tbody tr').length;
   const countEditList = document.querySelectorAll('#obraProdutosVerList .produto-obra-row').length;
-  _totalProdutosParaExcluir = Math.max(countModal, countEditList);
+  const servicos      = _obraServicosExistentes.length;
+  _totalProdutosParaExcluir = Math.max(countModal, countEditList) + servicos;
   document.getElementById('confirmarMsg').textContent =
     `Tem certeza que deseja remover "${nomeProduto}" desta obra?`;
   document.getElementById('btnConfirmarExcluir').onclick = () =>
@@ -5115,7 +5117,7 @@ async function confirmarExcluirProdObra(idObra, idProduto) {
   fecharModal('modalConfirmar');
 
   if (_totalProdutosParaExcluir <= 1) {
-    showToast('Não é possível remover o único produto da obra. A obra deve ter pelo menos um produto.', 'error');
+    showToast('A obra precisa ter ao menos um produto ou serviço vinculado.', 'error');
     return;
   }
 
