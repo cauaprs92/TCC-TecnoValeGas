@@ -155,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
     obraClienteNome:         'Nome do cliente é obrigatório.',
     obraClienteRua:          'Endereço é obrigatório.',
     obraClienteNumero:       'Número é obrigatório.',
-    obraClienteComplemento:  'Complemento é obrigatório.',
     obraClienteBairro:       'Bairro é obrigatório.',
   };
   Object.entries(_clienteBlurCfg).forEach(([id, msg]) => {
@@ -2312,7 +2311,6 @@ async function salvarObra() {
   const nomeCliente = document.getElementById('obraClienteNome').value.trim();
   const rua         = document.getElementById('obraClienteRua').value.trim();
   const numero      = document.getElementById('obraClienteNumero').value.trim();
-  const complemento = document.getElementById('obraClienteComplemento').value.trim();
   const bairro      = document.getElementById('obraClienteBairro').value.trim();
 
   let temErro = false;
@@ -2331,7 +2329,6 @@ async function salvarObra() {
     if (!nomeCliente){ _obraSetError('obraClienteNome',        'Nome do cliente é obrigatório.');   temErro = true; }
     if (!rua)        { _obraSetError('obraClienteRua',         'Endereço é obrigatório.');          temErro = true; }
     if (!numero)     { _obraSetError('obraClienteNumero',      'Número é obrigatório.');            temErro = true; }
-    if (!complemento){ _obraSetError('obraClienteComplemento', 'Complemento é obrigatório.');       temErro = true; }
     if (!bairro)     { _obraSetError('obraClienteBairro',      'Bairro é obrigatório.');            temErro = true; }
   }
   if (!dataInicio) { _obraSetError('obraDataInicio',  'Data de início é obrigatória.');     temErro = true; }
