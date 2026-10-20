@@ -1422,9 +1422,24 @@ function _prodSearchHTML(btnRemove) {
         <div class="prod-dropdown hidden"></div>
       </div>
       <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
+      <input type="text" placeholder="R$ 0,00" class="prod-valor-input" readonly tabindex="-1" />
       <input type="number" placeholder="Qtd." class="prod-qtd-input" min="1" />
       ${btnRemove}
     </div>`;
+}
+
+// Receita do serviço: custo da linha = quantidade × custo atual do produto.
+// A soma das linhas é o "material" do quadro de lucro sobre material.
+function _atualizarCustoLinhaServico(row) {
+  const valorEl = row?.querySelector('.prod-valor-input');
+  if (!valorEl) return;
+  const p   = cacheProdutos.find(x => x.idProduto === parseInt(row.querySelector('.prod-select').value));
+  const qtd = parseInt(row.querySelector('.prod-qtd-input').value) || 0;
+  valorEl.title = '';
+  if (!p) { valorEl.value = ''; return; }
+  if (p.custoUnitario == null) { valorEl.value = '—'; valorEl.title = 'Produto sem custo cadastrado'; return; }
+  valorEl.value = _fmtMoeda((qtd || 1) * Number(p.custoUnitario));
+  valorEl.title = `${qtd || 1} × ${_fmtMoeda(Number(p.custoUnitario))} (custo atual)`;
 }
 
 // ── Linhas novas de produto/serviço na OBRA ─────────────────────────────────
@@ -1534,6 +1549,7 @@ function selecionarProdutoDropdown(item, idProduto) {
     const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
     estoqueEl.value = `${p.qtdProduto} em estoque`;
     estoqueEl.style.color = cor;
+    _atualizarCustoLinhaServico(row);
   }
 
   // na conferência da NF o botão "Repor estoque" só libera com um produto escolhido
@@ -1782,6 +1798,7 @@ document.addEventListener('input', e => {
     _atualizarValorLinhaObra(e.target.closest('.produto-obra-row'));
     _atualizarValorTotalObra();
   }
+  if (e.target.matches('#modalServico .prod-qtd-input')) _atualizarCustoLinhaServico(e.target.closest('.produto-obra-row'));
   if (e.target.matches('#modalServico .prod-qtd-input, #servPreco')) _atualizarLucroServico();
 });
 
@@ -3091,6 +3108,7 @@ function _linhaProdutoServico(idProduto, nomeProduto, quantidade) {
     }
   }
   row.querySelector('.prod-qtd-input').value = quantidade || '';
+  _atualizarCustoLinhaServico(row);
   return row;
 }
 

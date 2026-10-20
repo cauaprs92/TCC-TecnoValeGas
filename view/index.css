@@ -568,6 +568,10 @@ body {
 /* Botões da linha (remover ×, editar, lixeira): quadrados e sem encolher. */
 .produto-obra-row .btn-icon { flex: 0 0 34px; width: 34px; height: 34px; font-size: .85rem; }
 
+/* Coluna de valor das linhas de produto (custo na receita do serviço);
+   nas listas da obra a largura vem da .lista-obra, logo abaixo. */
+.produto-obra-row .prod-valor-input { flex: 0 1 120px; }
+
 /* Listas da obra (produtos utilizados / serviços vinculados) e seus
    cabeçalhos usam as MESMAS larguras (.lista-obra), então cada título fica
    sobre a sua coluna e o Valor fica na mesma posição nas duas listas.
@@ -1641,6 +1645,12 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .prod-id-input      { flex: 0 0 68px; }
   .prod-estoque-input { flex: 1 1 110px; }
   .prod-qtd-input     { flex: 1 1 80px; }
+  .produto-obra-row .prod-valor-input { flex: 1 1 90px; }
+  /* receita do serviço: estoque, custo, qtd. e × numa linha abaixo do nome */
+  #produtosServicoList .prod-estoque-input,
+  #produtosServicoList .prod-valor-input { flex: 1 1 0; font-size: 14px; padding-left: 8px; padding-right: 6px; }
+  #produtosServicoList .prod-estoque-input { flex-grow: 1.45; }
+  #produtosServicoList .prod-qtd-input   { flex: 0 0 56px; padding-left: 8px; padding-right: 4px; }
   .produto-obra-header,
   .linha-cabecalho { display: none; }
   /* ID, valor, qtd. e os dois botões cabem numa linha abaixo do nome */
