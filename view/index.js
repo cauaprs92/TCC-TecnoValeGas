@@ -1403,17 +1403,15 @@ function renderTabelaObras(obras) {
   atualizarIndicadoresOrdenacao('obras');
 }
 
-// Botão quadrado com × que tira uma linha de produto/serviço do formulário.
-function _btnRemoverLinha(fn, titulo = 'Remover') {
-  return `<button type="button" class="btn-icon danger" title="${titulo}" onclick="${fn}(this)">
-    <i class="fa-solid fa-xmark"></i></button>`;
-}
-
-function _prodSearchHTML(btnRemove) {
+// Linha da receita do serviço, no padrão das linhas da obra:
+// ID | Nome | Qtd. em estoque | Custo | Qtd. | editar | excluir.
+// O ID vem da seleção; depois de escolhido o nome trava e o lápis reabre.
+function _prodSearchHTML(fnRemover) {
   return `
     <div class="produto-obra-row">
-      <div class="prod-search-wrap">
-        <input type="text" class="prod-search" placeholder="Buscar produto (nome ou ID)..."
+      <input type="text" class="prod-id-input" placeholder="—" readonly tabindex="-1" />
+      <div class="prod-search-wrap prod-nome-input">
+        <input type="text" class="prod-search" placeholder="Selecione o produto..."
           oninput="buscarProdutoInput(this)"
           onfocus="buscarProdutoInput(this)"
           onblur="setTimeout(()=>fecharDropdownProduto(this),150)"
@@ -1421,17 +1419,26 @@ function _prodSearchHTML(btnRemove) {
         <input type="hidden" class="prod-select" />
         <div class="prod-dropdown hidden"></div>
       </div>
-      <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly />
+      <input type="text" placeholder="Estoque" class="prod-estoque-input" readonly tabindex="-1" />
       <input type="text" placeholder="R$ 0,00" class="prod-valor-input" readonly tabindex="-1" />
       <input type="number" placeholder="Qtd." class="prod-qtd-input" min="1" />
-      ${btnRemove}
+      <button type="button" class="btn-icon edit" title="Trocar produto" onclick="_editarLinhaNovaObra(this)">
+        <i class="fa-solid fa-pen"></i>
+      </button>
+      <button type="button" class="btn-icon danger" title="Remover produto" onclick="${fnRemover}(this)">
+        <i class="fa-solid fa-trash"></i>
+      </button>
     </div>`;
 }
 
 // Receita do serviço: custo da linha = quantidade × custo atual do produto.
 // A soma das linhas é o "material" do quadro de lucro sobre material.
 function _atualizarCustoLinhaServico(row) {
-  const valorEl = row?.querySelector('.prod-valor-input');
+  // A linha da obra também tem .prod-valor-input (lá é preço de venda). Não
+  // dá para checar "#modalServico": ao editar um serviço a linha é montada
+  // antes de entrar no modal.
+  if (!row || row.classList.contains('linha-nova-obra')) return;
+  const valorEl = row.querySelector('.prod-valor-input');
   if (!valorEl) return;
   const p   = cacheProdutos.find(x => x.idProduto === parseInt(row.querySelector('.prod-select').value));
   const qtd = parseInt(row.querySelector('.prod-qtd-input').value) || 0;
@@ -1535,27 +1542,35 @@ function selecionarProdutoDropdown(item, idProduto) {
   wrap.querySelector('.prod-select').value = p.idProduto;
   wrap.querySelector('.prod-dropdown').classList.add('hidden');
 
-  if (row.classList.contains('linha-nova-obra')) {
-    // Obra: ID na própria coluna e só o nome no campo, que fica travado.
-    const busca = wrap.querySelector('.prod-search');
-    busca.value    = p.nomeProduto;
-    busca.readOnly = true;
-    row.querySelector('.prod-id-input').value = p.idProduto;
-    _atualizarValorLinhaObra(row);
-  } else {
-    // Serviço (receita) e conferência da nota fiscal: mostram o estoque.
-    wrap.querySelector('.prod-search').value = `${p.idProduto} — ${p.nomeProduto}`;
-    const estoqueEl = row.querySelector('.prod-estoque-input');
-    const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
-    estoqueEl.value = `${p.qtdProduto} em estoque`;
-    estoqueEl.style.color = cor;
-    _atualizarCustoLinhaServico(row);
-  }
+  _preencherProdutoNaLinha(row, p);
 
   // na conferência da NF o botão "Repor estoque" só libera com um produto escolhido
   _nfAtualizarBotaoRepor(row);
   if (row.closest('#modalObra')) _atualizarValorTotalObra();
   if (row.closest('#modalServico')) _atualizarLucroServico();
+}
+
+// Coloca o produto escolhido na linha. Obra e receita do serviço têm coluna
+// ID: o campo mostra só o nome e trava (o lápis reabre). A conferência da
+// nota fiscal não tem: lá o campo mostra "ID — nome".
+function _preencherProdutoNaLinha(row, p) {
+  const busca = row.querySelector('.prod-search');
+  const idEl  = row.querySelector('.prod-id-input');
+  if (idEl) {
+    idEl.value     = p.idProduto;
+    busca.value    = p.nomeProduto;
+    busca.readOnly = true;
+  } else {
+    busca.value = `${p.idProduto} — ${p.nomeProduto}`;
+  }
+  const estoqueEl = row.querySelector('.prod-estoque-input');
+  if (estoqueEl) {
+    estoqueEl.value = `${p.qtdProduto} em estoque`;
+    estoqueEl.style.color = p.qtdProduto <= 0 ? '#DC2626'
+      : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
+  }
+  _atualizarValorLinhaObra(row);     // obra: qtd. × preço de venda
+  _atualizarCustoLinhaServico(row);  // serviço: qtd. × custo
 }
 
 function fecharDropdownProduto(input) {
@@ -3096,21 +3111,21 @@ function filtrarServicos(q) {
 
 function _linhaProdutoServico(idProduto, nomeProduto, quantidade) {
   const wrap = document.createElement('div');
-  wrap.innerHTML = _prodSearchHTML(_btnRemoverLinha('removerProdutoServico', 'Remover produto'));
+  wrap.innerHTML = _prodSearchHTML('removerProdutoServico');
   const row = wrap.firstElementChild;
+  row.querySelector('.prod-qtd-input').value = quantidade || '';
   if (idProduto) {
-    const p = cacheProdutos.find(x => x.idProduto === idProduto);
-    row.querySelector('.prod-search').value = p ? `${p.idProduto} — ${p.nomeProduto}` : (nomeProduto || '');
     row.querySelector('.prod-select').value = idProduto;
+    const p = cacheProdutos.find(x => x.idProduto === idProduto);
     if (p) {
-      const cor = p.qtdProduto <= 0 ? '#DC2626' : (p.qtdMinima > 0 && p.qtdProduto <= p.qtdMinima) ? '#D97706' : '#16A34A';
-      const estoqueEl = row.querySelector('.prod-estoque-input');
-      estoqueEl.value = `${p.qtdProduto} em estoque`;
-      estoqueEl.style.color = cor;
+      _preencherProdutoNaLinha(row, p);
+    } else {
+      // produto fora do cache (ex.: excluído): mostra o que veio do serviço
+      row.querySelector('.prod-id-input').value = idProduto;
+      row.querySelector('.prod-search').value   = nomeProduto || '';
+      row.querySelector('.prod-search').readOnly = true;
     }
   }
-  row.querySelector('.prod-qtd-input').value = quantidade || '';
-  _atualizarCustoLinhaServico(row);
   return row;
 }
 

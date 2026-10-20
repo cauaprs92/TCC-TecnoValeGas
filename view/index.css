@@ -572,6 +572,13 @@ body {
    nas listas da obra a largura vem da .lista-obra, logo abaixo. */
 .produto-obra-row .prod-valor-input { flex: 0 1 120px; }
 
+/* Receita do serviço: mesma grade da obra, com a coluna de estoque a mais. */
+.lista-servico .prod-id-input      { flex: 0 0 56px; }
+.lista-servico .prod-nome-input    { flex: 1; min-width: 0; }
+.lista-servico .prod-estoque-input { flex: 0 0 132px; }
+.lista-servico .prod-valor-input   { flex: 0 0 104px; }
+.lista-servico .prod-qtd-input     { flex: 0 0 64px; }
+
 /* Listas da obra (produtos utilizados / serviços vinculados) e seus
    cabeçalhos usam as MESMAS larguras (.lista-obra), então cada título fica
    sobre a sua coluna e o Valor fica na mesma posição nas duas listas.
@@ -1647,10 +1654,15 @@ body.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
   .prod-qtd-input     { flex: 1 1 80px; }
   .produto-obra-row .prod-valor-input { flex: 1 1 90px; }
   /* receita do serviço: estoque, custo, qtd. e × numa linha abaixo do nome */
-  #produtosServicoList .prod-estoque-input,
-  #produtosServicoList .prod-valor-input { flex: 1 1 0; font-size: 14px; padding-left: 8px; padding-right: 6px; }
-  #produtosServicoList .prod-estoque-input { flex-grow: 1.45; }
-  #produtosServicoList .prod-qtd-input   { flex: 0 0 56px; padding-left: 8px; padding-right: 4px; }
+  /* receita do serviço: nome em cima; ID, estoque e custo numa linha;
+     qtd., editar e excluir na seguinte */
+  .lista-servico .prod-id-input      { flex: 0 0 48px; padding-left: 6px; padding-right: 4px; }
+  .lista-servico .prod-estoque-input { flex: 1.4 1 0; }
+  .lista-servico .prod-valor-input   { flex: 1 1 0; }
+  .lista-servico .prod-estoque-input,
+  .lista-servico .prod-valor-input   { min-width: 0; font-size: 14px; padding-left: 8px; padding-right: 6px; }
+  .lista-servico .prod-qtd-input     { flex: 1 1 100%; max-width: calc(100% - 88px); }
+  .lista-servico .btn-icon { flex: 0 0 36px; width: 36px; height: 36px; font-size: .8rem; }
   .produto-obra-header,
   .linha-cabecalho { display: none; }
   /* ID, valor, qtd. e os dois botões cabem numa linha abaixo do nome */
