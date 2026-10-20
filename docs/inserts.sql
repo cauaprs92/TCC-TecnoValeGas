@@ -95,7 +95,7 @@ INSERT INTO clientes (idCliente, nomeCliente, CNPJCPF, contatoCliente, emailClie
 -- ── Produtos ──────────────────────────────────────────────────────────────────
 -- qtdProduto = estoque atual | o estoque mínimo é calculado (ver docs/codigo.sql)
 -- custoUnitario e margemPercentual são FICTÍCIOS — substituir pelos valores
--- reais da TecnoVale Gás. Preço de venda = custo ÷ (1 − margem).
+-- reais da TecnoVale Gás. Preço de venda = custo × (1 + margem).
 -- Margem NULL = margem padrão do sistema (30%): os EPIs 39–42 usam a padrão,
 -- os demais têm margem própria. O produto 45 fica sem custo de propósito,
 -- para mostrar na tela um produto ainda sem preço de venda.
@@ -536,7 +536,7 @@ UPDATE produtosObras po
 JOIN produtos p ON p.idProduto = po.idProduto
 SET po.custoUnitario = p.custoUnitario,
     -- margem NULL = margem padrão (30%, MARGEM_PADRAO em precificacao.py)
-    po.precoVenda    = ROUND(p.custoUnitario / (1 - COALESCE(p.margemPercentual, 30) / 100), 2);
+    po.precoVenda    = ROUND(p.custoUnitario * (1 + COALESCE(p.margemPercentual, 30) / 100), 2);
 SET SQL_SAFE_UPDATES = 1;
 
 -- ── Serviços por obra ────────────────────────────────────────────────────────

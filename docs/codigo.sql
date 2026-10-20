@@ -51,7 +51,7 @@ create table fornecedores (
 -- Custo e venda (src/service/precificacao.py):
 --   custoUnitario    → digitado no cadastro ou atualizado pela nota fiscal
 --                      (média ponderada entre o estoque atual e a entrada)
---   margemPercentual → margem sobre a venda: preço = custo ÷ (1 − margem).
+--   margemPercentual → acréscimo sobre o custo: preço = custo × (1 + margem).
 --                      NULL = usa a margem padrão (MARGEM_PADRAO em precificacao.py).
 --                      O preço de venda não é gravado; sai sempre do custo atual.
 create table produtos(
@@ -71,7 +71,7 @@ create table produtos(
     CONSTRAINT ck_produto_periodo CHECK (periodoEstimativa IN ('dia', 'semana', 'mes')),
     CONSTRAINT ck_produto_prazo   CHECK (prazoEntregaDias > 0),
     CONSTRAINT ck_produto_custo   CHECK (custoUnitario >= 0),
-    CONSTRAINT ck_produto_margem  CHECK (margemPercentual >= 0 AND margemPercentual < 100)
+    CONSTRAINT ck_produto_margem  CHECK (margemPercentual >= 0 AND margemPercentual < 1000)
 );
 
 create table clientes(

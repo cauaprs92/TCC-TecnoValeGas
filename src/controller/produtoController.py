@@ -1,6 +1,7 @@
 from src.dao.produtoDAO import ProdutoDAO
 from src.controller.fornecedorController import FornecedorController
 from src.modelo.produto import Produto
+from src.service import precificacao
 
 
 class ProdutoController:
@@ -97,11 +98,12 @@ class ProdutoController:
         if consumo is None:
             periodo = None
 
-        # Custo e margem sobre a venda; vazios = produto ainda sem preço de venda
+        # Custo e margem (acréscimo sobre o custo); vazios = produto ainda sem preço de venda
         valido, mensagem, custo = self._opcional_decimal(dados.get("custoUnitario"), "Custo unitário")
         if not valido:
             return False, mensagem, None
-        valido, mensagem, margem = self._opcional_decimal(dados.get("margemPercentual"), "Margem", maximo=100)
+        valido, mensagem, margem = self._opcional_decimal(dados.get("margemPercentual"), "Margem",
+                                                         maximo=precificacao.MARGEM_MAXIMA)
         if not valido:
             return False, mensagem, None
 

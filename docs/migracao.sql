@@ -186,3 +186,33 @@ SET SQL_SAFE_UPDATES = 0;
 UPDATE historico SET acao = 'Inseriu' WHERE acao IN ('Cadastrou', 'Importou');
 UPDATE historico SET acao = 'Editou'  WHERE acao IN ('Reabriu', 'Repôs', 'Ignorou');
 SET SQL_SAFE_UPDATES = 1;
+
+-- ── 9. Preço de venda por markup ─────────────────────────────────────────────
+-- A margem passa a ser acréscimo sobre o custo: preço = custo × (1 + margem),
+-- e pode passar de 100%. (Antes: custo ÷ (1 − margem), limitada a < 100%.)
+ALTER TABLE produtos
+    DROP CONSTRAINT ck_produto_margem,
+    ADD CONSTRAINT ck_produto_margem CHECK (margemPercentual >= 0 AND margemPercentual < 1000);
+
+-- Recalcula o preço gravado nas obras com a regra nova, a partir do custo
+-- gravado no vínculo e da margem atual do produto (NULL = padrão de 30%).
+-- Para manter os valores antigos das obras, NÃO rode este bloco.
+SET SQL_SAFE_UPDATES = 0;
+UPDATE produtosObras po
+JOIN produtos p ON p.idProduto = po.idProduto
+SET po.precoVenda = ROUND(po.custoUnitario * (1 + COALESCE(p.margemPercentual, 30) / 100), 2)
+WHERE po.custoUnitario IS NOT NULL;
+
+-- Valor das obras concluídas com os preços recalculados (mesma conta de
+-- ProdutosObrasDAO.recalcular_valor: serviços + avulsos × preço gravado).
+UPDATE obras o
+SET o.valorObra =
+        (SELECT COALESCE(SUM(s.precoServico), 0)
+         FROM obraServicos os
+         JOIN servicos s ON s.idServico = os.idServico
+         WHERE os.idObra = o.idObra)
+      + (SELECT COALESCE(SUM(po.qtdProdutosObra * po.precoVenda), 0)
+         FROM produtosObras po
+         WHERE po.idObra = o.idObra)
+WHERE o.statusObra = 'Concluida';
+SET SQL_SAFE_UPDATES = 1;

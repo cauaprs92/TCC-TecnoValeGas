@@ -34,9 +34,9 @@ Sistema desenvolvido como Trabalho de Conclusão de Curso (TCC) para gerenciar o
 
 **Custo, preço de venda e lucro** (regra em `src/service/precificacao.py`)
 - Cada produto tem **custo unitário** (digitado ou atualizado pela nota fiscal,
-  por média ponderada com o estoque atual) e **margem sobre a venda**
-- Preço de venda = `custo ÷ (1 − margem)` — custo 100 com margem 30% vende a
-  142,86, e 30% do que é cobrado é lucro
+  por média ponderada com o estoque atual) e **margem** (acréscimo sobre o custo)
+- Preço de venda = `custo × (1 + margem)` — custo 100 com margem 30% vende a
+  130,00; a margem pode passar de 100%
 - Produto sem margem própria usa a **margem padrão** (30%, `MARGEM_PADRAO`),
   como o estoque mínimo automático; a margem manual é opcional no cadastro
 - Produto cadastrado pela nota fiscal usa o mesmo formulário, com o custo

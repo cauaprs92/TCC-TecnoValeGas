@@ -1,7 +1,8 @@
 """Custo, preço de venda e lucro.
 
-A margem é sobre a venda, não markup: com custo 100 e margem 30%, o preço é
-100 ÷ 0,70 = 142,86 — dos 142,86 cobrados, 30% (42,86) é lucro. O lucro aqui
+A margem é um acréscimo sobre o custo (markup): com custo 100 e margem 30%, o
+preço é 100 × 1,30 = 130,00 — o lucro (30,00) é 30% do custo. Por isso a
+margem pode passar de 100% (150% = vender por 2,5 vezes o custo). O lucro aqui
 considera só material; mão de obra, deslocamento e impostos ainda não entram.
 
 Produto sem margem própria usa MARGEM_PADRAO — como o estoque mínimo, que é
@@ -10,6 +11,8 @@ empresa informar a margem real.
 """
 
 MARGEM_PADRAO = 30.0
+# Limite da coluna produtos.margemPercentual (DECIMAL(5,2)).
+MARGEM_MAXIMA = 1000.0
 
 
 def margem_efetiva(margem_percentual) -> float:
@@ -18,14 +21,14 @@ def margem_efetiva(margem_percentual) -> float:
 
 
 def preco_venda(custo, margem_percentual):
-    """Preço de venda pela margem sobre a venda (a padrão, se o produto não
-    tiver margem própria), ou None se faltar o custo."""
+    """Preço de venda = custo × (1 + margem) — a margem do produto, ou a
+    padrão se ele não tiver uma própria. None se faltar o custo."""
     if custo is None:
         return None
     margem = margem_efetiva(margem_percentual) / 100
-    if not 0 <= margem < 1:
+    if margem < 0:
         return None
-    return round(float(custo) / (1 - margem), 2)
+    return round(float(custo) * (1 + margem), 2)
 
 
 def custo_medio(estoque_atual, custo_atual, qtd_entrada, custo_entrada):

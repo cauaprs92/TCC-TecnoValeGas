@@ -471,7 +471,7 @@ function _vProdMargem(show = true) {
   const v = document.getElementById('prodMargem').value.trim();
   let msg = '';
   if (v === '')                                   msg = 'Informe a margem ou desmarque a opção manual.';
-  else if (!(Number(v) >= 0 && Number(v) < 100))  msg = 'A margem deve ficar entre 0 e 99,9%.';
+  else if (!(Number(v) >= 0 && Number(v) < 1000)) msg = 'A margem deve ficar entre 0 e 999,99%.';
   if (msg && show) _erroProd('prodMargem', msg);
   else if (!msg)   _erroProd('prodMargem', '');
   return !msg;
@@ -747,12 +747,12 @@ function abrirModalEditarProduto(idProduto) {
   abrirModal('modalProduto');
 }
 
-// Mesma conta de src/service/precificacao.py: margem sobre a venda, não markup.
+// Mesma conta de src/service/precificacao.py: preço = custo × (1 + margem).
 // Margem null = margem padrão (o valor vem do backend em GET /produto).
 function _precoVenda(custo, margem) {
   const m = margem ?? margemPadrao;
-  if (custo == null || m < 0 || m >= 100) return null;
-  return custo / (1 - m / 100);
+  if (custo == null || m < 0) return null;
+  return custo * (1 + m / 100);
 }
 
 const _fmtPct = v => `${Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
@@ -765,7 +765,7 @@ function _atualizarPrecoVenda() {
   const margV  = document.getElementById('prodMargem').value.trim();
   const rotuloCusto = _nfItemCadastro ? 'Custo da nota' : 'Custo';
 
-  if (manual && !(margV !== '' && Number(margV) >= 0 && Number(margV) < 100)) {
+  if (manual && !(margV !== '' && Number(margV) >= 0 && Number(margV) < 1000)) {
     el.innerHTML = 'Informe a margem abaixo para calcular o preço de venda.';
     return;
   }
@@ -781,7 +781,7 @@ function _atualizarPrecoVenda() {
   }
   const custo = Number(custoV);
   el.innerHTML = `<span class="minimo-valor">${_fmtMoeda(_precoVenda(custo, margem))}</span>${badge}`
-    + `<span class="minimo-conta">${rotuloCusto} ${_fmtMoeda(custo)} ÷ (1 − ${_fmtPct(margem)})</span>`;
+    + `<span class="minimo-conta">${rotuloCusto} ${_fmtMoeda(custo)} + ${_fmtPct(margem)} de margem</span>`;
 }
 
 async function salvarProduto() {
