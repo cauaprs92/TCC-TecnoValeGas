@@ -9,6 +9,8 @@ class Conexao:
     _usuario  = os.environ.get("DB_USER", "root")
     _senha    = os.environ.get("DB_PASSWORD", "")
     _banco    = os.environ.get("DB_NAME", "tcc")
+    # Bancos na nuvem (ex.: Aiven) exigem SSL; o XAMPP local não usa.
+    _ssl      = os.environ.get("DB_SSL", "false").lower() == "true"
 
     @staticmethod
     def obter_conexao():
@@ -19,7 +21,7 @@ class Conexao:
                 user=Conexao._usuario, 
                 password=Conexao._senha,
                 database=Conexao._banco,
-                ssl_disabled=True,  
+                ssl_disabled=not Conexao._ssl,
                 connection_timeout=10
             )
         except Exception as e:

@@ -4,3 +4,4 @@ mysql-connector-python
 pyjwt
 bcrypt
 pypdf>=4.0
+gunicorn
